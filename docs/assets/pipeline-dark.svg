@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 300" width="1200" height="300" role="img" aria-label="How AI Observatory turns local agent transcripts into a ranked list of changes: Transcripts then Collect then Normalise then Detect then Decide.">
+<rect width="1200" height="300" fill="#0a0a0f"/>
+<text x="20" y="42" font-family="ui-sans-serif,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif" font-size="19" font-weight="650" fill="#ededf3" letter-spacing="-0.3">From files you already have to a decision you can act on</text>
+<text x="20" y="65" font-family="ui-sans-serif,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif" font-size="13" fill="#74748a">Nothing on this line touches the network.</text>
+<rect x="20" y="84" width="200" height="128" rx="14" fill="#131319" stroke="#2a2a33" stroke-width="1"/>
+<text x="38" y="114" font-family="ui-sans-serif,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif" font-size="11" font-weight="700" letter-spacing="1.4" fill="#74748a">01</text>
+<text x="38" y="142" font-family="ui-sans-serif,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif" font-size="17" font-weight="640" fill="#ededf3">Transcripts</text>
+<text x="38" y="164" font-family="ui-sans-serif,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif" font-size="13" font-weight="600" fill="#9b93ff">4 tools, on disk</text>
+<text x="38" y="186" font-family="ui-sans-serif,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif" font-size="12" fill="#a2a2b4">Files your agent already</text>
+<text x="38" y="202" font-family="ui-sans-serif,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif" font-size="12" fill="#a2a2b4">wrote</text>
+<path d="M230 148.0 h20 m-7 -5 l7 5 l-7 5" fill="none" stroke="#74748a" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+<rect x="260" y="84" width="200" height="128" rx="14" fill="#131319" stroke="#2a2a33" stroke-width="1"/>
+<text x="278" y="114" font-family="ui-sans-serif,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif" font-size="11" font-weight="700" letter-spacing="1.4" fill="#74748a">02</text>
+<text x="278" y="142" font-family="ui-sans-serif,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif" font-size="17" font-weight="640" fill="#ededf3">Collect</text>
+<text x="278" y="164" font-family="ui-sans-serif,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif" font-size="13" font-weight="600" fill="#9b93ff">read-only, ~0.2 s</text>
+<text x="278" y="186" font-family="ui-sans-serif,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif" font-size="12" fill="#a2a2b4">Zero tokens. No API, no</text>
+<text x="278" y="202" font-family="ui-sans-serif,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif" font-size="12" fill="#a2a2b4">proxy</text>
+<path d="M470 148.0 h20 m-7 -5 l7 5 l-7 5" fill="none" stroke="#74748a" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+<rect x="500" y="84" width="200" height="128" rx="14" fill="#131319" stroke="#2a2a33" stroke-width="1"/>
+<text x="518" y="114" font-family="ui-sans-serif,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif" font-size="11" font-weight="700" letter-spacing="1.4" fill="#74748a">03</text>
+<text x="518" y="142" font-family="ui-sans-serif,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif" font-size="17" font-weight="640" fill="#ededf3">Normalise</text>
+<text x="518" y="164" font-family="ui-sans-serif,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif" font-size="13" font-weight="600" fill="#9b93ff">counts only</text>
+<text x="518" y="186" font-family="ui-sans-serif,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif" font-size="12" fill="#a2a2b4">No prompts, code or paths</text>
+<text x="518" y="202" font-family="ui-sans-serif,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif" font-size="12" fill="#a2a2b4">stored</text>
+<path d="M710 148.0 h20 m-7 -5 l7 5 l-7 5" fill="none" stroke="#74748a" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+<rect x="740" y="84" width="200" height="128" rx="14" fill="#131319" stroke="#2a2a33" stroke-width="1"/>
+<text x="758" y="114" font-family="ui-sans-serif,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif" font-size="11" font-weight="700" letter-spacing="1.4" fill="#74748a">04</text>
+<text x="758" y="142" font-family="ui-sans-serif,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif" font-size="17" font-weight="640" fill="#ededf3">Detect</text>
+<text x="758" y="164" font-family="ui-sans-serif,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif" font-size="13" font-weight="600" fill="#9b93ff">15 checks</text>
+<text x="758" y="186" font-family="ui-sans-serif,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif" font-size="12" fill="#a2a2b4">Priced from 50 models, 13</text>
+<text x="758" y="202" font-family="ui-sans-serif,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif" font-size="12" fill="#a2a2b4">currencies</text>
+<path d="M950 148.0 h20 m-7 -5 l7 5 l-7 5" fill="none" stroke="#74748a" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+<rect x="980" y="84" width="200" height="128" rx="14" fill="#131319" stroke="#9b93ff" stroke-width="2"/>
+<text x="998" y="114" font-family="ui-sans-serif,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif" font-size="11" font-weight="700" letter-spacing="1.4" fill="#74748a">05</text>
+<text x="998" y="142" font-family="ui-sans-serif,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif" font-size="17" font-weight="640" fill="#ededf3">Decide</text>
+<text x="998" y="164" font-family="ui-sans-serif,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif" font-size="13" font-weight="600" fill="#9b93ff">ranked list</text>
+<text x="998" y="186" font-family="ui-sans-serif,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif" font-size="12" fill="#a2a2b4">Evidence, action, value</text>
+<text x="998" y="202" font-family="ui-sans-serif,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif" font-size="12" fill="#a2a2b4">per month</text>
+<rect x="20" y="248" width="151" height="26" rx="13" fill="#1d1d26"/>
+<text x="95.5" y="265" text-anchor="middle" font-family="ui-sans-serif,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif" font-size="12" fill="#a2a2b4">4 built-in collectors</text>
+<rect x="181" y="248" width="198" height="26" rx="13" fill="#1d1d26"/>
+<text x="280.0" y="265" text-anchor="middle" font-family="ui-sans-serif,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif" font-size="12" fill="#a2a2b4">+ any tool via one JSON spec</text>
+<rect x="389" y="248" width="118" height="26" rx="13" fill="#1d1d26"/>
+<text x="448.0" y="265" text-anchor="middle" font-family="ui-sans-serif,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif" font-size="12" fill="#a2a2b4">50 models priced</text>
+<rect x="517" y="248" width="64" height="26" rx="13" fill="#1d1d26"/>
+<text x="549.0" y="265" text-anchor="middle" font-family="ui-sans-serif,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif" font-size="12" fill="#a2a2b4">12 plans</text>
+<rect x="591" y="248" width="98" height="26" rx="13" fill="#1d1d26"/>
+<text x="640.0" y="265" text-anchor="middle" font-family="ui-sans-serif,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif" font-size="12" fill="#a2a2b4">13 currencies</text>
+<rect x="699" y="248" width="178" height="26" rx="13" fill="#1d1d26"/>
+<text x="788.0" y="265" text-anchor="middle" font-family="ui-sans-serif,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif" font-size="12" fill="#a2a2b4">rates verified 2026-08-19</text>
+</svg>

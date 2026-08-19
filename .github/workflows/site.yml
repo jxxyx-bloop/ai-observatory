@@ -63,21 +63,48 @@ jobs:
           test -s "$ASSETS/index.html" || { echo "::error::'$ASSETS' has no index.html"; exit 1; }
           test -s "$ASSETS/demo/index.html" || { echo "::error::demo dashboard missing from '$ASSETS'"; exit 1; }
           test -s "$ASSETS/_headers" || { echo "::error::_headers missing from '$ASSETS'"; exit 1; }
-          echo "ok — $ASSETS has index.html, demo/index.html and _headers"
+          test -s "$ASSETS/sitemap.xml" || { echo "::error::sitemap.xml missing from '$ASSETS'"; exit 1; }
+          echo "ok — $ASSETS has index.html, demo/index.html, _headers and sitemap.xml"
 
-      - name: The published page must make no external requests
+      - name: Every declared locale must have a page
         env:
           ASSETS: ${{ steps.cfg.outputs.assets }}
         run: |
-          # The dashboard's core promise is zero external requests. A landing
-          # page that loads a webfont while advertising that would be a bad
-          # look, so it is a build failure rather than a code-review question.
-          if grep -qiE '<(script|link|img)[^>]+(src|href)="https?://' "$ASSETS/index.html"; then
-            echo "::error::$ASSETS/index.html loads a remote asset"
-            grep -inE '<(script|link|img)[^>]+(src|href)="https?://' "$ASSETS/index.html"
+          # site/i18n.py is the source of truth for which languages exist; a
+          # locale declared there but missing from the output is a 404 that
+          # only the reader who needs it would ever find.
+          python3 - <<'PY'
+          import os, pathlib, sys
+          sys.path.insert(0, "site")
+          import i18n
+          root = pathlib.Path(os.environ["ASSETS"])
+          missing = [d or "(root)" for _c, d, *_ in i18n.LOCALES
+                     if not (root / d / "index.html").is_file()]
+          if missing:
+              print("::error::locales built no page: " + ", ".join(missing))
+              raise SystemExit(1)
+          print(f"ok — {len(i18n.LOCALES)} locales, all present")
+          PY
+
+      - name: The published pages must make no external requests
+        env:
+          ASSETS: ${{ steps.cfg.outputs.assets }}
+        run: python3 site/tools/check_no_remote.py "$ASSETS"
+
+      - name: Generated docs must match their sources
+        run: |
+          # docs/assets/*.svg comes from pricing.json, plans.json and the
+          # collectors directory; docs/readme/*.md comes from site/i18n.py. If a
+          # PR changes a source and does not regenerate, the documentation
+          # quietly starts describing last month's product.
+          python3 site/tools/diagrams.py
+          python3 site/tools/readmes.py
+          if ! git diff --quiet -- docs/assets docs/readme; then
+            echo "::error::generated docs are stale — run 'python3 site/tools/diagrams.py && python3 site/tools/readmes.py' and commit"
+            git diff --stat -- docs/assets docs/readme
             exit 1
           fi
-          echo "ok — no remote assets"
+          echo "ok — figures and translated READMEs match their sources"
 
       - uses: actions/upload-artifact@v4
         with:

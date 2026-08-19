@@ -1,35 +1,23 @@
-/* One protagonist colour, everything else grey. --accent marks the single
-   thing a chart is about; --high stays a true red so a severity badge can
-   never be mistaken for a chart accent. Indigo rather than the usual
-   developer-tool green because green already means "passing" everywhere else
-   in a terminal, and this dashboard's whole job is to be read, not scanned
-   for pass/fail. Both themes are defined explicitly — see docs/design. */
-:root{
-  --bg:#f2f3f5; --panel:#fff; --line:#e6e6e9; --ink:#1a1a1e; --muted:#6b6b75;
-  --faint:#9a9aa3; --accent:#5b5bd6; --track:#f7f7f8; --sel:#e9e9fb;
-  --high:#c62828; --med:#a8792a; --low:#5d7a8c; --info:#5b5bd6;
-  --r:3px; --pad:clamp(16px,4vw,28px);
-}
-@media (prefers-color-scheme:dark){
-  :root{--bg:#131318; --panel:#1b1b22; --line:#2c2c36; --ink:#e8e8ef;
-        --muted:#9c9cae; --faint:#70707f; --accent:#8f8ff5; --track:#25252e;
-        --sel:#282842; --high:#e0785f; --med:#d6a44e; --low:#8fb0c4; --info:#8f8ff5;}
-}
-:root[data-theme="dark"]{--bg:#131318; --panel:#1b1b22; --line:#2c2c36; --ink:#e8e8ef;
-  --muted:#9c9cae; --faint:#70707f; --accent:#8f8ff5; --track:#25252e; --sel:#282842;
-  --high:#e0785f; --med:#d6a44e; --low:#8fb0c4; --info:#8f8ff5;}
-:root[data-theme="light"]{--bg:#f2f3f5; --panel:#fff; --line:#e6e6e9; --ink:#1a1a1e;
-  --muted:#6b6b75; --faint:#9a9aa3; --accent:#5b5bd6; --track:#f7f7f8; --sel:#e9e9fb;
-  --high:#c62828; --med:#a8792a; --low:#5d7a8c; --info:#5b5bd6;}
+/* Dashboard layout and charts.
+   Every colour, size, radius and duration comes from assets/tokens.css, which
+   render.py inlines ahead of this file — this stylesheet must not introduce a
+   literal colour. Rationale: docs/design/DESIGN-SYSTEM.md.
 
-*{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--ink);
-  font:15px/1.55 ui-sans-serif,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
-  -webkit-font-smoothing:antialiased}
-.wrap{max-width:1080px;margin:0 auto;padding:var(--pad)}
+   Data panels stay square-ish (--r) and opaque. Only the floating chrome at the
+   top is glass, for the reason set out in §5 of that document: text over a live
+   blur is where "liquid glass" stops being readable, and every number here is
+   text. */
+
+body{font-size:15px;line-height:1.55}
+.wrap{max-width:1080px;margin:0 auto;padding:var(--pad) var(--pad) 0}
 h1{font-size:clamp(22px,3.4vw,30px);margin:0 0 4px;letter-spacing:-.02em;font-weight:650}
-h2{font-size:15px;margin:0 0 14px;letter-spacing:.06em;text-transform:uppercase;
-  color:var(--muted);font-weight:600}
+/* Two levels of heading, matching the landing page: a section announces
+   itself in sentence case; a panel inside it keeps the dense uppercase
+   micro-label, which is what a chart caption should be. */
+h2{font-size:12px;margin:0 0 14px;letter-spacing:.06em;text-transform:uppercase;
+  color:var(--muted);font-weight:640}
+section>h2{font-size:var(--t-h3);margin:0 0 10px;letter-spacing:var(--tr-head);
+  text-transform:none;color:var(--ink);font-weight:640}
 .sub{color:var(--muted);font-size:13.5px;margin:0}
 .note{margin:-6px 0 12px}
 .foot{margin:10px 0 0;font-size:12.5px}
@@ -163,19 +151,50 @@ td.n{font-variant-numeric:tabular-nums}
 .tag{display:inline-block;font-size:10.5px;letter-spacing:.04em;color:var(--muted);
   background:var(--track);border-radius:4px;padding:1px 5px;margin-left:5px}
 
-/* Theme toggle: a fixed rail on the side rather than another header control —
-   it's a page-wide setting, not part of the filter bar's flow. */
-.theme-toggle{position:fixed;right:14px;top:50%;transform:translateY(-50%);z-index:70;
-  width:34px;height:34px;border-radius:50%;border:1px solid var(--line);
-  background:var(--panel);color:var(--muted);font-size:16px;line-height:1;cursor:pointer;
-  box-shadow:0 2px 8px rgba(0,0,0,.12)}
-.theme-toggle:hover{border-color:var(--accent);color:var(--accent)}
-.theme-toggle:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
-@media (max-width:560px){.theme-toggle{right:8px;width:30px;height:30px;font-size:14px}}
-@media print{.theme-toggle{display:none}}
-
 footer{margin:34px 0 8px;padding-top:16px;border-top:1px solid var(--line);
   color:var(--faint);font-size:12.5px;line-height:1.6}
 code{font:12.5px ui-monospace,SFMono-Regular,Menlo,monospace;background:var(--track);
   padding:1px 5px;border-radius:4px}
 @media print{.controls{display:none}}
+
+/* ── Page chrome ──────────────────────────────────────────────────────────
+   The same top bar the landing page carries, so moving between the two feels
+   like one product. Breadcrumb on the left, icon-first controls on the right.
+   Every rule here has a twin in site/style.css; both draw from tokens.css. */
+.topbar{position:sticky;top:0;z-index:60;border-width:0 0 1px;
+  border-style:solid;border-color:var(--glass-line)}
+.topbar-in{max-width:1080px;margin:0 auto;padding:var(--s2) var(--pad);
+  display:flex;align-items:center;gap:var(--s3)}
+.brand{display:flex;align-items:center;gap:var(--s2);color:var(--ink);
+  text-decoration:none;font-weight:640;font-size:var(--t-sm);white-space:nowrap}
+.brand .mark{width:19px;height:19px;fill:none;stroke:var(--accent);stroke-width:1.5;
+  stroke-linecap:round}
+.crumbs{display:flex;align-items:center;gap:var(--s2);font-size:var(--t-xs);
+  color:var(--faint);margin-left:var(--s3);min-width:0}
+.crumbs a{color:var(--muted);text-decoration:none;white-space:nowrap}
+.crumbs a:hover{color:var(--accent)}
+.crumbs [aria-current]{color:var(--ink);font-weight:600;white-space:nowrap}
+.topbar .tools{display:flex;align-items:center;gap:var(--s1);margin-left:auto}
+.topbar .code{font-size:var(--t-micro);font-weight:650;letter-spacing:.04em}
+
+.menu{position:relative}
+.menu>summary{list-style:none;user-select:none}
+.menu>summary::-webkit-details-marker{display:none}
+.menu[open]>summary{color:var(--ink);background:var(--accent-soft)}
+.sheet{background:var(--panel);border:1px solid var(--line);
+  position:absolute;top:calc(100% + 8px);right:0;z-index:70;min-width:196px;
+  padding:var(--s2);border-radius:var(--r-md);box-shadow:var(--shadow-lg);
+  display:grid;gap:1px;max-height:min(70vh,440px);overflow:auto}
+.sheet a{padding:6px var(--s3);border-radius:var(--r-xs);color:var(--muted);
+  font-size:var(--t-sm);text-decoration:none}
+.sheet a:hover{background:var(--accent-soft);color:var(--ink)}
+.sheet a[aria-current="true"]{color:var(--accent);font-weight:600}
+
+.pagehead{padding:var(--s6) 0 0}
+/* Not the reader's language: says so once, where the English begins. */
+.lang-note{color:var(--faint);font-style:italic}
+
+@media (max-width:620px){
+  .crumbs{display:none}          /* the brand mark is still a link home */
+}
+@media print{.topbar{display:none}}

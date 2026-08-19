@@ -17,10 +17,35 @@ Provider files          Collectors        Store            Aggregate       Insig
 
 Collectors are provider-specific. Everything downstream consumes only normalized events.
 
-The last hop is split in two. `render.py` assembles `engine/assets/{page.html,app.css,app.js}`
-into one self-contained file; `app.js` re-aggregates the digest's fact cube in the
+The last hop is split in two. `render.py` assembles
+`observatory/assets/{page.html,tokens.css,app.css,i18n.js,app.js}` into one
+self-contained file; `app.js` re-aggregates the digest's fact cube in the
 browser so a date range or a slicer costs nothing to change. It re-aggregates — it
 never computes a metric the digest does not already define.
+
+## The presentation layer
+
+Three surfaces, one design system. `observatory/assets/tokens.css` is the only
+file in the repo permitted to contain a literal colour, and every surface
+inlines it before its own layout sheet — see
+[`docs/design/DESIGN-SYSTEM.md`](design/DESIGN-SYSTEM.md).
+
+| Surface | Built by | Language strategy |
+|---|---|---|
+| Landing page | `site/build.py` | One static page per locale, cross-linked with `hreflang` |
+| Hosted demo | `site/build.py` → `render.py` | One page, switched in the browser |
+| Local dashboard | `observe.py report` → `render.py` | Same page, opened from `file://` |
+
+The split is not inconsistency. A landing page wants crawlable URLs per
+language; a dashboard is also opened from `file://` on a laptop, where there is
+no set of sibling URLs to link between, so its whole locale table travels inside
+the page. Both read the same `observatory-lang` and `observatory-theme` keys, so
+a language or theme chosen on one carries to the other.
+
+`render.py` takes a `home` argument that decides where the breadcrumb goes: the
+hosted demo passes `"../"` and leads back to the landing page; a locally
+rendered dashboard passes nothing and links to the repository, because there is
+no site next to it to return to.
 
 ## The four tiers, and why each exists
 

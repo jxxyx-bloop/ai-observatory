@@ -18,6 +18,7 @@ import json
 from pathlib import Path
 
 ASSETS = Path(__file__).with_name("assets")
+REPO = "https://github.com/jxxyx-bloop/ai-observatory"
 
 SEV_COLOR = {"high": "var(--high)", "medium": "var(--med)",
              "low": "var(--low)", "info": "var(--info)"}
@@ -56,12 +57,29 @@ def findings_html(d: dict) -> str:
     return "".join(out)
 
 
-def render(digest: dict) -> str:
-    """Assemble the page from the templates in `engine/assets/`."""
+def render(digest: dict, home: str | None = None) -> str:
+    """Assemble the page from the templates in `engine/assets/`.
+
+    `home` is where the breadcrumb points. The hosted demo passes "../" so the
+    crumb leads back to the landing page; a dashboard rendered on your own
+    machine passes nothing and gets a link to the repository instead, because
+    there is no site next to it to return to.
+    """
     page = (ASSETS / "page.html").read_text(encoding="utf-8")
+    crumb_href = home or REPO
+    crumb_key = "crumb_home" if home else "crumb_repo"
+    crumb_label = "Home" if home else "Repository"
+    # Tokens first, then layout — the same order the landing page uses, so the
+    # two surfaces cannot drift apart. See docs/design/DESIGN-SYSTEM.md.
+    css = ((ASSETS / "tokens.css").read_text(encoding="utf-8") + "\n"
+           + (ASSETS / "app.css").read_text(encoding="utf-8"))
     return (
-        page.replace("/*CSS*/", (ASSETS / "app.css").read_text(encoding="utf-8"))
+        page.replace("/*CSS*/", css)
+            .replace("/*I18N*/", (ASSETS / "i18n.js").read_text(encoding="utf-8"))
             .replace("/*JS*/", (ASSETS / "app.js").read_text(encoding="utf-8"))
+            .replace("<!--HOMEKEY-->", crumb_key)
+            .replace("<!--HOMELABEL-->", crumb_label)
+            .replace("<!--HOME-->", crumb_href)
             .replace("<!--FINDINGS-->", findings_html(digest))
             .replace("<!--VERIFIED-->", esc(digest.get("pricing_verified_on") or "—"))
             .replace("<!--GENERATED-->",

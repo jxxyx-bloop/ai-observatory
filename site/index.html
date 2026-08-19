@@ -1,181 +1,204 @@
 <!doctype html>
-<html lang="en"><head>
+<html lang="{{htmllang}}"><head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="referrer" content="no-referrer">
-<title>AI Observatory — know what to change about your AI usage</title>
-<meta name="description" content="Local-first AI coding usage analytics that tells you what to change, priced against your plan, your vendor's clock and your currency. Zero tokens, no account, no network.">
+<meta name="color-scheme" content="light dark">
+<title>{{meta_title}}</title>
+<meta name="description" content="{{meta_desc}}">
+<meta property="og:title" content="{{meta_title}}">
+<meta property="og:description" content="{{meta_desc}}">
+<meta property="og:type" content="website">
+{{alternates}}
 <style>/*CSS*/</style>
+<script>
+/* Theme before first paint. Any later and the page flashes the wrong one.
+   Kept to the smallest thing that can work: read the stored choice, fall back
+   to the OS, stamp the root. Everything else is in the deferred script. */
+(function(){try{var t=localStorage.getItem("observatory-theme");
+if(t!=="dark"&&t!=="light"){t=matchMedia("(prefers-color-scheme:dark)").matches?"dark":"light";}
+document.documentElement.setAttribute("data-theme",t);}catch(e){}
+document.documentElement.className+=" js";})();
+</script>
 </head><body>
 
-<nav>
-  <span class="brand">AI&nbsp;Observatory</span>
-  <a href="#how">How it works</a>
-  <a href="#different">What's different</a>
-  <a href="#privacy">Privacy</a>
-  <a href="demo/" >Live demo</a>
-  <a href="https://github.com/jxxyx-bloop/ai-observatory" rel="noopener">GitHub</a>
-</nav>
+<!-- ── Ambient field. Decorative only, aria-hidden, and behind everything.
+     Two slow-drifting blobs plus a hairline grid: enough motion to read as
+     alive, slow enough that nobody watches it. ───────────────────────────── -->
+<div class="field" aria-hidden="true"><i class="b1"></i><i class="b2"></i></div>
 
-<div class="wrap">
+<header class="topbar glass noprint">
+  <div class="bar">
+    <a class="brand" href="{{home}}" aria-label="{{brand}}">
+      <svg viewBox="0 0 24 24" aria-hidden="true" class="mark">
+        <circle cx="12" cy="12" r="8.5"></circle>
+        <circle cx="12" cy="12" r="3"></circle>
+        <path d="M12 3.5v3M12 17.5v3M3.5 12h3M17.5 12h3"></path>
+      </svg>
+      <span>{{brand}}</span>
+    </a>
 
-  <header class="hero">
-    <h1>Know what to <em>change</em> about your AI usage.</h1>
-    <p class="lede">Every other token tracker is an <strong>odometer</strong> — it tells you
-      how much you spent. This one is a <strong>coach</strong>: it reads the transcripts your
-      coding agent already wrote to disk and turns them into ranked, evidence-backed changes
-      with a number attached.</p>
-    <p class="sub">Built for how developers in Southeast Asia and China actually buy AI:
-      flat monthly plans, tokens priced by the hour, and a currency that isn't the dollar.
-      Collection costs <strong>zero tokens</strong> — no API key, no proxy, no account,
-      no network.</p>
+    <nav class="mainnav" aria-label="{{nav_label}}">
+      <a href="#finding">{{nav_output}}</a>
+      <a href="#how">{{nav_how}}</a>
+      <a href="#why">{{nav_why}}</a>
+      <a href="#privacy">{{nav_privacy}}</a>
+    </nav>
 
-    <div class="cta">
-      <a class="btn primary" href="demo/">See the live demo →</a>
-      <a class="btn ghost" href="https://github.com/jxxyx-bloop/ai-observatory" rel="noopener">Star on GitHub</a>
+    <div class="tools">
+      <!-- Language: one glyph plus the current code. A card in the page body
+           asking people to click through to another language was a dead end;
+           this is where a reader looks for it. -->
+      <details class="menu" id="langmenu">
+        <summary class="iconbtn wide" title="{{lang_label}}" aria-label="{{lang_label}}">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle>
+            <path d="M3 12h18M12 3c2.6 2.7 2.6 15.3 0 18M12 3c-2.6 2.7-2.6 15.3 0 18"></path></svg>
+          <span class="code">{{lang_code}}</span>
+        </summary>
+        <div class="sheet" role="menu">{{langlinks}}</div>
+      </details>
+
+      <button class="iconbtn" id="theme" type="button"
+              title="{{theme_label}}" aria-label="{{theme_label}}">
+        <svg class="ico-sun" viewBox="0 0 24 24" aria-hidden="true">
+          <circle cx="12" cy="12" r="4.2"></circle>
+          <path d="M12 2v2.4M12 19.6V22M2 12h2.4M19.6 12H22M4.9 4.9l1.7 1.7M17.4 17.4l1.7 1.7M19.1 4.9l-1.7 1.7M6.6 17.4l-1.7 1.7"></path>
+        </svg>
+        <svg class="ico-moon" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M20 14.2A8.4 8.4 0 1 1 9.8 4a6.6 6.6 0 0 0 10.2 10.2Z"></path>
+        </svg>
+      </button>
+
+      <a class="iconbtn" href="{{repo}}" rel="noopener" title="GitHub" aria-label="GitHub">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 19c-4.3 1.3-4.3-2.2-6-2.6m12 5v-3.4a3 3 0 0 0-.8-2.3c2.7-.3 5.5-1.3 5.5-6a4.6 4.6 0 0 0-1.3-3.2 4.3 4.3 0 0 0-.1-3.2s-1-.3-3.4 1.3a11.7 11.7 0 0 0-6 0C6.5 2.9 5.5 3.2 5.5 3.2a4.3 4.3 0 0 0-.1 3.2A4.6 4.6 0 0 0 4 9.7c0 4.6 2.8 5.6 5.5 6a3 3 0 0 0-.8 2.2V21"></path></svg>
+      </a>
+
+      <a class="cta sm" href="{{base}}demo/">{{nav_demo}}</a>
     </div>
+  </div>
+</header>
 
-    <pre class="run"><span class="c"># 60 days of synthetic usage, then the whole dashboard — no data of your own needed</span>
-<span class="p">$</span> git clone https://github.com/jxxyx-bloop/ai-observatory
+<main>
+
+<!-- ── Hero ──────────────────────────────────────────────────────────────── -->
+<section class="hero">
+  <p class="eyebrow">{{hero_eyebrow}}</p>
+  <h1>{{hero_h1_a}} <em class="grad">{{hero_h1_b}}</em>{{hero_h1_c}}</h1>
+  <p class="lede">{{hero_lede}}</p>
+
+  <ul class="chips" role="list">
+    <li>{{chip1}}</li><li>{{chip2}}</li><li>{{chip3}}</li>
+  </ul>
+
+  <div class="ctas">
+    <a class="cta" href="{{base}}demo/">{{cta_demo}}
+      <svg viewBox="0 0 24 24" aria-hidden="true" class="arw"><path d="M5 12h13M13 6l6 6-6 6"></path></svg></a>
+    <a class="cta ghost" href="{{repo}}" rel="noopener">{{cta_github}}</a>
+  </div>
+
+  <div class="term glass">
+    <div class="dots" aria-hidden="true"><i></i><i></i><i></i></div>
+    <pre><code><span class="c"># {{run_comment}}</span>
+<span class="p">$</span> git clone {{repo}}
 <span class="p">$</span> cd ai-observatory/observatory
-<span class="p">$</span> python3 observe.py demo digest report
+<span class="p">$</span> python3 observe.py demo digest report</code></pre>
+  </div>
+  <p class="fine">{{run_note}}</p>
+</section>
 
-<span class="c"># or run it against your own transcripts</span>
-<span class="p">$</span> python3 observe.py all</pre>
-    <p class="sub">Python 3 standard library only. No dependencies, no install, no build step.</p>
-  </header>
+<!-- ── The output. The single most convincing thing this product has is one
+     real finding, so it gets its own act — and it cycles, because three make
+     the point that this is a list, not a lucky example. ──────────────────── -->
+<section id="finding" class="band">
+  <p class="eyebrow">{{find_eyebrow}}</p>
+  <h2>{{find_h2}}</h2>
 
-  <section id="how">
-    <h2>What a finding looks like</h2>
-    <div class="finding">
-      <div class="head">
-        <span class="sev">HIGH</span>
-        <span class="ttl">You are buying tokens at peak rates you did not have to pay</span>
-        <span class="save">~$34/mo</span>
-      </div>
-      <p>61.4% of your spend on time-priced vendors (deepseek, zhipu) landed inside a peak
-        window, where the same tokens cost up to twice the off-peak rate. Over this period
-        that timing cost about $68.20 more than running the identical work off-peak.</p>
-      <p class="act"><b>→</b> Peak windows are published and narrow. Anything that does not
-        need you watching — test generation, migrations, doc sweeps, bulk refactors — can be
-        queued for an off-peak hour at no cost to you. Interactive work is worth the
-        premium; a batch job is not.</p>
+  <div class="deck" id="deck">
+    {{findings}}
+  </div>
+
+  <div class="deckbar">
+    <button class="iconbtn" id="prev" type="button" aria-label="{{prev_label}}">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6l-6 6 6 6"></path></svg>
+    </button>
+    <div class="dotnav" id="dots" role="tablist" aria-label="{{find_eyebrow}}"></div>
+    <button class="iconbtn" id="next" type="button" aria-label="{{next_label}}">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"></path></svg>
+    </button>
+  </div>
+
+  <p class="fine center">{{find_note}}</p>
+</section>
+
+<!-- ── How ───────────────────────────────────────────────────────────────── -->
+<section id="how">
+  <p class="eyebrow">{{how_eyebrow}}</p>
+  <h2>{{how_h2}}</h2>
+  <ol class="steps" role="list">
+    <li>
+      <span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 5.5A1.5 1.5 0 0 1 5.5 4H14l6 6v8.5A1.5 1.5 0 0 1 18.5 20h-13A1.5 1.5 0 0 1 4 18.5Z"></path><path d="M14 4v6h6M8 14h8M8 17h5"></path></svg></span>
+      <h3>{{how_1_t}}</h3><p>{{how_1_d}}</p>
+    </li>
+    <li>
+      <span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 19V9M9.3 19V5M14.7 19v-6M20 19v-9"></path></svg></span>
+      <h3>{{how_2_t}}</h3><p>{{how_2_d}}</p>
+    </li>
+    <li>
+      <span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3l2.4 5.3 5.6.7-4.2 3.9 1.2 5.6L12 15.7 6.9 18.5l1.2-5.6L4 9l5.6-.7Z"></path></svg></span>
+      <h3>{{how_3_t}}</h3><p>{{how_3_d}}</p>
+    </li>
+  </ol>
+  <p class="fine center">{{how_note}}</p>
+</section>
+
+<!-- ── Why ───────────────────────────────────────────────────────────────── -->
+<section id="why" class="band">
+  <p class="eyebrow">{{why_eyebrow}}</p>
+  <h2>{{why_h2}}</h2>
+  <div class="cards">
+    <article class="card"><h3>{{why_1_t}}</h3><p>{{why_1_d}}</p></article>
+    <article class="card"><h3>{{why_2_t}}</h3><p>{{why_2_d}}</p></article>
+    <article class="card"><h3>{{why_3_t}}</h3><p>{{why_3_d}}</p></article>
+    <article class="card"><h3>{{why_4_t}}</h3><p>{{why_4_d}}</p></article>
+  </div>
+</section>
+
+<!-- ── Privacy ───────────────────────────────────────────────────────────── -->
+<section id="privacy">
+  <p class="eyebrow">{{priv_eyebrow}}</p>
+  <h2>{{priv_h2}}</h2>
+  <p class="lede narrow">{{priv_lede}}</p>
+  <ul class="ticks" role="list">
+    <li>{{priv_1}}</li><li>{{priv_2}}</li><li>{{priv_3}}</li>
+  </ul>
+</section>
+
+<!-- ── Start ─────────────────────────────────────────────────────────────── -->
+<section class="start">
+  <div class="startcard glass">
+    <h2>{{start_h2}}</h2>
+    <p class="lede narrow">{{start_d}}</p>
+    <div class="ctas center">
+      <a class="cta" href="{{base}}demo/">{{start_cta1}}
+        <svg viewBox="0 0 24 24" aria-hidden="true" class="arw"><path d="M5 12h13M13 6l6 6-6 6"></path></svg></a>
+      <a class="cta ghost" href="{{repo}}#quick-start" rel="noopener">{{start_cta2}}</a>
     </div>
-    <p class="sub">Fifteen deterministic detectors. Every finding carries the evidence
-      behind it, an action, a confidence level, and — where it can be defended — what a fix
-      is worth per month. A materiality gate demotes anything under $15/month, so the top of
-      the list always means something. <strong>Healthy usage is reported as healthy</strong>
-      — a tool that invents problems to look useful is a tool you stop believing.</p>
-  </section>
+  </div>
+</section>
 
-  <section id="different">
-    <h2>Why this is not another token counter</h2>
-    <div class="grid">
-      <div class="card">
-        <span class="tag">Peak / off-peak</span>
-        <h3>Priced on your vendor's clock</h3>
-        <p>DeepSeek bills full rate 01:00–04:00 and 06:00–10:00 UTC and half otherwise;
-          GLM peaks 14:00–18:00 UTC+8 on weekdays only. For anyone in UTC+7 to +9 that
-          second window <em>is</em> the working afternoon. No other open-source tracker
-          models this.</p>
-      </div>
-      <div class="card">
-        <span class="tag">Plan value</span>
-        <h3>Not a fake dollar figure</h3>
-        <p>On an $18/month plan, "you spent $412" is a shadow price, not a bill. The number
-          that matters is <strong>23× return</strong> — or, when it goes the other way,
-          "you are paying for headroom you never use."</p>
-      </div>
-      <div class="card">
-        <span class="tag">Cache economics</span>
-        <h3>Per-vendor, not per-convention</h3>
-        <p>The 0.1× cache-hit discount is an Anthropic convention, not a law — Kimi K2.6
-          sits near 0.074×. Cache is where the money is, so a wrong multiplier misprices
-          the most important number on the page.</p>
-      </div>
-      <div class="card">
-        <span class="tag">Local currency</span>
-        <h3>Thirteen of them</h3>
-        <p>IDR, VND, THB, PHP, MYR and more — framed against a median local day rate,
-          because <code>$412</code> means something very different in Jakarta than in
-          San Francisco.</p>
-      </div>
-      <div class="card">
-        <span class="tag">Contribution</span>
-        <h3>Your tool is a JSON file away</h3>
-        <p>A provider is a declarative spec plus a fixture — no engine code. If you use
-          Lingma, Qwen Code, CodeBuddy or Comate, you are the only person who can add it
-          correctly, and it costs you one file.</p>
-      </div>
-      <div class="card">
-        <span class="tag">Community</span>
-        <h3>Ranked on efficiency, never spend</h3>
-        <p>Existing leaderboards rank total tokens burned — the top of that board is
-          whoever wasted the most. We rank cache reuse, tokens per change and peak
-          discipline. Improvable, and fair across budgets.</p>
-      </div>
-    </div>
-  </section>
+</main>
 
-  <section id="privacy">
-    <h2>Privacy is a mechanism here, not a promise</h2>
-    <p class="lede" style="font-size:16px">Nothing leaves your machine unless you edit a
-      file to say so.</p>
-    <ul class="plain">
-      <li><b>Never stored, anywhere:</b> prompt text, completion text, thinking content,
-        file contents, tool argument values, shell commands, absolute paths.</li>
-      <li><b>Enforced at the parse boundary</b>, not by a later redaction step — a leak past
-        it is a bug, not a policy question.</li>
-      <li><b>The rendered dashboard makes zero external requests.</b> No CDN, no fonts,
-        no analytics. So does this page.</li>
-      <li><b>If you ever opt in to the community layer</b>, the payload is 633 bytes of
-        bucket indices — no repository name, no session id, no identifier, no raw value.
-        <code>observe.py share</code> prints the whole thing and has no network code path.</li>
-    </ul>
-  </section>
+<footer class="foot">
+  <div class="bar">
+    <span class="tag">{{foot_tag}}</span>
+    <nav aria-label="{{nav_label}}">
+      <a href="{{repo}}" rel="noopener">GitHub</a>
+      <a href="{{repo}}/tree/main/docs" rel="noopener">{{foot_docs}}</a>
+      <a href="{{repo}}/blob/main/docs/context/Known-Limitations.md" rel="noopener">{{foot_limits}}</a>
+      <a href="{{repo}}/blob/main/CONTRIBUTING.md" rel="noopener">{{foot_contrib}}</a>
+    </nav>
+  </div>
+</footer>
 
-  <section>
-    <h2>How it compares</h2>
-    <div class="tablewrap">
-      <table>
-        <thead><tr><th>&nbsp;</th><th>Typical token tracker</th><th>AI Observatory</th></tr></thead>
-        <tbody>
-          <tr><td>Reports what you spent</td><td class="yes">Yes</td><td class="yes">Yes</td></tr>
-          <tr><td>Tells you what to change</td><td class="no">—</td><td class="yes">Fifteen detectors, with evidence</td></tr>
-          <tr><td>Peak / off-peak pricing</td><td class="no">Flat rate for every vendor</td><td class="yes">Priced at the rate in force</td></tr>
-          <tr><td>Plan value vs. metered cost</td><td class="no">—</td><td class="yes">Return multiple, or "downgrade"</td></tr>
-          <tr><td>Local currency</td><td class="no">Usually USD only</td><td class="yes">13, with local-rate framing</td></tr>
-          <tr><td>Leaderboard ranks</td><td class="no">Total tokens burned</td><td class="yes">Efficiency</td></tr>
-          <tr><td>Runs with no account</td><td class="yes">Usually</td><td class="yes">Always — forever</td></tr>
-        </tbody>
-      </table>
-    </div>
-  </section>
-
-  <section>
-    <h2>Start here</h2>
-    <div class="grid">
-      <div class="card">
-        <h3><a href="demo/">Live demo dashboard</a></h3>
-        <p>The real thing, rendered from 60 days of synthetic usage. Same file you get
-          locally.</p>
-      </div>
-      <div class="card">
-        <h3><a href="https://github.com/jxxyx-bloop/ai-observatory#quick-start" rel="noopener">Quick start</a></h3>
-        <p>Three commands. No dependencies, no account.</p>
-      </div>
-      <div class="card">
-        <h3><a href="https://github.com/jxxyx-bloop/ai-observatory/blob/main/README.zh-Hans.md" rel="noopener">简体中文文档</a></h3>
-        <p>完整的中文说明 —— 快速开始、隐私说明与贡献指南。</p>
-      </div>
-    </div>
-  </section>
-
-  <footer>
-    <span>MIT licensed. Local-first, zero tokens, no account.</span>
-    <span class="sp"><a href="https://github.com/jxxyx-bloop/ai-observatory" rel="noopener">GitHub</a></span>
-    <a href="https://github.com/jxxyx-bloop/ai-observatory/tree/main/docs/strategy" rel="noopener">Strategy docs</a>
-    <a href="https://github.com/jxxyx-bloop/ai-observatory/blob/main/docs/context/Known-Limitations.md" rel="noopener">Known limitations</a>
-  </footer>
-</div>
+<script>/*JS*/</script>
 </body></html>
