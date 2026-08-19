@@ -1,0 +1,39 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # The engine promises stdlib-only Python 3. Testing the oldest version
+        # still shipped by a mainstream distro is what keeps that promise real.
+        python: ["3.9", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: No dependencies, by design
+        run: |
+          test ! -f requirements.txt || (echo "engine must stay dependency-free" && exit 1)
+      - name: Run every suite
+        run: observatory/tests/run.sh
+      - name: Config files must parse
+        run: |
+          for f in observatory/*.json observatory/collectors/specs/*.json; do
+            python3 -c "import json,sys; json.load(open(sys.argv[1]))" "$f" || exit 1
+            echo "ok $f"
+          done
+      - name: End to end on the demo fixture
+        run: |
+          cd observatory
+          python3 observe.py demo digest report insights

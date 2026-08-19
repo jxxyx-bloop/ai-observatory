@@ -1,0 +1,21 @@
+{
+  "_doc": "Your preferences. Everything here is display or policy — nothing changes what is collected. Safe to commit; it contains no identity and no secrets.",
+
+  "_timezone_doc": "Fixed UTC offset in hours used for every date, hour, and session boundary in the digest. Raw events on disk stay in UTC; only the presentation tier shifts. Defaults to +8 (SGT/CST/WITA/HKT/MYT/PHT) because that is where most of this project's users are. Jakarta/Bangkok/Hanoi = 7, India = 5.5, Japan/Korea = 9.",
+  "timezone_offset_hours": 8,
+
+  "_currency_doc": "Display currency for every cost figure. USD keeps the raw estimate. Anything else converts via plans.json -> currencies.",
+  "currency": "USD",
+
+  "_plan_doc": "What you actually pay each month, if anything. Set this and the dashboard stops pretending your token estimate is a bill and starts telling you what your plan returned. Ids come from plans.json. Use \"none\" for metered API.",
+  "plan": "none",
+
+  "_community_doc": "The opt-in community layer. Nothing is uploaded while `share` is false, which is the default — see docs/specs/Community-Share-Protocol.md for exactly what a share payload contains, and docs/adr/ADR-012-Opt-In-By-Default-Off.md for why the default is off rather than on.",
+  "community": {
+    "share": false,
+    "endpoint": "",
+    "handle": "",
+    "cohorts": [],
+    "include_repo_names": false
+  }
+}

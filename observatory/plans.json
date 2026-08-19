@@ -1,0 +1,136 @@
+{
+  "_doc": "Subscription plans and what their quotas are denominated in. This file exists because the dominant way our target users buy AI is a flat monthly plan, not metered API credit — so the honest headline number is not 'you spent $412', it is 'you paid $18 and consumed $412 of API-equivalent work, and you are 61% through this week's quota'. See docs/specs/Plan-And-Quota-Model.md.",
+  "_contributing": "Plan prices and quota units change often and vary by region. Correcting one is a welcome PR — cite the vendor's pricing page.",
+  "_verified_on": "2026-08-19",
+  "_schema": 1,
+
+  "_quota_doc": "quota.unit is what the vendor meters you in: 'credits' | 'prompts' | 'messages' | 'tokens' | 'none'. quota.windows lists each reset window the vendor enforces; a plan can have several at once (e.g. a 5-hour rolling cap AND a weekly cap). `amount: null` means the vendor publishes no number, so headroom is estimated from the user's own p90 instead of a published limit.",
+
+  "plans": {
+    "none": {
+      "label": "Pay-as-you-go API",
+      "vendors": ["*"],
+      "price_usd_month": 0,
+      "quota": { "unit": "none", "windows": [] },
+      "note": "Metered. The cost estimate IS the bill (modulo the rate card being right)."
+    },
+
+    "claude-pro": {
+      "label": "Claude Pro",
+      "vendors": ["anthropic"],
+      "price_usd_month": 20,
+      "quota": { "unit": "prompts", "windows": [
+        { "kind": "rolling", "hours": 5, "amount": null },
+        { "kind": "calendar", "days": 7, "amount": null }
+      ] }
+    },
+    "claude-max-5x": {
+      "label": "Claude Max 5x",
+      "vendors": ["anthropic"],
+      "price_usd_month": 100,
+      "quota": { "unit": "prompts", "windows": [
+        { "kind": "rolling", "hours": 5, "amount": null },
+        { "kind": "calendar", "days": 7, "amount": null }
+      ] }
+    },
+    "claude-max-20x": {
+      "label": "Claude Max 20x",
+      "vendors": ["anthropic"],
+      "price_usd_month": 200,
+      "quota": { "unit": "prompts", "windows": [
+        { "kind": "rolling", "hours": 5, "amount": null },
+        { "kind": "calendar", "days": 7, "amount": null }
+      ] }
+    },
+
+    "glm-coding-lite": {
+      "label": "GLM Coding Lite",
+      "vendors": ["zhipu"],
+      "price_usd_month": 18,
+      "price_usd_month_annual": 12.6,
+      "quota": { "unit": "credits", "windows": [
+        { "kind": "calendar", "days": 7, "amount": 10000 }
+      ] }
+    },
+    "glm-coding-pro": {
+      "label": "GLM Coding Pro",
+      "vendors": ["zhipu"],
+      "price_usd_month": 80,
+      "price_usd_month_annual": 56,
+      "quota": { "unit": "credits", "windows": [
+        { "kind": "calendar", "days": 7, "amount": 60000 },
+        { "kind": "rolling", "hours": 5, "amount": 400, "unit": "prompts" }
+      ] }
+    },
+    "glm-coding-max": {
+      "label": "GLM Coding Max",
+      "vendors": ["zhipu"],
+      "price_usd_month": 168,
+      "price_usd_month_annual": 117.6,
+      "quota": { "unit": "credits", "windows": [
+        { "kind": "calendar", "days": 7, "amount": 140000 }
+      ] }
+    },
+
+    "qwen-modelstudio-coding": {
+      "label": "Qwen ModelStudio Coding Plan",
+      "vendors": ["alibaba"],
+      "price_usd_month": 50,
+      "quota": { "unit": "credits", "windows": [
+        { "kind": "calendar", "days": 30, "amount": null }
+      ] }
+    },
+
+    "kimi-coding": {
+      "label": "Kimi Coding Plan",
+      "vendors": ["moonshot"],
+      "price_usd_month": 20,
+      "quota": { "unit": "prompts", "windows": [
+        { "kind": "rolling", "hours": 5, "amount": null }
+      ] }
+    },
+
+    "minimax-coding": {
+      "label": "MiniMax Coding Plan",
+      "vendors": ["minimax"],
+      "price_usd_month": 10,
+      "quota": { "unit": "prompts", "windows": [
+        { "kind": "rolling", "hours": 5, "amount": null }
+      ] }
+    },
+
+    "chatgpt-plus": {
+      "label": "ChatGPT Plus",
+      "vendors": ["openai"],
+      "price_usd_month": 20,
+      "quota": { "unit": "messages", "windows": [
+        { "kind": "rolling", "hours": 3, "amount": null }
+      ] }
+    },
+    "copilot-pro": {
+      "label": "GitHub Copilot Pro",
+      "vendors": ["github", "openai", "anthropic"],
+      "price_usd_month": 10,
+      "quota": { "unit": "prompts", "windows": [
+        { "kind": "calendar", "days": 30, "amount": 300 }
+      ] }
+    }
+  },
+
+  "_currency_doc": "Indicative FX for the local-currency lens. These are display conversions, not accounting: a bill is settled in USD by most vendors, and the point of showing MYR/IDR/VND is that '$412/month' means something very different in Jakarta than in San Francisco. `daily_dev_rate_usd` is a coarse median local contract rate used only for the 'this month cost N days of your own billable time' framing — it is a conversation-starter, not a salary benchmark.",
+  "currencies": {
+    "USD": { "symbol": "$",    "per_usd": 1,      "decimals": 2 },
+    "SGD": { "symbol": "S$",   "per_usd": 1.29,   "decimals": 2, "daily_dev_rate_usd": 400 },
+    "MYR": { "symbol": "RM",   "per_usd": 4.20,   "decimals": 2, "daily_dev_rate_usd": 130 },
+    "IDR": { "symbol": "Rp",   "per_usd": 16200,  "decimals": 0, "daily_dev_rate_usd": 90 },
+    "THB": { "symbol": "฿",    "per_usd": 33.0,   "decimals": 0, "daily_dev_rate_usd": 110 },
+    "PHP": { "symbol": "₱",    "per_usd": 57.5,   "decimals": 0, "daily_dev_rate_usd": 95 },
+    "VND": { "symbol": "₫",    "per_usd": 25400,  "decimals": 0, "daily_dev_rate_usd": 85 },
+    "CNY": { "symbol": "¥",    "per_usd": 7.15,   "decimals": 1, "daily_dev_rate_usd": 200 },
+    "TWD": { "symbol": "NT$",  "per_usd": 31.5,   "decimals": 0, "daily_dev_rate_usd": 190 },
+    "HKD": { "symbol": "HK$",  "per_usd": 7.80,   "decimals": 1, "daily_dev_rate_usd": 330 },
+    "INR": { "symbol": "₹",    "per_usd": 87.0,   "decimals": 0, "daily_dev_rate_usd": 80 },
+    "JPY": { "symbol": "¥",    "per_usd": 152.0,  "decimals": 0, "daily_dev_rate_usd": 300 },
+    "KRW": { "symbol": "₩",    "per_usd": 1370.0, "decimals": 0, "daily_dev_rate_usd": 260 }
+  }
+}
