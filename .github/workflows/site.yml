@@ -1,0 +1,69 @@
+name: site
+
+# Verifies the site builds. It does NOT deploy.
+#
+# Deployment is Cloudflare's own Git integration: it runs `python3 site/build.py`
+# then `npx wrangler deploy` against the root wrangler.toml. That split is
+# deliberate — it means no Cloudflare API token is ever stored in GitHub, so
+# there is no secret to leak, rotate, or scope wrongly.
+#
+# What this workflow buys is a check on pull requests, where Cloudflare's
+# production build never runs: a broken site fails here, in the PR, instead of
+# after merge.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: build site
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Build the site and the demo dashboard
+        run: python3 site/build.py
+
+      - name: The published page must make no external requests
+        run: |
+          # The dashboard's core promise is zero external requests. A landing
+          # page that loads a webfont while advertising that would be a bad
+          # look, so it is a build failure rather than a code-review question.
+          if grep -qiE '<(script|link|img)[^>]+(src|href)="https?://' site/dist/index.html; then
+            echo "::error::site/dist/index.html loads a remote asset"
+            grep -inE '<(script|link|img)[^>]+(src|href)="https?://' site/dist/index.html
+            exit 1
+          fi
+          test -s site/dist/demo/index.html || { echo "::error::demo dashboard is empty"; exit 1; }
+          test -s site/dist/_headers || { echo "::error::_headers missing"; exit 1; }
+          echo "ok — no remote assets, demo rendered, headers present"
+
+      - name: The assets directory must match wrangler.toml
+        run: |
+          # Cloudflare deploys whatever `assets.directory` points at. If that
+          # ever drifts from what site/build.py writes, the deploy succeeds and
+          # serves nothing — which is the failure that produced this check.
+          want=$(python3 -c "
+          import re,sys
+          m=re.search(r'directory\s*=\s*\"([^\"]+)\"', open('wrangler.toml').read())
+          sys.stdout.write(m.group(1).lstrip('./').rstrip('/'))
+          ")
+          echo "wrangler.toml assets.directory = $want"
+          test -d "$want" || { echo "::error::wrangler.toml points at '$want', which site/build.py did not create"; exit 1; }
+          test -s "$want/index.html" || { echo "::error::'$want' has no index.html"; exit 1; }
+          echo "ok — $want exists and has an index.html"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: site
+          path: site/dist
+          retention-days: 7

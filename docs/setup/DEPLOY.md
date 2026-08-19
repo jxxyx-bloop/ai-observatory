@@ -20,18 +20,19 @@ Reasoning for every choice here is in
 
 Worth stating first, because it is the usual worry.
 
-`.github/workflows/deploy.yml` is written so that **a commit made before any
-account exists cannot fail**:
+`.github/workflows/site.yml` **only builds and verifies. It never deploys.** So
+a commit made before any Cloudflare account exists cannot fail on the GitHub
+side, and there are no secrets to add for it to start working.
 
-- The **build** job always runs. If the site is broken, that fails — which is
-  what you want.
-- The **deploy** job is gated on `CLOUDFLARE_API_TOKEN` and
-  `CLOUDFLARE_ACCOUNT_ID` both being present. Without them it is skipped, with a
-  notice in the run summary saying so.
+Deployment is Cloudflare's own Git integration, configured in their dashboard.
+Until you connect it, nothing deploys and nothing is red.
 
-So the safe order is: **merge first, watch it build-and-skip, add secrets when
-you're ready.** Nothing is red in between, and there is no window where the repo
-is broken.
+**One sharp edge, learned the hard way:** once you *do* connect the repository
+in Cloudflare, their builder runs on every push — independently of GitHub
+Actions. If its build command is empty it will clone the repo, build nothing,
+and fail with `Could not detect a directory containing static files`. Set the
+build command at the same time you connect the repo (step 1.2) and this does not
+arise.
 
 The same is true of the site build itself: `python3 site/build.py` uses only the
 standard library and the repo's own engine. There is no npm, no lockfile, no
@@ -52,61 +53,55 @@ button. (Vercel's Hobby plan forbids commercial use and caps bandwidth at
 Copy your **Account ID** from the right-hand sidebar of the dashboard home.
 It is not a secret, but it identifies you.
 
-### 1.2 A Pages project
+### 1.2 Connect the repository
 
-Dashboard → **Workers & Pages** → **Create** → **Pages** → **Connect to Git**.
+Dashboard → **Workers & Pages** → **Create** → **Connect to Git** → pick
+`ai-observatory`.
 
-- Repository: `ai-observatory`
-- Project name: **`ai-observatory`** — this must match `--project-name` in
-  `.github/workflows/deploy.yml`, or change both together
-- Build command: leave **empty**
-- Build output directory: leave **empty**
-
-Leave the build settings empty on purpose: GitHub Actions builds the site and
-pushes the finished directory, so Cloudflare never needs to run Python. One
-build system, not two.
-
-### 1.3 An API token
-
-Dashboard → **My Profile** → **API Tokens** → **Create Token** → **Custom token**.
+Cloudflare builds and deploys this itself. Set these two, under the project's
+**Settings → Build**:
 
 | Setting | Value |
 |---|---|
-| Permissions | `Account` · `Cloudflare Pages` · **Edit** |
-| Account resources | Include · your account |
-| TTL | Whatever you're comfortable with; you can rotate it later |
+| **Build command** | `python3 site/build.py` |
+| **Deploy command** | `npx wrangler deploy` |
 
-**Scope it to Pages only.** A token that can edit your whole account is stored
-in GitHub, and the blast radius of a leak should be one static site.
+Python 3 is preinstalled in Cloudflare's build image, so there is no setup step
+to add.
 
-Copy the token — it is shown **once**.
+The rest is already in the repo: the root [`wrangler.toml`](../../wrangler.toml)
+declares `assets.directory = "./site/dist"`, which is exactly what
+`site/build.py` writes. There is no `main` in that file — this is a
+static-assets-only project, so no Worker code runs.
 
-### 1.4 Two GitHub secrets
+> **If you see `Could not detect a directory containing static files`,** the
+> build command is empty. Cloudflare cloned the repo, built nothing, and found
+> nothing to serve — `site/dist/` is gitignored because it is derived and
+> rebuilds in a second. Set the build command above.
 
-Repo → **Settings** → **Secrets and variables** → **Actions** → **New repository secret**.
+### 1.3 There is no API token to create
 
-| Name | Value |
-|---|---|
-| `CLOUDFLARE_API_TOKEN` | the token from 1.3 |
-| `CLOUDFLARE_ACCOUNT_ID` | the account id from 1.1 |
+Deliberately. Cloudflare pulls from Git and builds it itself, so **no Cloudflare
+credential is ever stored in GitHub** — nothing to leak, rotate, or scope
+wrongly. The GitHub Actions workflow (`.github/workflows/site.yml`) only
+*verifies* that the site builds, which is what gives you a check on pull
+requests, where Cloudflare's production build never runs.
 
-Both must exist before the deploy job will run. Add one and not the other and it
-stays skipped — deliberately, so a half-finished setup never half-deploys.
+### 1.4 Trigger it
 
-### 1.5 Trigger it
+Push to `main`. The site appears at `https://ai-observatory.workers.dev` (or the
+`.pages.dev` host, depending on how the project was created — the dashboard
+shows the real one).
 
-Push to `main`, or run the workflow manually from the **Actions** tab. The site
-appears at `https://ai-observatory.pages.dev`.
-
-### 1.6 A domain (optional)
+### 1.5 A domain (optional)
 
 Buy it at **Cloudflare Registrar** — wholesale price, no markup, and critically
 **no renewal hike** (about $9.77–10.44/yr for a `.com`, versus roughly $15 at
 renewal from registrars that discount year one). Over five years the renewal
 column is the only one that matters.
 
-Then Pages project → **Custom domains** → **Set up a domain**. DNS is automatic
-if the domain is already in your Cloudflare account.
+Then project → **Custom domains** → **Set up a domain**. DNS is automatic if the
+domain is already in your Cloudflare account.
 
 ---
 
@@ -183,9 +178,9 @@ Free tiers in this market are marketing, and marketing changes.
 
 | Symptom | Cause |
 |---|---|
-| Deploy job says "skipped" | Secrets not set, or you pushed to a branch other than `main`. Working as designed. |
-| `Project not found` | Pages project name ≠ `--project-name` in the workflow. |
-| `Authentication error` | Token lacks `Cloudflare Pages: Edit`, or was scoped to the wrong account. |
+| `Could not detect a directory containing static files` | The Cloudflare **build command** is empty, so nothing built `site/dist/`. Set it to `python3 site/build.py`. This is the one everyone hits. |
+| Build succeeds, site serves nothing | `assets.directory` in the root `wrangler.toml` no longer matches what `site/build.py` writes. CI checks for this drift on every PR. |
+| `python3: command not found` | Set the `PYTHON_VERSION` build variable (e.g. `3.12`) in the Cloudflare project's build settings. |
 | Build fails on "no external requests" | Something in `site/index.html` loads a remote asset. That check is deliberate — the page advertises zero external requests, so it must not make any. |
 | Site deploys but the demo 404s | `site/build.py` didn't produce `dist/demo/index.html`. Run it locally and look. |
 

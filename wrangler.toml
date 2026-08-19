@@ -1,0 +1,30 @@
+# Cloudflare config for the PUBLIC SITE (landing page + live demo dashboard).
+#
+# Not to be confused with server/wrangler.toml.example, which is the community
+# API and is deliberately not deployed. This one is for static assets only —
+# there is no `main`, so no Worker script runs; Cloudflare just serves the
+# directory that `site/build.py` produces.
+#
+# Cloudflare's Git integration builds and deploys this on every push to the
+# production branch. Two settings have to match it in the dashboard, under
+# Settings -> Build:
+#
+#   Build command:   python3 site/build.py
+#   Deploy command:  npx wrangler deploy
+#
+# Python 3 is preinstalled in Cloudflare's build image, so `site/build.py`
+# runs with no setup step. `site/dist/` is gitignored on purpose — it is
+# derived, rebuilds in about a second, and committing build output makes every
+# content change look like a code change.
+
+name = "ai-observatory"
+compatibility_date = "2026-08-19"
+
+[assets]
+directory = "./site/dist"
+# The site is a handful of static files with real extensions, so let Cloudflare
+# serve them as-is rather than rewriting paths: /demo/ resolves to
+# /demo/index.html, and anything genuinely missing gets a 404 instead of being
+# silently rewritten to the landing page.
+html_handling = "auto-trailing-slash"
+not_found_handling = "404-page"

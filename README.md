@@ -242,9 +242,9 @@ what it is (about **$1/month at launch, ~$6/month at 100k users**).
 python3 site/build.py     # -> site/dist/  (landing page + live demo dashboard)
 ```
 
-The deploy workflow is written so it **cannot break a commit made before you
-have a Cloudflare account**: the build always runs, the deploy step skips with a
-notice until the secrets exist.
+CI only **verifies** that the site builds — it never deploys, so there are no
+secrets in GitHub and nothing to leak. Deployment is Cloudflare's own Git
+integration, which builds from the root [`wrangler.toml`](wrangler.toml).
 
 Self-hosting the community layer is a first-class path, not an enterprise tier —
 [`server/schema.sql`](server/schema.sql) applies unchanged to a plain
