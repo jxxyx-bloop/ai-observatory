@@ -804,6 +804,16 @@ function initLang() {
     if (code) {
       I18N.LOCALES.forEach(function (l) { if (l[0] === lang) code.textContent = l[2]; });
     }
+
+    /* A reader who arrived from the Thai landing page should get back to the
+       Thai landing page, not the English one. Only rewritten on the hosted
+       copy, which is the only place those sibling directories exist. */
+    var crumb = $("crumbHome");
+    if (crumb && crumb.getAttribute("data-locale-home")) {
+      I18N.LOCALES.forEach(function (l) {
+        if (l[0] === lang) crumb.href = "../" + (l[3] ? l[3] + "/" : "");
+      });
+    }
     if (sheet) {
       each("[data-lang]", function (el) {
         if (el.getAttribute("data-lang") === lang) el.setAttribute("aria-current", "true");

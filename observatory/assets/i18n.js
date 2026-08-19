@@ -19,21 +19,25 @@
 var I18N = (function () {
 "use strict";
 
-/* Same thirteen locales as the landing page, same order, same badges. */
+/* Same thirteen locales as the landing page, same order, same badges — plus the
+   URL directory each one is published at, so the breadcrumb can lead home in the
+   language the reader is actually reading. site/build.py checks this table
+   against site/i18n.py on every build; two locale lists that can disagree
+   eventually will. */
 var LOCALES = [
-  ["en",      "English",          "EN"],
-  ["zh-Hans", "简体中文",           "简"],
-  ["zh-Hant", "繁體中文",           "繁"],
-  ["ja",      "日本語",             "JA"],
-  ["ko",      "한국어",             "KO"],
-  ["hi",      "हिन्दी",              "HI"],
-  ["id",      "Bahasa Indonesia", "ID"],
-  ["vi",      "Tiếng Việt",       "VI"],
-  ["th",      "ไทย",               "TH"],
-  ["ms",      "Bahasa Melayu",    "MS"],
-  ["fil",     "Filipino",         "FIL"],
-  ["pt-BR",   "Português (BR)",   "PT"],
-  ["es",      "Español",          "ES"]
+  ["en",      "English",          "EN",  ""],
+  ["zh-Hans", "简体中文",           "简",  "zh-hans"],
+  ["zh-Hant", "繁體中文",           "繁",  "zh-hant"],
+  ["ja",      "日本語",             "JA",  "ja"],
+  ["ko",      "한국어",             "KO",  "ko"],
+  ["hi",      "हिन्दी",              "HI",  "hi"],
+  ["id",      "Bahasa Indonesia", "ID",  "id"],
+  ["vi",      "Tiếng Việt",       "VI",  "vi"],
+  ["th",      "ไทย",               "TH",  "th"],
+  ["ms",      "Bahasa Melayu",    "MS",  "ms"],
+  ["fil",     "Filipino",         "FIL", "fil"],
+  ["pt-BR",   "Português (BR)",   "PT",  "pt-br"],
+  ["es",      "Español",          "ES",  "es"]
 ];
 
 var T = {};

@@ -45,7 +45,16 @@ a language or theme chosen on one carries to the other.
 `render.py` takes a `home` argument that decides where the breadcrumb goes: the
 hosted demo passes `"../"` and leads back to the landing page; a locally
 rendered dashboard passes nothing and links to the repository, because there is
-no site next to it to return to.
+no site next to it to return to. On the hosted copy the crumb is then rewritten
+client-side to the reader's own locale directory — someone who arrived from
+`/th/` goes back to `/th/`, not to the English root. Each locale page records
+its own language on load, so a reader who arrives from a search result and never
+touches the switcher still gets the demo in their language.
+
+Both locale tables (`site/i18n.py` and `observatory/assets/i18n.js`) are
+compared on every build. They have to be separate — one runs at build time in
+Python, the other in a browser opened from `file://` — and two lists that can
+disagree eventually will.
 
 ## The four tiers, and why each exists
 

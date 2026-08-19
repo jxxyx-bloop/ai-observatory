@@ -69,6 +69,8 @@ def render(digest: dict, home: str | None = None) -> str:
     crumb_href = home or REPO
     crumb_key = "crumb_home" if home else "crumb_repo"
     crumb_label = "Home" if home else "Repository"
+    # Only the hosted copy has sibling locale directories to point at.
+    crumb_attr = ' data-locale-home="1"' if home else ""
     # Tokens first, then layout — the same order the landing page uses, so the
     # two surfaces cannot drift apart. See docs/design/DESIGN-SYSTEM.md.
     css = ((ASSETS / "tokens.css").read_text(encoding="utf-8") + "\n"
@@ -77,6 +79,7 @@ def render(digest: dict, home: str | None = None) -> str:
         page.replace("/*CSS*/", css)
             .replace("/*I18N*/", (ASSETS / "i18n.js").read_text(encoding="utf-8"))
             .replace("/*JS*/", (ASSETS / "app.js").read_text(encoding="utf-8"))
+            .replace("<!--HOMEATTR-->", crumb_attr)
             .replace("<!--HOMEKEY-->", crumb_key)
             .replace("<!--HOMELABEL-->", crumb_label)
             .replace("<!--HOME-->", crumb_href)

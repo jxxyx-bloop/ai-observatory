@@ -32,6 +32,7 @@ from __future__ import annotations
 
 import html
 import os
+import re
 import shutil
 import sys
 from pathlib import Path
@@ -183,6 +184,26 @@ def build_demo() -> str:
     return html_out
 
 
+def check_locale_tables() -> None:
+    """The landing page and the dashboard keep separate locale tables.
+
+    They have to: one is Python that runs at build time, the other is JavaScript
+    that runs in a browser opened from `file://`. But two lists that can
+    disagree eventually will — a locale added to one and not the other gives a
+    switcher entry that 404s, and only a reader who needs that language would
+    ever find it. So they are compared here, on every build.
+    """
+    js = (ENGINE / "assets" / "i18n.js").read_text(encoding="utf-8")
+    block = js[js.index("var LOCALES = ["):js.index("];", js.index("var LOCALES = ["))]
+    found = re.findall(r'\[\s*"([^"]*)"\s*,\s*"[^"]*"\s*,\s*"[^"]*"\s*,\s*"([^"]*)"\s*\]',
+                       block)
+    want = [(code, d) for code, d, *_ in i18n.LOCALES]
+    if found != want:
+        raise SystemExit(
+            "build: site/i18n.py and observatory/assets/i18n.js disagree about "
+            f"locales.\n  python: {want}\n  js:     {found}")
+
+
 def sitemap() -> str:
     rows = []
     for _code, d, *_ in i18n.LOCALES:
@@ -199,6 +220,8 @@ def main() -> int:
     if OUT.exists():
         shutil.rmtree(OUT)
     (OUT / "demo").mkdir(parents=True)
+
+    check_locale_tables()
 
     template = (HERE / "index.html").read_text(encoding="utf-8")
     js = (HERE / "app.js").read_text(encoding="utf-8")

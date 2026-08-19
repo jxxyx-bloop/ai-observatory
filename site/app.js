@@ -24,6 +24,11 @@ if (theme) {
    search engines and for anyone with scripting off. The click is recorded
    only so the dashboard, which is one page for every locale, can open in the
    language you were just reading. */
+/* Reading a page IS choosing its language. Someone who arrives at /th/ from a
+   search result never touches the switcher, so without this the demo would open
+   in English for them — which is exactly the reader this whole effort is for. */
+try { localStorage.setItem("observatory-lang", root.lang || "en"); } catch (e) {}
+
 var menu = $("langmenu");
 if (menu) {
   menu.addEventListener("click", function (e) {
