@@ -148,7 +148,7 @@ observatory/tests/run.sh
 |---|---|
 | [`docs/strategy/`](docs/strategy/) | **竞品拆解 · 定位 · 东南亚/中国产品论证 · 增长飞轮 · 风险** |
 | [`docs/00-*.md`](docs/) | 愿景、工程原则、架构、决策日志 |
-| [`docs/adr/`](docs/adr/) | 14 份决策记录，包含被否决的方案及原因 |
+| [`docs/adr/`](docs/adr/) | 15 份决策记录，包含被否决的方案及原因 |
 | [`docs/specs/`](docs/specs/) | 事件 schema · 成本估算 · 峰值计价 · 套餐与额度 · 社区协议 · 认证 |
 | [`docs/context/`](docs/context/) | 术语表 · **已知局限** |
 

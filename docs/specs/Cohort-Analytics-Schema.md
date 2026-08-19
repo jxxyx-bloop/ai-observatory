@@ -198,6 +198,13 @@ that slice was dropped rather than given one.
 
 ## Retention
 
+> **Superseded for the public build.** This section describes the
+> single-employer deployment. The open-source design prunes per-user rows at
+> **35 days**, because the client holds full history — see
+> [Community-Share-Protocol](Community-Share-Protocol.md) and
+> [ADR-015](../adr/ADR-015-Hosting-And-Data-Residency.md).
+
+
 `daily` — prune rows older than **400 days**. `cohort_daily` — keep
 indefinitely; it is the company's own trend record and is not reconstructible
 once `daily` is pruned. `profiles` — until the user calls

@@ -174,7 +174,7 @@ No test framework — stdlib Python and one optional node script.
 |---|---|
 | [`docs/strategy/`](docs/strategy/) | **Competitive teardown · positioning · the SEA/China thesis · growth flywheel · risks** |
 | [`docs/00-*.md`](docs/) | Vision, engineering principles, architecture, decision log |
-| [`docs/adr/`](docs/adr/) | Fourteen decision records, including what was rejected and why |
+| [`docs/adr/`](docs/adr/) | Fifteen decision records, including what was rejected and why |
 | [`docs/specs/`](docs/specs/) | Event schema · cost estimation · peak/off-peak · plans and quotas · community protocol · auth |
 | [`docs/context/`](docs/context/) | Glossary · **known limitations** |
 

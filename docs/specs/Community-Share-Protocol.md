@@ -161,6 +161,46 @@ Kimi user on a 2 a.m. schedule could guess which stranger. Rotating the key
 would remove this and would also destroy the product. This is a known position,
 not an oversight, and it is stated here so nobody has to discover it.
 
+## Retention, and why the server holds so little
+
+**Server-side per-user rows are pruned at 35 days.**
+
+The client is the system of record. The local NDJSON store never expires, so the
+server needs a person's rows only long enough to build the nightly rollup and to
+make a re-submitted window idempotent — about five weeks, not the thirteen months
+the private-deployment design used
+([ADR-010](../adr/ADR-010-Cohort-Analytics-Store.md) retention section, which
+this supersedes for the public build).
+
+"Is my percentile improving?" is therefore computed **on the user's own
+machine**, against their own complete history and the published cohort files.
+The server never needs a long tail of anybody's behaviour to answer it.
+
+This is cheaper and it is a better privacy story; those two rarely point the
+same way, and when they do the decision is easy. At 100,000 opted-in users it is
+the difference between 2.2 GB and 25 GB of stored personal-ish data — and
+between a free tier and a bill ([ADR-015](../adr/ADR-015-Hosting-And-Data-Residency.md)).
+
+Cohort files are kept indefinitely. They are aggregates above the suppression
+floor and are not reconstructible once the underlying rows are pruned.
+
+## Where the read path lives
+
+`cohort_daily` is rebuilt nightly, so a cohort response is already a static
+artefact with a 24-hour lifetime. It is published **as a file on a CDN**, not
+served from a query:
+
+```
+/cohort/all-30d.json
+/cohort/vendor-deepseek-30d.json
+/cohort/plan-glm-coding-lite-30d.json
+```
+
+Beyond making reads free and unlimited, this removes an entire class of risk:
+a file of suppressed-above-floor aggregates cannot be coaxed into returning an
+individual's row, because there is no query interface to coax. Suppression at
+write time and a read path with no parameters are the same defence stated twice.
+
 ## Self-hosting
 
 The server is a small stateless service over three tables. Self-hosting is a

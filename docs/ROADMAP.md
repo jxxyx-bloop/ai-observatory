@@ -79,8 +79,13 @@ not the author. All three, not any one.
 - [ ] Accounts — Google and GitHub OIDC, device-code flow for slow connections
 - [ ] Submission endpoint; cohort read endpoint
 - [ ] Efficiency percentiles by vendor, plan and self-declared cohort
+- [ ] Nightly rollup publishing cohort files to the CDN
 - [ ] Self-hosting guide as a first-class path, not an enterprise tier
 - [ ] `PRIVACY.md` with a plain-language data map
+
+Stack decided in [ADR-015](adr/ADR-015-Hosting-And-Data-Residency.md):
+Cloudflare Pages + Workers + D1, cohort reads as static files, ~$5/month at
+100k users. Verify every price against the vendor before committing.
 
 Deliberately last. A leaderboard with fifty participants is embarrassing, and
 launching it first would file this project under "another vanity board" —

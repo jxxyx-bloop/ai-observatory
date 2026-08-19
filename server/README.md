@@ -19,6 +19,31 @@ after — which is the order that mistake usually happens in.
   the only acceptable option. A project that treats that as an enterprise upsell
   has misread its market.
 
+## How small this actually is
+
+Worth stating plainly, because it decides the hosting: the measured share
+payload is **633 bytes**, and the fingerprint skip means about 1.5 row-writes
+per user per day. At 100,000 opted-in users that is **0.12 writes per second**
+and ~2.2 GB of storage at the 35-day retention this design uses.
+
+There is no scaling problem here. There is only a maintenance problem, and the
+architecture below exists to minimise it — see
+[ADR-015](../docs/adr/ADR-015-Hosting-And-Data-Residency.md).
+
+## The read path is files, not queries
+
+`cohorts` is rebuilt nightly, so a cohort response is already a static artefact
+with a 24-hour lifetime. The rollup job **writes files to a CDN**:
+
+```
+/cohort/all-30d.json
+/cohort/vendor-deepseek-30d.json
+```
+
+Reads therefore never touch the database: free, unlimited, and impossible to
+coax into returning an individual's row because there is no query interface to
+coax. Only writes and account operations reach the service at all.
+
 ## Tables
 
 | Table | Row id | Holds |
@@ -43,17 +68,19 @@ way; see [ADR-010](../docs/adr/ADR-010-Cohort-Analytics-Store.md).
 POST   /v1/submit     Bearer token. Body: the share payload. Validates ranges,
                       rejects future dates, rate-limits per account. Writes one
                       `facts` row per day, upserted by deterministic id.
-GET    /v1/cohort     ?slice=vendor:deepseek&window=30d
-                      Reads `cohorts` only. Never touches `facts`.
+GET    /cohort/*.json Static file on the CDN. No service involved.
 GET    /v1/me         The caller's own account row and submission count.
 DELETE /v1/me         Removes the account row and every fact row. No soft
                       delete, no grace period, no "we keep the aggregates".
 ```
 
 A nightly job rebuilds `cohorts` from `facts` for the previous two days — two,
-not one, so a late submission still lands. Suppression happens at **write**
-time: a slice below the floor is never written, so a thin slice does not exist
-to be leaked by a rendering bug.
+not one, so a late submission still lands — then publishes the CDN files. The
+same job prunes `facts` older than **35 days**; the client holds full history,
+so the server does not need to.
+
+Suppression happens at **write** time: a slice below the floor is never written,
+so a thin slice does not exist to be leaked by a rendering bug.
 
 ## Why histograms, not percentiles
 
@@ -73,6 +100,17 @@ IP-derived location slice** — an enumerable roster defeats any numeric floor, 
 a raised floor only changes how many names an attacker has to rule out. Dropped
 rather than tuned; see
 [ADR-011](../docs/adr/ADR-011-Community-Layer.md).
+
+## Where it runs
+
+Cloudflare Pages for the static files, a Worker for the write path, D1 for the
+three tables — about $5/month at 100,000 users, and $0 below roughly 1,000.
+Reasoning, the alternatives weighed, and the trade-offs accepted are in
+[ADR-015](../docs/adr/ADR-015-Hosting-And-Data-Residency.md).
+
+D1 is SQLite, which is the point: a self-hoster runs the identical schema
+against a plain `.db` file with no service at all. The platform-specific part
+is the binding API — a few hundred lines — not the data.
 
 ## Before this accepts a byte
 
