@@ -114,23 +114,59 @@ def test_plan_value():
 
 # --- attribution -----------------------------------------------------------
 
+# A topology stated by the test rather than inherited from the host. `~/code`
+# is a different directory for every user and every CI runner, and the shipped
+# `scratch_prefixes` include /tmp — so a runner whose HOME sits under /tmp would
+# correctly classify the whole fixture as scratch and fail a test that had
+# nothing to do with scratch handling.
+FIXTURE_TOPOLOGY = {
+    "code_roots": ["/home/dev/code"],
+    "special_roots": {"/home/dev/.claude": "claude-config"},
+    "scratch_prefixes": ["/tmp/claude-", "/private/tmp/claude-"],
+    "worktree_marker": ".worktrees",
+    "incidental_repos": ["scratchpad", "claude-config"],
+    "surface_rules": {
+        "claude-config": [["skills/*", "skills"]],
+        "*": [["src/*", "src/{1}"], ["packages/*", "package:{1}"]],
+    },
+    "lanes": {"default": "work", "rules": [{"repo": "dotfiles", "lane": "personal"}]},
+}
+
+
 def test_paths():
     print("\npath attribution")
-    import os
-    home = os.path.expanduser("~")
-    check("a source file lands in its repo and folder",
-          topo.classify(home + "/code/my-app/src/api/routes.py"), ("my-app", "src/api"))
-    check("a top-level file is (root), not the filename",
-          topo.classify(home + "/code/my-app/README.md"), ("my-app", "(root)"))
-    check("a worktree is attributed to its parent repo",
-          topo.classify(home + "/code/my-app/.worktrees/feat-x/src/db/pool.go"),
-          ("my-app", "src/db"))
-    check("a temp path is one flat scratch bucket",
-          topo.classify("/tmp/claude-abc/notes.md"), ("scratchpad", "scratch files"))
-    check("an unknown path is honestly unattributed, not guessed",
-          topo.classify("/opt/somewhere/else/file.py"), (None, None))
-    check("a real repo outranks an incidental one",
-          topo.pick_repo("scratchpad", [("my-app", "src")]), "my-app")
+    topo.use(FIXTURE_TOPOLOGY)
+    try:
+        check("a source file lands in its repo and folder",
+              topo.classify("/home/dev/code/my-app/src/api/routes.py"), ("my-app", "src/api"))
+        check("a monorepo package becomes its own bucket",
+              topo.classify("/home/dev/code/my-app/packages/ui/Button.tsx"),
+              ("my-app", "package:ui"))
+        check("a top-level file is (root), not the filename",
+              topo.classify("/home/dev/code/my-app/README.md"), ("my-app", "(root)"))
+        check("a worktree is attributed to its parent repo",
+              topo.classify("/home/dev/code/my-app/.worktrees/feat-x/src/db/pool.go"),
+              ("my-app", "src/db"))
+        check("a special root is named rather than left unattributed",
+              topo.classify("/home/dev/.claude/skills/foo/SKILL.md"),
+              ("claude-config", "skills"))
+        check("a temp path is one flat scratch bucket",
+              topo.classify("/tmp/claude-abc/notes.md"), ("scratchpad", "scratch files"))
+        check("an unknown path is honestly unattributed, not guessed",
+              topo.classify("/opt/somewhere/else/file.py"), (None, None))
+        check("a real repo outranks an incidental one",
+              topo.pick_repo("scratchpad", [("my-app", "src")]), "my-app")
+        check("an incidental repo still stands alone when nothing else ran",
+              topo.pick_repo("scratchpad", []), "scratchpad")
+    finally:
+        topo.use(None)
+
+    # One assertion against the topology the repo actually ships, so a broken
+    # default config cannot pass every test by virtue of never being loaded.
+    cfg = topo.config()
+    ok("the shipped topology declares code roots", len(cfg["code_roots"]) > 0)
+    ok("the shipped topology expands ~ to an absolute path",
+       all(r.startswith("/") for r in cfg["_roots"]))
 
 
 # --- privacy boundary ------------------------------------------------------
