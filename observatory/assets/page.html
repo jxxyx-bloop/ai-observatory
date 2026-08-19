@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<meta name="robots" content="noindex,nofollow">
+<title>AI Observatory</title>
+<style>/*CSS*/</style>
+</head><body>
+<div class="wrap">
+  <header>
+    <h1>AI Observatory</h1>
+    <p class="sub" id="span">Loading…</p>
+  </header>
+
+  <div class="controls">
+    <div class="ctl"><span class="lbl">Range</span><div class="seg" id="presets"></div></div>
+    <div class="ctl"><span class="lbl">From</span><input type="date" id="from">
+      <span class="lbl">To</span><input type="date" id="to"></div>
+    <div class="ctl"><span class="lbl">Provider</span><select id="provider"></select></div>
+    <div class="ctl"><span class="lbl">Lane</span><select id="lane"></select></div>
+    <div class="ctl"><span class="lbl">Repo</span><select id="repo"></select></div>
+    <button id="reset" type="button">Reset</button>
+  </div>
+  <p class="scope" id="scope"></p>
+
+  <div class="kpis" id="kpis"></div>
+
+  <section><h2>Daily rhythm</h2>
+    <p class="sub note">Every day in the selected range, labelled. Quiet days show as
+      gaps rather than being skipped, so the shape of a week stays visible. Click a day
+      to drill every panel below into just that day; click it again to clear.</p>
+    <div class="panel">
+      <div class="chartbar"><div class="seg small" id="dailyMetric"></div>
+        <span class="legend" id="dailyLegend"></span></div>
+      <div id="daily"></div>
+    </div>
+  </section>
+
+  <section><h2>Where the investment goes</h2>
+    <p class="sub note">Repository first, then the folders inside it. Click a bar to
+      filter the whole page to that repository.</p>
+    <div class="grid2">
+      <div class="panel"><h2>By repository</h2><div id="repos"></div></div>
+      <div class="panel"><h2 id="surfaceTitle">Inside</h2><div id="surfaces"></div>
+        <p class="sub foot" id="surfaceNote"></p></div>
+    </div>
+  </section>
+
+  <section><h2>Model mix</h2>
+    <div class="grid2">
+      <div class="panel"><h2>Output by model</h2><div id="models"></div></div>
+      <div class="panel"><h2>Turns by reasoning effort</h2><div id="efforts"></div></div>
+    </div>
+  </section>
+
+  <section id="phaseSection" hidden><h2>Peak and off-peak<span class="info" tabindex="0"
+      role="img" aria-label="What this measures" data-tt="Some vendors price tokens by the
+      hour — DeepSeek bills full rate 01:00-04:00 and 06:00-10:00 UTC and half rate the rest
+      of the day; Z.ai's GLM peaks only 14:00-18:00 UTC+8 on weekdays. Flat-priced vendors are
+      excluded from both bars: they were never time-priced, so there is nothing to shift.">i</span></h2>
+    <p class="sub note">Only vendors that publish a peak schedule appear here. The
+      <em>premium</em> is what the peak-hour turns cost above the same tokens at the same
+      vendor's off-peak rate — arithmetic on your own usage, not a projection.</p>
+    <div class="panel"><div id="phase"></div>
+      <p class="sub foot" id="phaseNote"></p></div>
+  </section>
+
+  <section><h2>Working hours<span class="info" tabindex="0" role="img"
+      aria-label="What this measures" data-tt="When turns actually happen, in your configured
+      timezone — darker = more turns in that hour, that weekday, across the whole synced
+      window.">i</span></h2>
+    <p class="sub note" id="hoursNote">Weekday × hour, in your configured timezone — the one
+      the work actually happens in, not wherever the collecting machine's clock is set.</p>
+    <div class="panel"><div id="hours"></div></div>
+  </section>
+
+  <section><h2>Behavioral trends</h2>
+    <p class="sub note">7-day rolling mean of each metric, over the whole selected range —
+      not narrowed by a day drilled into above, since one day has no week-over-week shape
+      to show. This is the direct answer to "am I getting better at this."</p>
+    <div id="trends"></div>
+  </section>
+
+  <section><h2>Tools and delegation</h2>
+    <div class="grid2">
+      <div class="panel"><h2>Tool calls</h2><div id="tools"></div></div>
+      <div class="panel"><h2>Named subagents</h2><div id="agents"></div>
+        <p class="sub foot" id="agentsNote"></p></div>
+    </div>
+  </section>
+
+  <section><h2>Heaviest sessions</h2>
+    <p class="sub note">Writes/reads is the produce-to-explore ratio. Peak context is
+      the largest single-turn context the session carried.</p>
+    <div class="panel"><div id="sessions"></div></div>
+  </section>
+
+  <section><h2>What to change</h2>
+    <p class="sub note">Ordered by severity, then by what it is worth. Every finding
+      names its evidence. Computed once over the whole window — the filters above do
+      not change it.</p>
+    <!--FINDINGS-->
+  </section>
+
+  <footer>
+    <p><strong>How this was measured.</strong> Every number comes from the token
+    accounting the API already returned, recorded in local Claude Code and Codex
+    transcripts. Collection reads those files and costs no tokens. No prompt text,
+    completion text, file contents, shell commands, or absolute paths are stored or
+    shown — counts, model names, tool names, and derived repository and folder
+    labels only.</p>
+    <p><strong>Cost is an estimate.</strong> Token counts are exact; dollar figures
+    apply a local price list (verified <!--VERIFIED-->) and are notional on a seat
+    plan. Treat spend as a <em>relative</em> measure of where effort goes, not a bill.</p>
+    <p><strong>How work is attributed.</strong> A turn is credited to the repository
+    it ran in, or to the first real repository whose files it touched. Turns that name
+    no file inherit the nearest attributed turn in the same session; a session that
+    touched nothing stays <code>unattributed</code>. Scratch and config folders lose
+    ties to real repositories. Lanes are inferred from
+    <code>engine/topology.json</code> — transcripts carry no account identity, so a
+    lane is a rule you write, not a fact the provider reports.</p>
+    <p>Self-contained page — no external requests, fonts, scripts, or analytics.
+    Generated <!--GENERATED--> UTC. Regenerate with
+    <code>python3 engine/observe.py all</code>.</p>
+  </footer>
+</div>
+<button id="themeToggle" class="theme-toggle" type="button"
+  aria-label="Switch between light and dark theme" title="Light / dark theme">◐</button>
+<div id="tt" class="tt" role="tooltip" aria-hidden="true"></div>
+<script id="digest" type="application/json">/*PAYLOAD*/</script>
+<script>/*JS*/</script>
+</body></html>

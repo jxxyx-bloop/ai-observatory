@@ -1,0 +1,66 @@
+{
+  "_doc": "Workspace topology. Turns an absolute path (seen only in memory, never stored) into a repo name and a coarse surface label. This is the one file worth editing on day one: point `code_roots` at wherever you actually keep repos. See docs/specs/Surface-Attribution.md.",
+
+  "_code_roots_doc": "Where your repositories live. Longest match wins, so a nested root can override a broader one. `~` is expanded. Paths that match nothing are reported as unattributed rather than guessed at — a wrong attribution is worse than an honest gap.",
+  "code_roots": [
+    "~/code",
+    "~/src",
+    "~/projects",
+    "~/repos",
+    "~/dev",
+    "~/work",
+    "~/GitHub",
+    "~/GitLab",
+    "~/Documents/GitHub",
+    "~/Desktop"
+  ],
+
+  "_worktree_doc": "Folder name under which git worktrees are kept, if you use them. A path inside one is attributed to the parent repository rather than to the worktree directory.",
+  "worktree_marker": ".worktrees",
+
+  "_special_roots_doc": "Folders that are not repositories but are worth naming, so that time spent configuring your tooling shows up as exactly that instead of as unattributed noise.",
+  "special_roots": {
+    "~/.claude": "claude-config",
+    "~/.codex": "codex-config",
+    "~/.config": "dotfiles",
+    "~/.cursor": "cursor-config"
+  },
+
+  "scratch_prefixes": ["/private/tmp/", "/tmp/", "/private/var/folders/", "/var/folders/"],
+
+  "_incidental_doc": "Infrastructure, not a subject of work. A turn that only wrote a scratch file or opened a config folder is attributed to whatever real repo the session was actually about. These still stand on their own when a session touched nothing else.",
+  "incidental_repos": ["scratchpad", "claude-config", "codex-config", "dotfiles", "cursor-config"],
+
+  "_surface_rules_doc": "Per repo, first matching glob wins. '*' matches one segment. '{n}' in the label is replaced by segment n of the matched path (0-based). Repo '*' rules apply to every repo, after that repo's own rules. Unmatched paths fall back to their first path segment, or '(root)' for a top-level file. A rule may only ever name a DIRECTORY — a rule that would interpolate the filename is skipped, so a document title can never become a permanent bucket (ADR-008).",
+  "surface_rules": {
+    "claude-config": [
+      ["projects/*/memory/*",   "agent memory"],
+      ["projects/*",            "transcripts"],
+      ["skills/*",              "skills"],
+      ["commands/*",            "commands"],
+      ["plugins/*",             "plugins"]
+    ],
+    "*": [
+      ["src/*",                 "src/{1}"],
+      ["packages/*",            "package:{1}"],
+      ["apps/*",                "app:{1}"],
+      ["services/*",            "service:{1}"],
+      ["test/*",                "tests"],
+      ["tests/*",               "tests"],
+      ["docs/*",                "docs"],
+      [".claude/*",             "tooling"],
+      [".github/*",             "ci"],
+      ["infra/*",               "infra"],
+      ["terraform/*",           "infra"]
+    ]
+  },
+
+  "_lanes_doc": "Which usage lane a turn belongs to. Transcripts carry no account identity, so a lane is inferred from where and how the work happened. First matching rule wins; anything unmatched gets `default`. Keys usable in a rule: repo, entrypoint, provider. Set this up if you want work and side-project usage separated — most people want that separation and no vendor dashboard offers it.",
+  "lanes": {
+    "default": "work",
+    "rules": [
+      { "repo": "dotfiles",   "lane": "personal" },
+      { "repo": "scratchpad", "lane": "work" }
+    ]
+  }
+}

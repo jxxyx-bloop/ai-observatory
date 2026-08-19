@@ -1,0 +1,181 @@
+/* One protagonist colour, everything else grey. --accent marks the single
+   thing a chart is about; --high stays a true red so a severity badge can
+   never be mistaken for a chart accent. Indigo rather than the usual
+   developer-tool green because green already means "passing" everywhere else
+   in a terminal, and this dashboard's whole job is to be read, not scanned
+   for pass/fail. Both themes are defined explicitly — see docs/design. */
+:root{
+  --bg:#f2f3f5; --panel:#fff; --line:#e6e6e9; --ink:#1a1a1e; --muted:#6b6b75;
+  --faint:#9a9aa3; --accent:#5b5bd6; --track:#f7f7f8; --sel:#e9e9fb;
+  --high:#c62828; --med:#a8792a; --low:#5d7a8c; --info:#5b5bd6;
+  --r:3px; --pad:clamp(16px,4vw,28px);
+}
+@media (prefers-color-scheme:dark){
+  :root{--bg:#131318; --panel:#1b1b22; --line:#2c2c36; --ink:#e8e8ef;
+        --muted:#9c9cae; --faint:#70707f; --accent:#8f8ff5; --track:#25252e;
+        --sel:#282842; --high:#e0785f; --med:#d6a44e; --low:#8fb0c4; --info:#8f8ff5;}
+}
+:root[data-theme="dark"]{--bg:#131318; --panel:#1b1b22; --line:#2c2c36; --ink:#e8e8ef;
+  --muted:#9c9cae; --faint:#70707f; --accent:#8f8ff5; --track:#25252e; --sel:#282842;
+  --high:#e0785f; --med:#d6a44e; --low:#8fb0c4; --info:#8f8ff5;}
+:root[data-theme="light"]{--bg:#f2f3f5; --panel:#fff; --line:#e6e6e9; --ink:#1a1a1e;
+  --muted:#6b6b75; --faint:#9a9aa3; --accent:#5b5bd6; --track:#f7f7f8; --sel:#e9e9fb;
+  --high:#c62828; --med:#a8792a; --low:#5d7a8c; --info:#5b5bd6;}
+
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);
+  font:15px/1.55 ui-sans-serif,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  -webkit-font-smoothing:antialiased}
+.wrap{max-width:1080px;margin:0 auto;padding:var(--pad)}
+h1{font-size:clamp(22px,3.4vw,30px);margin:0 0 4px;letter-spacing:-.02em;font-weight:650}
+h2{font-size:15px;margin:0 0 14px;letter-spacing:.06em;text-transform:uppercase;
+  color:var(--muted);font-weight:600}
+.sub{color:var(--muted);font-size:13.5px;margin:0}
+.note{margin:-6px 0 12px}
+.foot{margin:10px 0 0;font-size:12.5px}
+section{margin:30px 0 0}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);
+  padding:clamp(14px,2.4vw,20px)}
+.grid2{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(320px,1fr))}
+
+.kpis{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));margin-top:18px}
+.kpi{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:13px 15px}
+.kpi.lead{box-shadow:inset 3px 0 0 var(--accent)}
+.kpi .v{font-size:clamp(19px,2.6vw,24px);font-weight:650;letter-spacing:-.02em;
+  font-variant-numeric:tabular-nums}
+.kpi .k{font-size:11.5px;color:var(--muted);letter-spacing:.05em;text-transform:uppercase;margin-top:3px}
+.kpi .n{font-size:12px;color:var(--faint);margin-top:5px;line-height:1.4}
+
+/* Info affordance: every metric explains its own formula. Neutral until
+   hovered/focused, so it never competes with a chart's own accent. */
+.info{display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;
+  border-radius:50%;border:1px solid var(--faint);color:var(--faint);font-size:10px;
+  font-style:normal;font-weight:700;line-height:1;margin-left:5px;cursor:help;
+  vertical-align:middle;flex:none}
+.info:hover,.info:focus-visible{border-color:var(--accent);color:var(--accent)}
+.info:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+h2 .info{margin-left:7px}
+.k .info{margin-left:4px;transform:translateY(-1px)}
+
+.find{border:1px solid var(--line);border-left:3px solid var(--c);border-radius:8px;
+  padding:14px 16px;margin:0 0 10px;background:var(--panel)}
+.find:last-child{margin-bottom:0}
+.find .top{display:flex;flex-wrap:wrap;gap:8px;align-items:baseline;margin-bottom:6px}
+.find .sev{font-size:10.5px;font-weight:700;letter-spacing:.08em;color:var(--c);
+  border:1px solid var(--c);border-radius:4px;padding:1px 6px;text-transform:uppercase}
+.find .ttl{font-weight:620;font-size:15px}
+.find .save{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums;margin-left:auto}
+.find p{margin:0 0 8px;font-size:14px;color:var(--ink)}
+.find .act{margin:0;font-size:14px;color:var(--muted);padding-left:14px;border-left:2px solid var(--line)}
+.find .meta{margin:8px 0 0;font-size:12px;color:var(--faint)}
+.controls{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center;margin-top:18px;
+  padding:12px 14px;background:var(--panel);border:1px solid var(--line);border-radius:var(--r)}
+.ctl{display:flex;align-items:center;gap:7px;min-width:0}
+.lbl{font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--faint);
+  font-weight:600;white-space:nowrap}
+.seg{display:flex;border:1px solid var(--line);border-radius:7px;overflow:hidden}
+.seg button{appearance:none;border:0;border-right:1px solid var(--line);background:transparent;
+  color:var(--muted);font:inherit;font-size:12.5px;padding:4px 10px;cursor:pointer;white-space:nowrap}
+.seg button:last-child{border-right:0}
+.seg button:hover{background:var(--track);color:var(--ink)}
+.seg button[aria-pressed="true"]{background:var(--accent);color:var(--panel);font-weight:600}
+.seg.small button{font-size:11.5px;padding:3px 9px}
+.controls select,.controls input[type="date"]{font:inherit;font-size:12.5px;color:var(--ink);
+  background:var(--bg);border:1px solid var(--line);border-radius:7px;padding:4px 7px;
+  max-width:190px}
+.controls button#reset{appearance:none;font:inherit;font-size:12.5px;color:var(--muted);
+  background:transparent;border:1px solid var(--line);border-radius:7px;padding:4px 11px;
+  cursor:pointer;margin-left:auto}
+.controls button#reset:hover{background:var(--track);color:var(--ink)}
+.scope{margin:9px 2px 0;font-size:12.5px;color:var(--faint);font-variant-numeric:tabular-nums}
+/* Five joined buttons do not fit a phone. Below that, the segmented control
+   becomes a wrapping chip row rather than being clipped at the panel edge. */
+@media (max-width:560px){
+  .seg{flex-wrap:wrap;border:0;gap:6px}
+  .seg button{border:1px solid var(--line);border-radius:7px}
+  .controls button#reset{margin-left:0}
+}
+.chartbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:12px}
+.legend{font-size:12px;color:var(--faint)}
+.legend i{display:inline-block;width:9px;height:9px;border-radius:2px;margin:0 4px 0 10px;
+  background:var(--accent);vertical-align:baseline}
+.legend i.avg{background:var(--med);height:2px;border-radius:0;width:14px;vertical-align:middle}
+svg{display:block;width:100%;height:auto;max-width:100%}
+.axis{font-size:10.5px;fill:var(--faint)}
+/* A day-per-column chart cannot shrink to a phone without its labels going
+   sub-legible. Below the viewBox width it scrolls instead, at full type size. */
+#daily,#hours{overflow-x:auto;-webkit-overflow-scrolling:touch}
+#daily>svg,#hours>svg{min-width:720px}
+.empty{color:var(--faint);font-size:13.5px;margin:6px 0;font-style:italic}
+
+/* Daily rhythm bars double as a drill-down control: click a day to filter
+   every other panel down to it. */
+#daily g.daycol{cursor:pointer}
+#daily g.daycol:hover rect.hitcol{fill:var(--track);opacity:.6}
+
+/* Weekday x hour heatmap — single-hue ramp on the accent hue
+   HourStrip: intensity, not a rainbow. Shares #hours's overflow/min-width
+   rules above with the chart it replaced. */
+.heatcell{stroke:var(--panel);stroke-width:1.5}
+
+/* Behavioral trends: three compact rolling-mean sparklines, one metric each. */
+.sparks{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(210px,1fr))}
+.spark{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);
+  padding:12px 14px}
+.spark .sk{font-size:11px;color:var(--muted);letter-spacing:.04em;display:flex;
+  align-items:center;gap:2px}
+.spark .sv{font-size:19px;font-weight:650;letter-spacing:-.01em;margin-top:2px;
+  font-variant-numeric:tabular-nums}
+.spark svg{margin-top:6px}
+
+/* Shared hover tooltip for every chart — SVG bars and HTML hbars alike.
+   Colors invert relative to the page so it reads as a distinct overlay in
+   both themes. */
+.tt{position:fixed;left:-9999px;top:-9999px;z-index:80;pointer-events:none;
+  background:var(--ink);color:var(--bg);font-size:12px;line-height:1.45;
+  padding:6px 10px;border-radius:6px;box-shadow:0 4px 14px rgba(0,0,0,.2);
+  opacity:0;transform:translateY(2px);transition:opacity .08s ease,transform .08s ease;
+  white-space:normal;width:max-content;max-width:260px}
+.tt.show{opacity:1;transform:translateY(0)}
+
+.hbars{display:flex;flex-direction:column;gap:9px}
+.hbar{display:grid;gap:10px;align-items:center;
+  grid-template-columns:minmax(0,11fr) minmax(56px,14fr) minmax(46px,auto)}
+.hbar .hl{font-size:12.5px;color:var(--ink);overflow:hidden;text-overflow:ellipsis;
+  white-space:nowrap}
+.hbar .ht{height:10px;border-radius:5px;background:var(--track);overflow:hidden}
+.hbar .ht>i{display:block;height:100%;border-radius:5px;background:var(--accent)}
+.hbar .hv{font-size:12px;color:var(--muted);text-align:right;
+  font-variant-numeric:tabular-nums;white-space:nowrap}
+.hbar.hit{cursor:pointer}
+.hbar.hit:hover .hl{color:var(--accent);font-weight:600}
+.hbar.hit:hover .ht>i{opacity:.75}
+
+table{width:100%;border-collapse:collapse;font-size:13.5px;min-width:660px}
+th,td{text-align:right;padding:7px 9px;border-bottom:1px solid var(--line);white-space:nowrap}
+th:first-child,td:first-child{text-align:left;white-space:normal;min-width:170px}
+th{font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);font-weight:600}
+tbody tr:last-child td{border-bottom:none}
+td.n{font-variant-numeric:tabular-nums}
+.scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.bar{height:6px;border-radius:3px;background:var(--track);overflow:hidden;min-width:52px}
+.bar>i{display:block;height:100%;background:var(--accent);border-radius:3px}
+.tag{display:inline-block;font-size:10.5px;letter-spacing:.04em;color:var(--muted);
+  background:var(--track);border-radius:4px;padding:1px 5px;margin-left:5px}
+
+/* Theme toggle: a fixed rail on the side rather than another header control —
+   it's a page-wide setting, not part of the filter bar's flow. */
+.theme-toggle{position:fixed;right:14px;top:50%;transform:translateY(-50%);z-index:70;
+  width:34px;height:34px;border-radius:50%;border:1px solid var(--line);
+  background:var(--panel);color:var(--muted);font-size:16px;line-height:1;cursor:pointer;
+  box-shadow:0 2px 8px rgba(0,0,0,.12)}
+.theme-toggle:hover{border-color:var(--accent);color:var(--accent)}
+.theme-toggle:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+@media (max-width:560px){.theme-toggle{right:8px;width:30px;height:30px;font-size:14px}}
+@media print{.theme-toggle{display:none}}
+
+footer{margin:34px 0 8px;padding-top:16px;border-top:1px solid var(--line);
+  color:var(--faint);font-size:12.5px;line-height:1.6}
+code{font:12.5px ui-monospace,SFMono-Regular,Menlo,monospace;background:var(--track);
+  padding:1px 5px;border-radius:4px}
+@media print{.controls{display:none}}

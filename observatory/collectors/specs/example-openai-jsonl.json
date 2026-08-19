@@ -1,0 +1,26 @@
+{
+  "_doc": "Worked example, and the shape most vendors happen to use: one JSONL record per assistant turn with an OpenAI-style `usage` object. Copy this, change the roots and the paths, add a fixture. Not enabled against any real path on purpose — `roots` points at a directory nobody has.",
+  "provider": "example",
+  "roots": ["~/.example-agent/sessions/**/*.jsonl"],
+  "where": { "role": "assistant" },
+  "default_entrypoint": "cli",
+  "input_is_total": true,
+  "fields": {
+    "ts": "created_at",
+    "session": "conversation_id",
+    "cwd": "workspace.path",
+    "model": "model",
+    "stop": "finish_reason",
+    "input": "usage.prompt_tokens",
+    "output": "usage.completion_tokens",
+    "cache_read": "usage.prompt_tokens_details.cached_tokens",
+    "cache_create": "usage.prompt_tokens_details.cache_creation_tokens"
+  },
+  "tools": {
+    "list": "tool_calls",
+    "where": { "type": "function" },
+    "name": "function.name",
+    "args": "function.parsed_arguments",
+    "path_args": ["file_path", "path", "filename"]
+  }
+}

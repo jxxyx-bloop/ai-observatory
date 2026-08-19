@@ -1,0 +1,42 @@
+# Cloudflare Worker config for the community API.
+#
+# NOT DEPLOYED, AND NOT READY TO BE. Per ADR-011 the community layer ships only
+# after the local product is useful, the shareable artefacts exist, and the
+# consent flow has been reviewed by someone who is not the author. This file
+# exists so that design is reviewable before it is built, which is the opposite
+# order to how this normally goes wrong.
+#
+# To use it later:  cp wrangler.toml.example wrangler.toml
+# `wrangler.toml` is gitignored — it will carry your account id.
+
+name = "ai-observatory-api"
+main = "src/index.js"
+compatibility_date = "2026-08-19"
+
+# Your account id, from the Cloudflare dashboard sidebar. Not a secret, but it
+# identifies you, so the real file stays out of git.
+account_id = "PUT_YOUR_ACCOUNT_ID_HERE"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "ai-observatory"
+database_id = "PUT_YOUR_D1_DATABASE_ID_HERE"   # from `wrangler d1 create ai-observatory`
+
+# The nightly rollup: rebuild yesterday and the day before (two, not one, so a
+# late submission still lands), publish the cohort files, prune facts past 35
+# days. 17:00 UTC is 01:00 in UTC+8, i.e. the quiet end of the target timezone.
+[triggers]
+crons = ["0 17 * * *"]
+
+[vars]
+COHORT_MIN_PARTICIPANTS = "5"
+COHORT_MIN_ACTIVE_DAYS  = "7"
+FACTS_RETENTION_DAYS    = "35"
+
+# Secrets are set with `wrangler secret put NAME`, never written to this file:
+#   OBSERVATORY_HMAC_SECRET   derives uid / auid / email seals. Rotating it
+#                             orphans every stored row; each user's next sync
+#                             rebuilds theirs, so no data is lost — the laptop
+#                             holds the source.
+#   OIDC_GOOGLE_CLIENT_SECRET
+#   OIDC_GITHUB_CLIENT_SECRET

@@ -1,0 +1,86 @@
+name: site
+
+# Verifies the site builds. It does NOT deploy.
+#
+# Deployment is Cloudflare's own Git integration: its default `npx wrangler
+# deploy` runs the [build] command declared in the root wrangler.toml. That
+# split is deliberate — no Cloudflare API token is ever stored in GitHub, so
+# there is no secret to leak, rotate, or scope wrongly.
+#
+# What this workflow buys is a check on pull requests, where Cloudflare's
+# production build never runs: a broken site fails here, in the PR, not after
+# merge.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: build site
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      # Read the real contract out of wrangler.toml rather than restating it.
+      # Drift between what CI builds and what Cloudflare builds is precisely how
+      # the first deploy failure happened, so the values come from one place.
+      - name: Read the deploy contract from wrangler.toml
+        id: cfg
+        run: |
+          python3 - <<'PY' >> "$GITHUB_OUTPUT"
+          import tomllib
+          with open("wrangler.toml", "rb") as fh:
+              cfg = tomllib.load(fh)
+          build = cfg.get("build", {}).get("command", "")
+          assets = cfg.get("assets", {}).get("directory", "")
+          assert build, "wrangler.toml declares no [build] command"
+          assert assets, "wrangler.toml declares no [assets] directory"
+          print(f"build={build}")
+          print(f"assets={assets.lstrip('./').rstrip('/')}")
+          PY
+          echo "resolved from wrangler.toml:"
+          cat "$GITHUB_OUTPUT"
+
+      - name: Build exactly the way Cloudflare will
+        run: sh -c '${{ steps.cfg.outputs.build }}'
+
+      - name: The declared build must produce the declared directory
+        env:
+          ASSETS: ${{ steps.cfg.outputs.assets }}
+        run: |
+          # A mismatch here deploys successfully and serves nothing, which is a
+          # worse failure than a red build because it looks like success.
+          test -d "$ASSETS" || { echo "::error::wrangler.toml points at '$ASSETS', which the build did not create"; exit 1; }
+          test -s "$ASSETS/index.html" || { echo "::error::'$ASSETS' has no index.html"; exit 1; }
+          test -s "$ASSETS/demo/index.html" || { echo "::error::demo dashboard missing from '$ASSETS'"; exit 1; }
+          test -s "$ASSETS/_headers" || { echo "::error::_headers missing from '$ASSETS'"; exit 1; }
+          echo "ok — $ASSETS has index.html, demo/index.html and _headers"
+
+      - name: The published page must make no external requests
+        env:
+          ASSETS: ${{ steps.cfg.outputs.assets }}
+        run: |
+          # The dashboard's core promise is zero external requests. A landing
+          # page that loads a webfont while advertising that would be a bad
+          # look, so it is a build failure rather than a code-review question.
+          if grep -qiE '<(script|link|img)[^>]+(src|href)="https?://' "$ASSETS/index.html"; then
+            echo "::error::$ASSETS/index.html loads a remote asset"
+            grep -inE '<(script|link|img)[^>]+(src|href)="https?://' "$ASSETS/index.html"
+            exit 1
+          fi
+          echo "ok — no remote assets"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: site
+          path: ${{ steps.cfg.outputs.assets }}
+          retention-days: 7
