@@ -20,21 +20,39 @@ CONFIG_PATH = Path(__file__).with_name("topology.json")
 _CFG = None
 
 
+def _prepare(cfg: dict) -> dict:
+    """Expand `~` and pre-sort the roots longest-first so the most specific wins."""
+    cfg = dict(cfg)
+    cfg["_roots"] = sorted(
+        (os.path.expanduser(r).rstrip("/") for r in cfg["code_roots"]),
+        key=len, reverse=True,
+    )
+    cfg["_special"] = sorted(
+        ((os.path.expanduser(k).rstrip("/"), v)
+         for k, v in cfg.get("special_roots", {}).items()),
+        key=lambda kv: -len(kv[0]),
+    )
+    return cfg
+
+
 def config() -> dict:
     global _CFG
     if _CFG is None:
-        cfg = json.loads(CONFIG_PATH.read_text(encoding="utf-8"))
-        cfg["_roots"] = sorted(
-            (os.path.expanduser(r).rstrip("/") for r in cfg["code_roots"]),
-            key=len, reverse=True,
-        )
-        cfg["_special"] = sorted(
-            ((os.path.expanduser(k).rstrip("/"), v)
-             for k, v in cfg["special_roots"].items()),
-            key=lambda kv: -len(kv[0]),
-        )
-        _CFG = cfg
+        _CFG = _prepare(json.loads(CONFIG_PATH.read_text(encoding="utf-8")))
     return _CFG
+
+
+def use(cfg=None) -> None:
+    """Swap the active topology, or reset to `topology.json` when given None.
+
+    Exists because attribution is the one part of the engine whose behaviour
+    depends on the machine it runs on — `~/code` is a different directory for
+    every user and every CI runner. A test that wants a deterministic answer has
+    to state its own roots rather than inherit the host's, and anything
+    embedding the engine needs the same hook.
+    """
+    global _CFG
+    _CFG = None if cfg is None else _prepare(cfg)
 
 
 def split(path):

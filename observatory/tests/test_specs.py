@@ -18,8 +18,24 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent))
 
+import paths as topo                        # noqa: E402
 import pricing                              # noqa: E402
 from collectors.generic import SpecCollector  # noqa: E402
+
+# Attribution is the one part of the engine whose answer depends on the machine
+# it runs on: `~/code` is a different directory for every user and every CI
+# runner. Fixtures therefore carry a fixed absolute path and the test declares
+# the roots that make it meaningful, so the assertion means the same thing
+# everywhere. Reset in main().
+FIXTURE_TOPOLOGY = {
+    "code_roots": ["/home/dev/code"],
+    "special_roots": {},
+    "scratch_prefixes": ["/tmp/"],
+    "worktree_marker": ".worktrees",
+    "incidental_repos": [],
+    "surface_rules": {"*": [["src/*", "src/{1}"]]},
+    "lanes": {"default": "work", "rules": []},
+}
 
 FAILURES = []
 
@@ -77,8 +93,12 @@ def test_example_openai_jsonl():
 
 
 def main():
-    for fn in (test_example_openai_jsonl,):
-        fn()
+    topo.use(FIXTURE_TOPOLOGY)
+    try:
+        for fn in (test_example_openai_jsonl,):
+            fn()
+    finally:
+        topo.use(None)
     print()
     if FAILURES:
         print("%d FAILURE(S): %s" % (len(FAILURES), ", ".join(FAILURES)))
