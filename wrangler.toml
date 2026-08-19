@@ -6,19 +6,26 @@
 # directory that `site/build.py` produces.
 #
 # Cloudflare's Git integration builds and deploys this on every push to the
-# production branch. Two settings have to match it in the dashboard, under
-# Settings -> Build:
+# production branch, and NEEDS NO DASHBOARD CONFIGURATION: the [build] section
+# below runs as part of `npx wrangler deploy`, which is already Cloudflare's
+# default deploy command. Everything the deploy needs is described in this file,
+# so the repo is self-sufficient and a self-hoster gets the same behaviour.
 #
-#   Build command:   python3 site/build.py
-#   Deploy command:  npx wrangler deploy
+# That matters because `site/dist/` is gitignored — it is derived output, it
+# rebuilds in about a second, and committing it would make every content change
+# look like a code change. So something has to build it on the runner. This is
+# that something.
 #
-# Python 3 is preinstalled in Cloudflare's build image, so `site/build.py`
-# runs with no setup step. `site/dist/` is gitignored on purpose — it is
-# derived, rebuilds in about a second, and committing build output makes every
-# content change look like a code change.
+# Python 3 is preinstalled in Cloudflare's build image, so there is no setup
+# step to add.
 
 name = "ai-observatory"
 compatibility_date = "2026-08-19"
+
+# Runs before every deploy, and before `wrangler dev`. This is what produces
+# the directory named under [assets] below.
+[build]
+command = "python3 site/build.py"
 
 [assets]
 directory = "./site/dist"

@@ -58,26 +58,32 @@ It is not a secret, but it identifies you.
 Dashboard → **Workers & Pages** → **Create** → **Connect to Git** → pick
 `ai-observatory`.
 
-Cloudflare builds and deploys this itself. Set these two, under the project's
-**Settings → Build**:
+**That is the whole setup. There is nothing to configure in the dashboard.**
 
-| Setting | Value |
-|---|---|
-| **Build command** | `python3 site/build.py` |
-| **Deploy command** | `npx wrangler deploy` |
+The root [`wrangler.toml`](../../wrangler.toml) describes everything the deploy
+needs:
+
+```toml
+[build]
+command = "python3 site/build.py"     # runs as part of `wrangler deploy`
+
+[assets]
+directory = "./site/dist"             # exactly what that command writes
+```
+
+Cloudflare's default deploy command is already `npx wrangler deploy`, and
+wrangler runs the `[build]` command before deploying — so the repo builds
+itself. There is no `main` in that file: this is a static-assets-only project,
+so no Worker code runs.
 
 Python 3 is preinstalled in Cloudflare's build image, so there is no setup step
 to add.
 
-The rest is already in the repo: the root [`wrangler.toml`](../../wrangler.toml)
-declares `assets.directory = "./site/dist"`, which is exactly what
-`site/build.py` writes. There is no `main` in that file — this is a
-static-assets-only project, so no Worker code runs.
-
-> **If you see `Could not detect a directory containing static files`,** the
-> build command is empty. Cloudflare cloned the repo, built nothing, and found
-> nothing to serve — `site/dist/` is gitignored because it is derived and
-> rebuilds in a second. Set the build command above.
+> **If you see `Could not detect a directory containing static files`:** you are
+> on a commit from before `wrangler.toml` existed, or the project's deploy
+> command was changed away from `npx wrangler deploy`. `site/dist/` is gitignored
+> because it is derived, so something has to build it on the runner — and the
+> `[build]` command above is that something.
 
 ### 1.3 There is no API token to create
 

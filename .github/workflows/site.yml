@@ -30,8 +30,19 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Build the site and the demo dashboard
-        run: python3 site/build.py
+      - name: Build exactly the way Cloudflare will
+        run: |
+          # Run the command wrangler.toml declares, not a hardcoded copy of it.
+          # If the two ever drift, Cloudflare deploys something this job never
+          # built — which is how the first deploy failure happened.
+          cmd=$(python3 -c "
+          import re
+          m = re.search(r'\[build\][^\[]*command\s*=\s*"([^"]+)"', open('wrangler.toml').read(), re.S)
+          print(m.group(1) if m else '')
+          ")
+          test -n "$cmd" || { echo "::error::wrangler.toml declares no [build] command"; exit 1; }
+          echo "wrangler.toml [build] command = $cmd"
+          sh -c "$cmd"
 
       - name: The published page must make no external requests
         run: |
@@ -47,7 +58,7 @@ jobs:
           test -s site/dist/_headers || { echo "::error::_headers missing"; exit 1; }
           echo "ok — no remote assets, demo rendered, headers present"
 
-      - name: The assets directory must match wrangler.toml
+      - name: The declared build must actually produce the declared directory
         run: |
           # Cloudflare deploys whatever `assets.directory` points at. If that
           # ever drifts from what site/build.py writes, the deploy succeeds and

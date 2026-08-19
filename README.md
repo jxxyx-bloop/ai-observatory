@@ -244,7 +244,9 @@ python3 site/build.py     # -> site/dist/  (landing page + live demo dashboard)
 
 CI only **verifies** that the site builds — it never deploys, so there are no
 secrets in GitHub and nothing to leak. Deployment is Cloudflare's own Git
-integration, which builds from the root [`wrangler.toml`](wrangler.toml).
+integration, and the root [`wrangler.toml`](wrangler.toml) declares both the
+build command and the output directory, so **there is nothing to configure in
+any dashboard**.
 
 Self-hosting the community layer is a first-class path, not an enterprise tier —
 [`server/schema.sql`](server/schema.sql) applies unchanged to a plain
