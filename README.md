@@ -33,18 +33,89 @@ cd ai-observatory/observatory
 
 # See the whole product on 60 days of synthetic data, right now
 python3 observe.py demo digest report
-
-# Or run it on your own usage
-python3 observe.py all
 ```
 
-Then open `dist/observatory.html`. Python 3 standard library only — **no
-dependencies, no install, no build step.**
+Open `dist/observatory.html`. Python 3 standard library only — **no dependencies,
+no install, no build step, no account, no network.**
 
 > `demo` exists because every tool in this category has the same problem: the
 > dashboard is the pitch, and you can't see it until you have weeks of your own
 > data. This fills that gap deterministically, so everyone sees the same numbers
 > and can argue about them in an issue.
+
+### Your first five minutes
+
+**1. Run it on your own usage.**
+
+```bash
+rm -rf ../data ../dist        # clear the demo data first — it must not mix with yours
+python3 observe.py all        # sync -> digest -> report
+```
+
+`observe.py demo` refuses to run once real events exist, but the reverse is on
+you: clear `data/` before your first real sync.
+
+**2. Tell it where your repos live.** Open
+[`topology.json`](observatory/topology.json) and put your actual code
+directories in `code_roots`. This is the one edit worth making on day one —
+without it, work shows as `unattributed` rather than by project.
+
+```bash
+python3 observe.py sync --full digest report   # --full is needed after a topology change
+```
+
+**3. Set three things in [`settings.json`](observatory/settings.json).**
+
+| Field | Set it to |
+|---|---|
+| `timezone_offset_hours` | `8` for SG/CN/MY/PH/HK, `7` for ID/TH/VN, `9` for JP/KR, `5.5` for IN |
+| `currency` | `IDR`, `VND`, `THB`, `PHP`, `MYR`, `SGD`, `CNY` … or leave `USD` |
+| `plan` | your subscription id from [`plans.json`](observatory/plans.json), or `none` if you pay per token |
+
+Setting `plan` is what turns the dollar figure from a number you don't
+recognise into *"your $18 plan returned 23× what you paid."*
+
+**4. Read the top finding and do something about it.**
+
+```bash
+python3 observe.py insights
+```
+
+The list is sorted most-material first. If the top item is `info`, your usage
+is healthy and the tool will say so rather than inventing a problem.
+
+**5. Make it a habit.** A daily cron costs nothing to run (zero tokens, ~0.2 s):
+
+```cron
+0 9 * * *  cd /path/to/ai-observatory/observatory && python3 observe.py all
+```
+
+### What it can read
+
+Collection is read-only and costs zero tokens — it parses transcripts these
+tools already wrote to disk.
+
+| Tool | Reads from |
+|---|---|
+| Claude Code | `~/.claude/projects/**/*.jsonl` |
+| Codex | `~/.codex/sessions/**/*.jsonl` |
+| Kimi Code | `~/.kimi-code/sessions/**/wire.jsonl` |
+| Antigravity | `~/.gemini/antigravity/brain/**` |
+| Anything else | a [declarative spec](observatory/collectors/specs/README.md) — one JSON file |
+
+**Your tool missing?** If it writes JSONL with token counts on a record, adding
+it needs no Python — see [CONTRIBUTING.md](CONTRIBUTING.md). You have the
+transcripts to test against, which the maintainers do not.
+
+### If something looks wrong
+
+| Symptom | Cause |
+|---|---|
+| `no events found` | None of the paths above exist. Check with `ls ~/.claude/projects`. |
+| Everything is `unattributed` | `code_roots` in `topology.json` doesn't match where your repos are. |
+| Repo names look wrong after editing `topology.json` | Attribution is baked in at sync time — re-run with `sync --full`. |
+| Costs look implausible | Check `_verified_on` in [`pricing.json`](observatory/pricing.json). Rates go stale; correcting one is a one-line PR. |
+| A finding seems wrong | That's a bug worth an issue — credibility is the whole product. |
 
 ## Commands
 
@@ -159,6 +230,27 @@ before you consent.
 
 Editing `topology.json` needs `observe.py sync --full` to take effect.
 
+## Deploy your own
+
+The whole local product needs no server. If you want the landing page and a
+hosted demo — or a private community instance under your own jurisdiction —
+[`docs/setup/DEPLOY.md`](docs/setup/DEPLOY.md) is the walkthrough, and
+[ADR-015](docs/adr/ADR-015-Hosting-And-Data-Residency.md) is why the stack is
+what it is (about **$1/month at launch, ~$6/month at 100k users**).
+
+```bash
+python3 site/build.py     # -> site/dist/  (landing page + live demo dashboard)
+```
+
+The deploy workflow is written so it **cannot break a commit made before you
+have a Cloudflare account**: the build always runs, the deploy step skips with a
+notice until the secrets exist.
+
+Self-hosting the community layer is a first-class path, not an enterprise tier —
+[`server/schema.sql`](server/schema.sql) applies unchanged to a plain
+`sqlite3` file. For anyone under Indonesia's PDP Law, Vietnam's PDPL, Thailand's
+PDPA or China's PIPL, that may be the only acceptable option.
+
 ## Tests
 
 ```bash
@@ -197,9 +289,17 @@ Aider, OpenCode, Goose, Zed.
 
 ## Status
 
-Early. The engine, dashboard, detectors and privacy boundary work and are
-tested. The community layer is specified and not yet built. See
-[ROADMAP.md](docs/ROADMAP.md).
+Early, and honest about which parts are which.
+
+| | |
+|---|---|
+| Engine, collectors, dashboard, 15 detectors | **working, tested** |
+| Peak/off-peak pricing, plan value, currency | **working, tested** |
+| Landing page + hosted demo, deploy pipeline | **working** |
+| Community layer (accounts, cohorts, leaderboard) | **specified, not built** — `observe.py share` builds and audits a payload locally and has no network code path at all |
+
+See [ROADMAP.md](docs/ROADMAP.md) and
+[Known-Limitations](docs/context/Known-Limitations.md).
 
 ## Licence
 

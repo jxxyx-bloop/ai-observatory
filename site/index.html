@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<title>AI Observatory — know what to change about your AI usage</title>
+<meta name="description" content="Local-first AI coding usage analytics that tells you what to change, priced against your plan, your vendor's clock and your currency. Zero tokens, no account, no network.">
+<style>/*CSS*/</style>
+</head><body>
+
+<nav>
+  <span class="brand">AI&nbsp;Observatory</span>
+  <a href="#how">How it works</a>
+  <a href="#different">What's different</a>
+  <a href="#privacy">Privacy</a>
+  <a href="demo/" >Live demo</a>
+  <a href="https://github.com/jxxyx-bloop/ai-observatory" rel="noopener">GitHub</a>
+</nav>
+
+<div class="wrap">
+
+  <header class="hero">
+    <h1>Know what to <em>change</em> about your AI usage.</h1>
+    <p class="lede">Every other token tracker is an <strong>odometer</strong> — it tells you
+      how much you spent. This one is a <strong>coach</strong>: it reads the transcripts your
+      coding agent already wrote to disk and turns them into ranked, evidence-backed changes
+      with a number attached.</p>
+    <p class="sub">Built for how developers in Southeast Asia and China actually buy AI:
+      flat monthly plans, tokens priced by the hour, and a currency that isn't the dollar.
+      Collection costs <strong>zero tokens</strong> — no API key, no proxy, no account,
+      no network.</p>
+
+    <div class="cta">
+      <a class="btn primary" href="demo/">See the live demo →</a>
+      <a class="btn ghost" href="https://github.com/jxxyx-bloop/ai-observatory" rel="noopener">Star on GitHub</a>
+    </div>
+
+    <pre class="run"><span class="c"># 60 days of synthetic usage, then the whole dashboard — no data of your own needed</span>
+<span class="p">$</span> git clone https://github.com/jxxyx-bloop/ai-observatory
+<span class="p">$</span> cd ai-observatory/observatory
+<span class="p">$</span> python3 observe.py demo digest report
+
+<span class="c"># or run it against your own transcripts</span>
+<span class="p">$</span> python3 observe.py all</pre>
+    <p class="sub">Python 3 standard library only. No dependencies, no install, no build step.</p>
+  </header>
+
+  <section id="how">
+    <h2>What a finding looks like</h2>
+    <div class="finding">
+      <div class="head">
+        <span class="sev">HIGH</span>
+        <span class="ttl">You are buying tokens at peak rates you did not have to pay</span>
+        <span class="save">~$34/mo</span>
+      </div>
+      <p>61.4% of your spend on time-priced vendors (deepseek, zhipu) landed inside a peak
+        window, where the same tokens cost up to twice the off-peak rate. Over this period
+        that timing cost about $68.20 more than running the identical work off-peak.</p>
+      <p class="act"><b>→</b> Peak windows are published and narrow. Anything that does not
+        need you watching — test generation, migrations, doc sweeps, bulk refactors — can be
+        queued for an off-peak hour at no cost to you. Interactive work is worth the
+        premium; a batch job is not.</p>
+    </div>
+    <p class="sub">Fifteen deterministic detectors. Every finding carries the evidence
+      behind it, an action, a confidence level, and — where it can be defended — what a fix
+      is worth per month. A materiality gate demotes anything under $15/month, so the top of
+      the list always means something. <strong>Healthy usage is reported as healthy</strong>
+      — a tool that invents problems to look useful is a tool you stop believing.</p>
+  </section>
+
+  <section id="different">
+    <h2>Why this is not another token counter</h2>
+    <div class="grid">
+      <div class="card">
+        <span class="tag">Peak / off-peak</span>
+        <h3>Priced on your vendor's clock</h3>
+        <p>DeepSeek bills full rate 01:00–04:00 and 06:00–10:00 UTC and half otherwise;
+          GLM peaks 14:00–18:00 UTC+8 on weekdays only. For anyone in UTC+7 to +9 that
+          second window <em>is</em> the working afternoon. No other open-source tracker
+          models this.</p>
+      </div>
+      <div class="card">
+        <span class="tag">Plan value</span>
+        <h3>Not a fake dollar figure</h3>
+        <p>On an $18/month plan, "you spent $412" is a shadow price, not a bill. The number
+          that matters is <strong>23× return</strong> — or, when it goes the other way,
+          "you are paying for headroom you never use."</p>
+      </div>
+      <div class="card">
+        <span class="tag">Cache economics</span>
+        <h3>Per-vendor, not per-convention</h3>
+        <p>The 0.1× cache-hit discount is an Anthropic convention, not a law — Kimi K2.6
+          sits near 0.074×. Cache is where the money is, so a wrong multiplier misprices
+          the most important number on the page.</p>
+      </div>
+      <div class="card">
+        <span class="tag">Local currency</span>
+        <h3>Thirteen of them</h3>
+        <p>IDR, VND, THB, PHP, MYR and more — framed against a median local day rate,
+          because <code>$412</code> means something very different in Jakarta than in
+          San Francisco.</p>
+      </div>
+      <div class="card">
+        <span class="tag">Contribution</span>
+        <h3>Your tool is a JSON file away</h3>
+        <p>A provider is a declarative spec plus a fixture — no engine code. If you use
+          Lingma, Qwen Code, CodeBuddy or Comate, you are the only person who can add it
+          correctly, and it costs you one file.</p>
+      </div>
+      <div class="card">
+        <span class="tag">Community</span>
+        <h3>Ranked on efficiency, never spend</h3>
+        <p>Existing leaderboards rank total tokens burned — the top of that board is
+          whoever wasted the most. We rank cache reuse, tokens per change and peak
+          discipline. Improvable, and fair across budgets.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="privacy">
+    <h2>Privacy is a mechanism here, not a promise</h2>
+    <p class="lede" style="font-size:16px">Nothing leaves your machine unless you edit a
+      file to say so.</p>
+    <ul class="plain">
+      <li><b>Never stored, anywhere:</b> prompt text, completion text, thinking content,
+        file contents, tool argument values, shell commands, absolute paths.</li>
+      <li><b>Enforced at the parse boundary</b>, not by a later redaction step — a leak past
+        it is a bug, not a policy question.</li>
+      <li><b>The rendered dashboard makes zero external requests.</b> No CDN, no fonts,
+        no analytics. So does this page.</li>
+      <li><b>If you ever opt in to the community layer</b>, the payload is 633 bytes of
+        bucket indices — no repository name, no session id, no identifier, no raw value.
+        <code>observe.py share</code> prints the whole thing and has no network code path.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>How it compares</h2>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>&nbsp;</th><th>Typical token tracker</th><th>AI Observatory</th></tr></thead>
+        <tbody>
+          <tr><td>Reports what you spent</td><td class="yes">Yes</td><td class="yes">Yes</td></tr>
+          <tr><td>Tells you what to change</td><td class="no">—</td><td class="yes">Fifteen detectors, with evidence</td></tr>
+          <tr><td>Peak / off-peak pricing</td><td class="no">Flat rate for every vendor</td><td class="yes">Priced at the rate in force</td></tr>
+          <tr><td>Plan value vs. metered cost</td><td class="no">—</td><td class="yes">Return multiple, or "downgrade"</td></tr>
+          <tr><td>Local currency</td><td class="no">Usually USD only</td><td class="yes">13, with local-rate framing</td></tr>
+          <tr><td>Leaderboard ranks</td><td class="no">Total tokens burned</td><td class="yes">Efficiency</td></tr>
+          <tr><td>Runs with no account</td><td class="yes">Usually</td><td class="yes">Always — forever</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <h2>Start here</h2>
+    <div class="grid">
+      <div class="card">
+        <h3><a href="demo/">Live demo dashboard</a></h3>
+        <p>The real thing, rendered from 60 days of synthetic usage. Same file you get
+          locally.</p>
+      </div>
+      <div class="card">
+        <h3><a href="https://github.com/jxxyx-bloop/ai-observatory#quick-start" rel="noopener">Quick start</a></h3>
+        <p>Three commands. No dependencies, no account.</p>
+      </div>
+      <div class="card">
+        <h3><a href="https://github.com/jxxyx-bloop/ai-observatory/blob/main/README.zh-Hans.md" rel="noopener">简体中文文档</a></h3>
+        <p>完整的中文说明 —— 快速开始、隐私说明与贡献指南。</p>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <span>MIT licensed. Local-first, zero tokens, no account.</span>
+    <span class="sp"><a href="https://github.com/jxxyx-bloop/ai-observatory" rel="noopener">GitHub</a></span>
+    <a href="https://github.com/jxxyx-bloop/ai-observatory/tree/main/docs/strategy" rel="noopener">Strategy docs</a>
+    <a href="https://github.com/jxxyx-bloop/ai-observatory/blob/main/docs/context/Known-Limitations.md" rel="noopener">Known limitations</a>
+  </footer>
+</div>
+</body></html>
