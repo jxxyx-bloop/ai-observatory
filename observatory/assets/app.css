@@ -120,6 +120,9 @@ svg{display:block;width:100%;height:auto;max-width:100%}
 #calendar rect[data-day]{cursor:pointer}
 #calendar rect[data-day]:hover{stroke:var(--ink);stroke-width:1.5}
 .axis{font-size:10.5px;fill:var(--faint)}
+/* Seven weekday labels on a 16px pitch: one notch down so the rows stay
+   distinct, and tabular so Sun/Mon/Tue do not jitter against each other. */
+.axis.dow{font-size:9.5px;letter-spacing:.01em}
 /* A day-per-column chart cannot shrink to a phone without its labels going
    sub-legible. Below the viewBox width it scrolls instead, at full type size. */
 /* A scroll container still has to be told it may not exceed its parent.

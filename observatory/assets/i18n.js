@@ -43,6 +43,7 @@ var LOCALES = [
 var T = {};
 
 T["en"] = {
+  "m_none": "None of the vendors you used price by the hour, so no hour here cost more than another.",
   "m_peak": "PEAK — full rate",
   "m_at_peak": "at peak rate",
   "m_off": "off-peak",
@@ -94,6 +95,7 @@ T["en"] = {
 };
 
 T["zh-Hans"] = {
+  "m_none": "你用到的厂商都不按时段计价，所以这里没有哪个小时比另一个更贵。",
   "m_peak": "高峰 — 全价",
   "m_at_peak": "按高峰价",
   "m_off": "非高峰",
@@ -145,6 +147,7 @@ T["zh-Hans"] = {
 };
 
 T["zh-Hant"] = {
+  "m_none": "你用到的廠商都不按時段計價，所以這裡沒有哪個小時比另一個更貴。",
   "m_peak": "尖峰 — 全價",
   "m_at_peak": "按尖峰價",
   "m_off": "離峰",
@@ -196,6 +199,7 @@ T["zh-Hant"] = {
 };
 
 T["ja"] = {
+  "m_none": "あなたが使った提供元はいずれも時間帯課金ではないので、ここではどの時間も他より高くはありません。",
   "m_peak": "ピーク — 全額",
   "m_at_peak": "ピーク料金",
   "m_off": "オフピーク",
@@ -247,6 +251,7 @@ T["ja"] = {
 };
 
 T["ko"] = {
+  "m_none": "사용하신 제공사 중 시간대 과금을 하는 곳이 없어, 여기서는 어떤 시간도 다른 시간보다 비싸지 않습니다.",
   "m_peak": "피크 — 정가",
   "m_at_peak": "피크 요금",
   "m_off": "비피크",
@@ -298,6 +303,7 @@ T["ko"] = {
 };
 
 T["hi"] = {
+  "m_none": "आपने जिन वेंडरों का इस्तेमाल किया उनमें कोई समय-आधारित दर नहीं लेता, इसलिए यहाँ कोई घंटा दूसरे से महँगा नहीं पड़ा।",
   "m_peak": "पीक — पूरी दर",
   "m_at_peak": "पीक दर पर",
   "m_off": "ऑफ़-पीक",
@@ -349,6 +355,7 @@ T["hi"] = {
 };
 
 T["id"] = {
+  "m_none": "Tidak ada penyedia yang Anda pakai memasang tarif per jam, jadi di sini tidak ada jam yang lebih mahal dari jam lain.",
   "m_peak": "PUNCAK — tarif penuh",
   "m_at_peak": "tarif puncak",
   "m_off": "luar puncak",
@@ -400,6 +407,7 @@ T["id"] = {
 };
 
 T["vi"] = {
+  "m_none": "Không nhà cung cấp nào bạn dùng tính giá theo giờ, nên ở đây không giờ nào đắt hơn giờ nào.",
   "m_peak": "CAO ĐIỂM — giá đầy đủ",
   "m_at_peak": "giá cao điểm",
   "m_off": "thấp điểm",
@@ -451,6 +459,7 @@ T["vi"] = {
 };
 
 T["th"] = {
+  "m_none": "ผู้ให้บริการที่คุณใช้ไม่มีรายใดคิดราคาตามช่วงเวลา ที่นี่จึงไม่มีชั่วโมงไหนแพงกว่าชั่วโมงอื่น",
   "m_peak": "พีค — ราคาเต็ม",
   "m_at_peak": "ราคาช่วงพีค",
   "m_off": "นอกพีค",
@@ -502,6 +511,7 @@ T["th"] = {
 };
 
 T["ms"] = {
+  "m_none": "Tiada pembekal yang anda guna mengenakan kadar mengikut jam, jadi di sini tiada jam yang lebih mahal daripada jam lain.",
   "m_peak": "PUNCAK — kadar penuh",
   "m_at_peak": "kadar puncak",
   "m_off": "luar puncak",
@@ -553,6 +563,7 @@ T["ms"] = {
 };
 
 T["fil"] = {
+  "m_none": "Walang provider na ginamit mo ang naniningil kada oras, kaya walang oras dito na mas mahal kaysa sa iba.",
   "m_peak": "PEAK — buong presyo",
   "m_at_peak": "nasa peak rate",
   "m_off": "off-peak",
@@ -604,6 +615,7 @@ T["fil"] = {
 };
 
 T["pt-BR"] = {
+  "m_none": "Nenhum fornecedor que você usou cobra por horário, então aqui nenhuma hora custou mais que outra.",
   "m_peak": "PICO — tarifa cheia",
   "m_at_peak": "na tarifa de pico",
   "m_off": "fora de pico",
@@ -655,6 +667,7 @@ T["pt-BR"] = {
 };
 
 T["es"] = {
+  "m_none": "Ninguno de los proveedores que usaste cobra por horas, así que aquí ninguna hora costó más que otra.",
   "m_peak": "PUNTA — tarifa completa",
   "m_at_peak": "a tarifa punta",
   "m_off": "valle",

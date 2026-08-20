@@ -48,6 +48,23 @@ turns land at peak, and which off-peak hours the reader *already* works in.
 The second is the actionable half. "Move your batch work" is advice; "you
 already work at 12:00, 18:00 and 19:00, and those are half price" is a plan.
 
+**The overlay is a mask over (weekday, hour), not over hour.** GLM peaks
+14:00–18:00 UTC+8 on weekdays *only*; weekends are entirely off-peak. A window
+treated as a flat set of hours ringed Saturday and Sunday cells that were never
+charged a premium — a false positive, which is the one class of error this
+product cannot afford. The timezone shift moves the weekday as well as the
+hour: 23:00 UTC Monday is 07:00 Tuesday at UTC+8.
+
+**And it only appears if the reader uses a time-priced vendor.** Most people
+use none. Drawing DeepSeek's window over their week invents a problem they
+cannot have. When no vendor in the current filter prices by the hour the panel
+becomes plain "Working hours" — no bands, no rings, no phase in the tooltips —
+and says so: *"None of the vendors you used price by the hour, so no hour here
+cost more than another."* That is a useful finding in its own right, and it is
+one the reader can act on the day they add a vendor that does. The two states
+swap on any filter change, so narrowing to a single provider answers "does this
+apply to me" directly.
+
 This required the peak schedules to travel inside the digest, and the engine to
 record which *providers* bill on each window — a window is keyed by vendor
 (`zhipu`) and an event carries a provider (`glm`), and nothing downstream could
@@ -63,6 +80,19 @@ teach.
 It sits with the daily chart rather than in a section of its own because it is
 the same question at a different zoom, and splitting them would make the reader
 choose between two answers to "when do I work" before knowing they differ.
+
+**All seven weekdays are labelled.** GitHub labels only Mon/Wed/Fri, because at
+10px squares seven labels collide. That trade buys tidiness and charges the
+reader for it: they count rows to decide whether a dark square is a Tuesday or
+a Thursday, which is the question the chart exists to answer. We spend three
+more pixels of pitch and label all seven.
+
+**Month boundaries get a hairline, which GitHub does not have.** GitHub relies
+on the label row alone — fine at a glance, poor when you are trying to say
+"that spike was in July". Label and rule anchor to the same week column, so
+they cannot disagree; both mark the first column containing a day of the new
+month, which is an approximation, since a month starts mid-week six times in
+seven, and is the same approximation the label was already making.
 
 ### 4. Not 3D
 
@@ -92,11 +122,12 @@ holds one line at realistic widths, having dropped a caption column that cost
 digest carries the window table. Both are small; the page is still one
 self-contained file with no network calls.
 
-**A limit worth stating.** The meter marks an hour as peak if *any* time-priced
+**A limit worth stating.** The meter marks a cell as peak if *any* time-priced
 vendor in the current filter charges peak then. With two such vendors whose
 windows differ, a ringed cell means "somebody charged you extra here", not
 "everything in this cell was expensive". The tooltip names which vendors, which
 is the honest resolution; a per-vendor grid would be four charts nobody reads.
+Filtering to one provider collapses the ambiguity entirely.
 
 ## Revisit when
 

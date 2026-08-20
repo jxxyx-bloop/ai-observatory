@@ -153,9 +153,12 @@ var l=localStorage.getItem("observatory-lang");if(l)r.setAttribute("data-lang",l
 
   <section id="timing"><h2 data-i18n="s_timing">When you work, and what it costs</h2>
 
-    <div class="panel"><h2 data-i18n="s_meter">Your week against the meter</h2>
-      <p class="sub note" data-i18n="n_meter">Your own hours, with every vendor's peak
-        window drawn over them. Red rings mark work you are paying peak rates for.</p>
+    <!-- Heading and hint are written by draw(), not by the translator: which of
+         the two this panel is depends on whether the reader uses a time-priced
+         vendor at all. -->
+    <div class="panel"><h2 id="meterTitle">Your week against the meter</h2>
+      <p class="sub note" id="meterHint">Your own hours, with every vendor's peak
+        window drawn over them.</p>
       <div id="meter"></div>
       <p class="sub foot" id="meterNote"></p>
     </div>

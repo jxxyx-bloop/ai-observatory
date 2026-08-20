@@ -313,41 +313,61 @@ function dayAxis(days, L, step, base, PH) {
    not already carry, and would make neighbouring cells occlude each other —
    the comparison this chart exists to support. */
 function peakHoursSet(F) {
-  // Which local hours are peak, for the vendors actually present in the
-  // current filter. A window nobody uses is not a finding, it is noise.
+  /* A 7x24 mask of which of YOUR local hours are peak-priced, built only from
+     the vendors present in the current filter.
+
+     Two things this must get right, and an earlier version got neither:
+
+     1. **Only vendors you use.** Most people never touch a time-priced model.
+        Drawing DeepSeek's window over their week would invent a problem they
+        cannot have — and the honest answer, "no hour you worked cost more than
+        another", is itself useful.
+     2. **Weekdays are part of the window.** GLM peaks 14:00-18:00 UTC+8 on
+        weekdays *only*; weekends are entirely off-peak. Treating the window as
+        a plain set of hours ringed Saturday and Sunday cells that were never
+        charged a premium — the exact false positive this product cannot
+        afford. Hence a mask over (weekday, hour), not over hour alone. */
   var wins = D.windows || {}, tz = Number(CUR.tz_offset_hours || 0);
   var used = {};
   agg(D.cube, CUBE, F, ["provider"]).forEach(function (r) { used[r.provider] = true; });
 
-  var hours = {}, vendors = [];
+  var mask = [], vendors = [];
+  for (var i = 0; i < 7; i++) mask.push(new Array(24).fill(null));
+
   Object.keys(wins).forEach(function (name) {
     var w = wins[name];
-    // The engine already resolved which providers bill on this window. Matching
-    // on the vendor name here would silently drop GLM, whose events carry
-    // provider "glm" against a window keyed to vendor "zhipu".
-    var on = (w.providers || []).some(function (p) { return used[p]; });
-    if (!on) return;
-    (w.providers || []).forEach(function (p) {
-      if (vendors.indexOf(p) < 0) vendors.push(p);
-    });
+    // The engine resolved which providers bill on this window. Matching on the
+    // vendor name here would silently drop GLM, whose events carry provider
+    // "glm" against a window keyed to vendor "zhipu".
+    var mine = (w.providers || []).filter(function (p) { return used[p]; });
+    if (!mine.length) return;
+    mine.forEach(function (p) { if (vendors.indexOf(p) < 0) vendors.push(p); });
+
+    // `days` are UTC weekdays; absent means every day.
+    var days = w.days && w.days.length ? w.days : [0, 1, 2, 3, 4, 5, 6];
     (w.peak_utc || []).forEach(function (pair) {
       for (var h = pair[0]; h < pair[1]; h++) {
-        // Fractional offsets (UTC+5:30) shift the boundary; the hour a turn is
-        // bucketed into is the one that decides its price, so round the same
-        // way the pricing does — down.
-        var local = ((Math.floor(h + tz)) % 24 + 24) % 24;
-        hours[local] = (hours[local] || []);
-        (w.providers || []).forEach(function (p) {
-          if (used[p] && hours[local].indexOf(p) < 0) hours[local].push(p);
+        days.forEach(function (d) {
+          // A timezone shift moves the weekday as well as the hour: 23:00 UTC
+          // Monday is 07:00 Tuesday at UTC+8. Floor, because the hour a turn
+          // is bucketed into is the one that decides its price.
+          var shifted = Math.floor(h + tz);
+          var lh = ((shifted % 24) + 24) % 24;
+          var ld = ((d + Math.floor(shifted / 24)) % 7 + 7) % 7;
+          mask[ld][lh] = (mask[ld][lh] || []);
+          mine.forEach(function (p) {
+            if (mask[ld][lh].indexOf(p) < 0) mask[ld][lh].push(p);
+          });
         });
       }
     });
   });
-  return {hours: hours, vendors: vendors, days: null};
+  return {mask: mask, vendors: vendors};
 }
 
 function meter(F) {
   var pk = peakHoursSet(F);
+  var hasPeak = pk.vendors.length > 0;
   var grid = [], total = 0;
   for (var w = 0; w < 7; w++) grid.push(new Array(24).fill(0));
   agg(D.hours, HOURS, F, ["date", "hour"]).forEach(function (r) {
@@ -356,43 +376,59 @@ function meter(F) {
     grid[parse(r.date).getUTCDay()][h] += r.turns;
     total += r.turns;
   });
-  if (!total) return {svg: '<p class="empty">Nothing in this range.</p>', note: ""};
+  if (!total) {
+    return {svg: '<p class="empty">Nothing in this range.</p>', note: "",
+            hasPeak: false};
+  }
 
   var peak = 1, inPeak = 0;
   for (var a = 0; a < 7; a++) for (var b = 0; b < 24; b++) {
     if (grid[a][b] > peak) peak = grid[a][b];
-    if (pk.hours[b]) inPeak += grid[a][b];
+    if (pk.mask[a][b]) inPeak += grid[a][b];
   }
 
-  var W = 760, L = 38, TOP = 34, CH = 20, GAP = 4, cw = (W - L - 10) / 24;
+  var W = 760, L = 38, TOP = hasPeak ? 34 : 20, CH = 20, GAP = 4;
+  var cw = (W - L - 10) / 24;
   var H = TOP + 7 * (CH + GAP) + 34;
   var s = '<svg viewBox="0 0 ' + W + ' ' + H + '" role="img" '
-    + 'preserveAspectRatio="xMinYMin meet" aria-label="Turns by weekday and hour, '
-    + 'with peak-priced hours marked">';
+    + 'preserveAspectRatio="xMinYMin meet" aria-label="'
+    + (hasPeak ? "Turns by weekday and hour, with peak-priced hours marked"
+               : "Turns by weekday and hour") + '">';
 
-  // Peak columns first, behind everything: a band the eye reads as "the
-  // expensive part of the day" before it reads any individual cell.
-  var bandTop = TOP - 16, bandH = 7 * (CH + GAP) + 14;
-  Object.keys(pk.hours).forEach(function (h) {
-    s += '<rect x="' + (L + h * cw).toFixed(1) + '" y="' + bandTop + '" width="'
-      + Math.max(1, cw - 1.5).toFixed(1) + '" height="' + bandH + '" rx="4" '
-      + 'fill="var(--high)" opacity="0.10"/>';
-  });
-  s += '<text x="' + L + '" y="' + (bandTop - 6) + '" class="axis" '
-    + 'fill="var(--high)">' + esc(t18("m_peak", "PEAK — full rate") + " · "
-    + pk.vendors.join(", ")) + "</text>";
+  if (hasPeak) {
+    // Tinted per cell rather than as a full-height column: GLM's window is
+    // weekdays only, so a column band would wash Saturday and Sunday in a
+    // premium they were never charged. Adjacent tints touch, so where a window
+    // does run all week it still reads as one band.
+    for (var d0 = 0; d0 < 7; d0++) {
+      for (var h0 = 0; h0 < 24; h0++) {
+        if (!pk.mask[d0][h0]) continue;
+        s += '<rect x="' + (L + h0 * cw - 0.75).toFixed(1) + '" y="'
+          + (TOP + d0 * (CH + GAP) - 2) + '" width="' + (cw + 0.5).toFixed(1)
+          + '" height="' + (CH + 4) + '" fill="var(--high)" opacity="0.10"/>';
+      }
+    }
+    s += '<text x="' + L + '" y="' + (TOP - 12) + '" class="axis" '
+      + 'fill="var(--high)">' + esc(t18("m_peak", "PEAK — full rate") + " · "
+      + pk.vendors.join(", ")) + "</text>";
+  }
 
   for (var w2 = 0; w2 < 7; w2++) {
     var y = TOP + w2 * (CH + GAP);
     s += '<text x="' + (L - 8) + '" y="' + (y + CH / 2 + 3.5).toFixed(1)
       + '" text-anchor="end" class="axis">' + DOW[w2] + "</text>";
     for (var h2 = 0; h2 < 24; h2++) {
-      var v = grid[w2][h2], x = L + h2 * cw, hot = !!pk.hours[h2];
+      var v = grid[w2][h2], x = L + h2 * cw, hot = pk.mask[w2][h2];
       var op = v ? Math.max(0.16, v / peak).toFixed(2) : "1";
       var tip = DOW[w2] + " " + String(h2).padStart(2, "0") + ":00 " + CUR.tz_label
-        + " — " + num(v) + " turns"
-        + (hot ? " · " + t18("m_at_peak", "at peak rate") + " (" + pk.hours[h2].join(", ") + ")"
-               : " · " + t18("m_off", "off-peak"));
+        + " — " + num(v) + " turns";
+      // No phase suffix at all when nothing you use is time-priced: labelling
+      // every cell "off-peak" implies a peak somewhere that does not exist.
+      if (hasPeak) {
+        tip += hot
+          ? " · " + t18("m_at_peak", "at peak rate") + " (" + hot.join(", ") + ")"
+          : " · " + t18("m_off", "off-peak");
+      }
       s += '<rect class="heatcell" data-tt="' + esc(tip) + '" x="' + x.toFixed(1)
         + '" y="' + y.toFixed(1) + '" width="' + Math.max(1, cw - 1.5).toFixed(1)
         + '" height="' + CH + '" rx="3" fill="' + (v ? "var(--accent)" : "var(--track)")
@@ -415,18 +451,24 @@ function meter(F) {
   s += '<text x="' + (W - 4) + '" y="' + by.toFixed(1) + '" text-anchor="end" '
     + 'class="axis">' + esc(CUR.tz_label) + "</text></svg>";
 
-  // The number that makes the picture matter, and the hours to move work to:
-  // quiet enough to be cheap, close enough to when you already work.
-  var pct = pctOf(inPeak, total);
-  var byHour = new Array(24).fill(0);
-  for (var c = 0; c < 7; c++) for (var d = 0; d < 24; d++) byHour[d] += grid[c][d];
-  var offNeighbours = [];
-  for (var e = 0; e < 24; e++) {
-    if (pk.hours[e] || !byHour[e]) continue;
-    offNeighbours.push({h: e, v: byHour[e]});
+  if (!hasPeak) {
+    // Worth saying out loud rather than leaving a plain grid to be read as a
+    // missing feature.
+    return {svg: s, hasPeak: false,
+            note: t18("m_none", "None of the vendors you used price by the hour, "
+                      + "so no hour here cost more than another.")};
   }
-  offNeighbours.sort(function (m, n) { return n.v - m.v; });
-  var best = offNeighbours.slice(0, 3).sort(function (m, n) { return m.h - n.h; })
+
+  var pct = pctOf(inPeak, total);
+  var byHour = new Array(24).fill(0), offHour = new Array(24).fill(0);
+  for (var c = 0; c < 7; c++) for (var d = 0; d < 24; d++) {
+    byHour[d] += grid[c][d];
+    if (!pk.mask[c][d]) offHour[d] += grid[c][d];
+  }
+  var best = [];
+  for (var e = 0; e < 24; e++) if (offHour[e]) best.push({h: e, v: offHour[e]});
+  best.sort(function (m, n) { return n.v - m.v; });
+  best = best.slice(0, 3).sort(function (m, n) { return m.h - n.h; })
     .map(function (o) { return String(o.h).padStart(2, "0") + ":00"; });
 
   var note = t18("m_share", "%P% of your turns on time-priced vendors land in a peak window.")
@@ -435,7 +477,7 @@ function meter(F) {
     note += " " + t18("m_move", "You already work at %H% — those hours are off-peak.")
       .replace("%H%", best.join(", "));
   }
-  return {svg: s, note: note};
+  return {svg: s, note: note, hasPeak: true};
 }
 
 /* ---- the long view: one square per day ------------------------------------
@@ -463,44 +505,85 @@ function calendar() {
   Object.keys(days).forEach(function (k) { if (days[k] > maxv) maxv = days[k]; });
   if (!maxv) return "";
 
-  var CELL = 11, G = 3, L = 26, TOP = 18;
-  var W = Math.max(L + weeks * (CELL + G) + 8, 260);
-  var H = TOP + 7 * (CELL + G) + 24;
-  // Explicit width/height, not just a viewBox: this is the one chart on the
-  // page that must NOT stretch to its container. A day is a fixed-size square
-  // or it is not a calendar — nine weeks of data blown up to 1100px reads as
-  // a bar chart with square bars.
-  var s = '<svg width="' + W + '" height="' + H + '" viewBox="0 0 ' + W + ' '
-    + H + '" role="img" preserveAspectRatio="xMinYMin meet" '
-    + 'aria-label="One square per day, darker means more turns">';
-  var lastMonth = -1;
+  /* Every weekday labelled, not every other one.
+
+     GitHub labels only Mon/Wed/Fri because its squares are 10px and seven
+     labels would collide. That trade buys tidiness at the cost of the reader
+     counting rows to work out whether a dark square is a Tuesday or a
+     Thursday — which is the one question this chart exists to answer. We take
+     the extra 3px of pitch instead and label all seven. */
+  var CELL = 12, G = 4, PITCH = CELL + G;
+  var L = 34, TOP = 26;
+  var W = Math.max(L + weeks * PITCH + 10, 300);
+  var H = TOP + 7 * PITCH + 26;
+
+  // Which month owns each week column: the month of that column's first day
+  // that falls inside the collected range. Label and separator both anchor
+  // here, so they can never disagree about where a month starts.
+  var colMonth = [];
   for (var w = 0; w < weeks; w++) {
+    colMonth[w] = null;
     for (var d = 0; d < 7; d++) {
       var day = new Date(start.getTime());
       day.setUTCDate(day.getUTCDate() + w * 7 + d);
       if (day < first || day > last) continue;
-      var key = day.toISOString().slice(0, 10), v = days[key] || 0;
-      var x = L + w * (CELL + G), y = TOP + d * (CELL + G);
-      if (d === 0 && day.getUTCMonth() !== lastMonth) {
-        lastMonth = day.getUTCMonth();
-        s += '<text x="' + x + '" y="' + (TOP - 6) + '" class="axis">'
-          + MON[lastMonth] + "</text>";
-      }
-      s += '<rect class="calcell" data-tt="' + esc(key + " — " + num(v) + " turns")
-        + '" data-day="' + key + '" x="' + x + '" y="' + y + '" width="' + CELL
-        + '" height="' + CELL + '" rx="2.5" fill="'
-        + (v ? "var(--accent)" : "var(--track)") + '" opacity="'
-        + (v ? Math.max(0.18, v / maxv).toFixed(2) : "1") + '"/>';
+      colMonth[w] = day.getUTCMonth();
+      break;
     }
   }
-  ["Mon", "Wed", "Fri"].forEach(function (lbl, i) {
-    var row = [1, 3, 5][i];
-    s += '<text x="' + (L - 6) + '" y="' + (TOP + row * (CELL + G) + CELL - 1)
-      + '" text-anchor="end" class="axis">' + lbl + "</text>";
-  });
+
+  var s = '<svg width="' + W + '" height="' + H + '" viewBox="0 0 ' + W + ' '
+    + H + '" role="img" preserveAspectRatio="xMinYMin meet" '
+    + 'aria-label="One square per day, darker means more turns">';
+
+  /* Month boundaries. GitHub itself draws none — it relies on the label row
+     alone — which is fine at a glance and poor when you are trying to say
+     "that spike was in July". A hairline costs almost nothing and removes the
+     guess, so: GitHub's label placement, plus a rule.
+
+     It sits between week columns, which is an approximation: a month starts
+     mid-week about six times in seven. The rule marks the first *column* of
+     the new month, which is exactly what the label above it already claims,
+     so the two agree even though neither is to-the-day precise. */
+  var prev = null;
+  for (var w1 = 0; w1 < weeks; w1++) {
+    if (colMonth[w1] === null || colMonth[w1] === prev) continue;
+    var x1 = L + w1 * PITCH - G / 2;
+    if (prev !== null) {
+      // Starts below the label baseline: a rule running through "Aug" is
+      // worse than no rule at all.
+      s += '<line x1="' + x1.toFixed(1) + '" y1="' + (TOP - 4) + '" x2="'
+        + x1.toFixed(1) + '" y2="' + (TOP + 7 * PITCH - G + 2)
+        + '" stroke="var(--line)" stroke-width="1"/>';
+    }
+    s += '<text x="' + (L + w1 * PITCH + 2) + '" y="' + (TOP - 9)
+      + '" class="axis">' + MON[colMonth[w1]] + "</text>";
+    prev = colMonth[w1];
+  }
+
+  for (var w2 = 0; w2 < weeks; w2++) {
+    for (var d2 = 0; d2 < 7; d2++) {
+      var cd = new Date(start.getTime());
+      cd.setUTCDate(cd.getUTCDate() + w2 * 7 + d2);
+      if (cd < first || cd > last) continue;
+      var key = cd.toISOString().slice(0, 10), v = days[key] || 0;
+      s += '<rect class="calcell" data-tt="' + esc(DOW[d2] + " " + key + " — "
+        + num(v) + " turns") + '" data-day="' + key + '" x="' + (L + w2 * PITCH)
+        + '" y="' + (TOP + d2 * PITCH) + '" width="' + CELL + '" height="' + CELL
+        + '" rx="2.5" fill="' + (v ? "var(--accent)" : "var(--track)")
+        + '" opacity="' + (v ? Math.max(0.18, v / maxv).toFixed(2) : "1") + '"/>';
+    }
+  }
+
+  // All seven, aligned to the middle of their own row.
+  for (var d3 = 0; d3 < 7; d3++) {
+    s += '<text x="' + (L - 7) + '" y="' + (TOP + d3 * PITCH + CELL - 2)
+      + '" text-anchor="end" class="axis dow">' + DOW[d3] + "</text>";
+  }
+
   // Ramp legend. Without it a pale square is ambiguous between "a quiet day"
   // and "no data", which are different facts.
-  var ly = TOP + 7 * (CELL + G) + 11, lx = L;
+  var ly = TOP + 7 * PITCH + 12, lx = L;
   s += '<text x="' + lx + '" y="' + ly + '" class="axis">'
     + esc(t18("c_less", "less")) + "</text>";
   lx += 30;
@@ -509,7 +592,7 @@ function calendar() {
       + '" height="' + CELL + '" rx="2.5" fill="'
       + (v ? "var(--accent)" : "var(--track)") + '" opacity="'
       + (v ? Math.max(0.18, v).toFixed(2) : "1") + '"/>';
-    lx += CELL + G;
+    lx += PITCH;
   });
   s += '<text x="' + (lx + 4) + '" y="' + ly + '" class="axis">'
     + esc(t18("c_more", "more")) + "</text>";
@@ -746,6 +829,15 @@ function draw() {
   var mt = meter(DF);
   $("meter").innerHTML = mt.svg;
   $("meterNote").textContent = mt.note;
+  // The panel is two panels depending on the reader's vendors: a priced meter,
+  // or a plain picture of when they work. Promising "peak windows drawn over
+  // them" to someone who uses none is worse than saying nothing.
+  $("meterTitle").textContent = mt.hasPeak
+    ? t18("s_meter", "Your week against the meter")
+    : t18("s_hours", "Working hours");
+  $("meterHint").textContent = mt.hasPeak
+    ? t18("n_meter", "Your own hours, with every vendor's peak window drawn over them.")
+    : t18("n_hours", "Weekday \u00d7 hour, in your configured timezone.");
   $("tools").innerHTML = bars(agg(D.tools, TOOLS, DF, ["tool"])
     .sort(function (a, b) { return b.calls - a.calls; }).slice(0, 10),
     function (r) { return r.tool; }, function (r) { return r.calls; }, num);
