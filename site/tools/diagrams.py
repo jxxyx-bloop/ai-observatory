@@ -313,9 +313,9 @@ def peak_clock(theme: str, f: dict) -> str:
          f'charges by the clock</text>',
          f'<text x="{GUTTER}" y="72" font-family="{FONT}" font-size="13.5" '
          f'fill="{c["faint"]}">{n_clock} of the {n_checked} vendors checked so far '
-         f'change price by the hour. For the rest the cheaper lane is the '
-         f'batch queue. From pricing.json — verified '
-         f'{esc(f["verified"])}.</text>']
+         f'change price by the hour. A batch queue is cheaper for some of the '
+         f'rest — see each vendor\'s note in pricing.json for which models. '
+         f'Verified {esc(f["verified"])}.</text>']
 
     # Hour axis
     y_axis = head - 22
@@ -372,9 +372,16 @@ def peak_clock(theme: str, f: dict) -> str:
             p.append(f'<text x="{left + span / 2:.1f}" y="{y + 20}" '
                      f'text-anchor="middle" font-family="{FONT}" font-size="12" '
                      f'fill="{c["faint"]}">no hour is cheaper</text>')
-            p.append(f'<text x="{left + span + S2}" y="{y + 20}" '
-                     f'font-family="{FONT}" font-size="13" font-weight="650" '
-                     f'fill="{c["ok"]}">batch {r["batch"]:g}×</text>')
+            # A vendor-wide batch_mult means the discount applies to (nearly)
+            # every model, so it earns the headline number. Its absence does
+            # NOT mean no batch lane exists — several checked vendors have one
+            # for specific models only, which this chart isn't scoped to
+            # render per-model; that nuance lives in pricing.json's vendor
+            # note instead of a number that would overclaim here.
+            if r["batch"]:
+                p.append(f'<text x="{left + span + S2}" y="{y + 20}" '
+                         f'font-family="{FONT}" font-size="13" font-weight="650" '
+                         f'fill="{c["ok"]}">batch {r["batch"]:g}×</text>')
         else:
             p.append(f'<text x="{left + span / 2:.1f}" y="{y + 20}" '
                      f'text-anchor="middle" font-family="{FONT}" font-size="12" '

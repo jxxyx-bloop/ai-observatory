@@ -1,7 +1,7 @@
 {
   "_doc": "Community-maintained rate card. USD per million tokens, from each vendor's public price list. Multipliers apply to the model's own input rate; a model may set its own `cache_read_mult` when the vendor's cache-hit discount isn't the 0.1x default. `window` names a peak/off-peak schedule in `windows` — a pricing shape that Chinese vendors use and Western trackers ignore. See docs/specs/Cost-Estimation.md and docs/specs/Peak-Off-Peak-Pricing.md.",
   "_contributing": "Rates go stale. Correcting one is the easiest useful PR in this repo: edit the entry, move `_verified_on`, cite the vendor page in the PR body. See CONTRIBUTING.md.",
-  "_verified_on": "2026-08-19",
+  "_verified_on": "2026-08-20",
   "_schema": 2,
   "multipliers": {
     "cache_read": 0.1,
@@ -84,6 +84,38 @@
       "flat": true,
       "batch_mult": 0.5,
       "note": "Flat by the hour. Gemini batch mode bills 0.5x."
+    },
+    "alibaba": {
+      "flat": true,
+      "note": "No vendor-wide batch_mult set — the discount is real but per-model, not universal. Batch calls (where a model supports them) bill input and output at 0.5x real-time, mutually exclusive with the context-cache discount. qwen3-max shows the batch tag on Model Studio's regional tables; qwen3-coder-plus, qwen3-coder-flash and qwen3-plus do not. Verified 2026-08-20: alibabacloud.com/help/en/model-studio/models"
+    },
+    "baidu": {
+      "flat": true,
+      "note": "No vendor-wide batch_mult set. Qianfan does offer batch inference, but at 0.4x (60% off), not the 0.5x other vendors use — and it does NOT cover ernie-5.0, the only Baidu model in this file. Batch is limited to the ERNIE-4.5-Turbo family, a DeepSeek-V3.2 resale, and InternVL3, none of which are priced here yet. Verified 2026-08-20: cloud.baidu.com/doc/QIANFAN/s/qm3ie59jf"
+    },
+    "bytedance": {
+      "flat": true,
+      "note": "No vendor-wide batch_mult set. Volcengine's Doubao-Seed-2.0 and Seed-2.1 both bill batch inference at exactly 0.5x (confirmed on the console); Seed-Evolving and Seed-Character show no batch option. Which Seed generation doubao-pro/doubao-seed-code in this file map to on Volcengine's current catalog is unconfirmed — do not apply 0.5x to either until that's checked. Verified 2026-08-20: volcengine.com/pricing?product=ark_subscription"
+    },
+    "minimax": {
+      "flat": true,
+      "note": "Checked, nothing found. No batch or off-peak lane anywhere on the pay-as-you-go or Token Plan pages — only prompt-caching discounts and a 1.5x 'Priority' premium (faster admission, not cheaper). Verified 2026-08-20: platform.minimax.io/docs/guides/pricing-paygo"
+    },
+    "moonshot": {
+      "flat": true,
+      "note": "No vendor-wide batch_mult set. Kimi's own Batch Inference page states 0.6x (60% of standard) explicitly for kimi-k2.7-code, kimi-k2.6 and kimi-k2.5 only — kimi-k3 (also priced in this file) is excluded, so a single vendor-level multiplier would misprice it. Verified 2026-08-20: platform.kimi.com/docs/pricing/batch"
+    },
+    "stepfun": {
+      "flat": true,
+      "note": "Checked, nothing found. No batch or off-peak lane on the pricing/rate-limits page — only cache-hit vs cache-miss input pricing and top-up-based rate-limit tiers. Verified 2026-08-20: platform.stepfun.ai/docs/en/guides/pricing/details"
+    },
+    "tencent": {
+      "flat": true,
+      "note": "Checked, nothing found. No batch or off-peak lane on Hunyuan's pricing page — only free resource packages and prepaid/postpaid billing. Page also flags Tencent is mid-migration to a new 'TokenHub' console. Verified 2026-08-20: cloud.tencent.com/document/product/1729"
+    },
+    "xai": {
+      "flat": true,
+      "note": "No vendor-wide batch_mult set. xAI's own pricing page states Batch API bills 0.8x (20% off) for grok-4.3, grok-4.20-0309-reasoning, grok-4.20-0309-non-reasoning and grok-4.20-multi-agent-0309 only — the flagship grok-4.6/grok-4.5 and grok-build-0.1 get none. Which of these grok-4/grok-code-fast in this file correspond to on xAI's current catalog is unconfirmed; do not apply 0.8x to either until that's checked. Verified 2026-08-20: docs.x.ai/developers/pricing"
     }
   },
   "models": {
