@@ -11,7 +11,7 @@
 
 Coding agent anda sudah pun merekod setiap giliran. Alat ini membaca rekod itu dan menyebut beberapa perubahan yang berbaloi — setiap satu dengan angkanya.
 
-`Sifar token` · `Tanpa akaun` · `Tiada data keluar dari mesin anda`
+`Sedia dalam kurang seminit` · `Tanpa akaun` · `Tiada data keluar dari mesin anda`
 
 **[Buka demo langsung](https://ai-observatory.workers.dev/demo/)** · [AI Observatory](https://ai-observatory.workers.dev/ms/) · [GitHub](https://github.com/jxxyx-bloop/ai-observatory)
 
@@ -80,7 +80,7 @@ Pustaka standard Python 3 sahaja. Tanpa pemasangan, tanpa kebergantungan, tanpa 
 | | | |
 |---|---|---|
 | **01 Baca** | **02 Ukur** | **03 Bertindak** |
-| Agent anda menulis transkrip bagi setiap sesi. Kami membaca fail itu di tempatnya. | Token, cache, masa dan kos — dikira pada kadar yang benar-benar berkuat kuasa ketika itu. | Senarai perubahan yang tersusun, lengkap dengan buktinya dan nilainya sebulan. |
+| Agent anda sudah menulis lognya. Kami membaca fail itu di tempatnya — tiada apa perlu dipasang atau dihidupkan. | Token, cache, masa dan kos — dikira pada kadar yang benar-benar berkuat kuasa ketika itu. | Senarai perubahan yang tersusun, lengkap dengan buktinya dan nilainya sebulan. |
 
 Tanpa kunci API, tanpa proksi, tanpa akaun, tanpa rangkaian. Pengumpulan data menggunakan sifar token.
 

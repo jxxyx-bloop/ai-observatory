@@ -11,7 +11,7 @@
 
 Agent của bạn vốn đã ghi lại từng lượt. Công cụ này đọc các log đó và chỉ ra vài thay đổi đáng làm — mỗi thay đổi kèm một con số.
 
-`Không tốn token` · `Không cần tài khoản` · `Không gì rời khỏi máy bạn`
+`Cài đặt trong chưa đầy một phút` · `Không cần tài khoản` · `Không gì rời khỏi máy bạn`
 
 **[Mở bản demo](https://ai-observatory.workers.dev/demo/)** · [AI Observatory](https://ai-observatory.workers.dev/vi/) · [GitHub](https://github.com/jxxyx-bloop/ai-observatory)
 
@@ -80,7 +80,7 @@ Chỉ dùng thư viện chuẩn Python 3. Không cài đặt, không phụ thu�
 | | | |
 |---|---|---|
 | **01 Đọc** | **02 Đo** | **03 Hành động** |
-| Agent ghi lại toàn bộ mỗi phiên làm việc. Chúng tôi đọc chính các tệp đó, ngay tại chỗ. | Token, cache, thời điểm và chi phí — tính theo đúng mức giá đang áp dụng lúc chạy. | Một danh sách thay đổi có xếp hạng, kèm bằng chứng và giá trị mỗi tháng. |
+| Agent của bạn đã ghi log sẵn. Chúng tôi đọc chính các tệp đó tại chỗ — không phải cài gì, không phải bật gì. | Token, cache, thời điểm và chi phí — tính theo đúng mức giá đang áp dụng lúc chạy. | Một danh sách thay đổi có xếp hạng, kèm bằng chứng và giá trị mỗi tháng. |
 
 Không API key, không proxy, không tài khoản, không mạng. Việc thu thập tốn 0 token.
 

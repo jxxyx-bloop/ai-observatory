@@ -11,7 +11,7 @@
 
 Seu agente de código já registra cada turno. Isto lê esses registros e aponta as poucas mudanças que valem a pena — cada uma com um número junto.
 
-`Zero tokens` · `Sem conta` · `Nada sai da sua máquina`
+`Pronto em menos de um minuto` · `Sem conta` · `Nada sai da sua máquina`
 
 **[Abrir a demo](https://ai-observatory.workers.dev/demo/)** · [AI Observatory](https://ai-observatory.workers.dev/pt-br/) · [GitHub](https://github.com/jxxyx-bloop/ai-observatory)
 
@@ -80,7 +80,7 @@ Apenas a biblioteca padrão do Python 3. Sem instalação, sem dependências, se
 | | | |
 |---|---|---|
 | **01 Ler** | **02 Medir** | **03 Agir** |
-| Seu agente grava a transcrição de cada sessão. A gente lê esses arquivos onde eles já estão. | Tokens, cache, horário e custo — pelo preço que realmente estava valendo na hora. | Uma lista ordenada de mudanças, cada uma com a evidência e quanto vale por mês. |
+| Seu agente já gravou os logs. A gente lê esses arquivos onde eles estão — nada para instalar, nada para ativar. | Tokens, cache, horário e custo — pelo preço que realmente estava valendo na hora. | Uma lista ordenada de mudanças, cada uma com a evidência e quanto vale por mês. |
 
 Sem chave de API, sem proxy, sem conta, sem rede. A coleta custa zero tokens.
 

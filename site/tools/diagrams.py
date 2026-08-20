@@ -49,6 +49,46 @@ THEME = {
 FONT = ("ui-sans-serif,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',"
         "Arial,sans-serif")
 
+# ── Spacing scale ────────────────────────────────────────────────────────────
+# One scale for every figure, so two drawings made months apart still look like
+# they came from the same hand. See docs/design/DESIGN-SYSTEM.md §9.
+#
+# The rule these constants exist to enforce: **comparable rows share one
+# pitch.** The first version of the peak chart stacked the two working-hour
+# rows at a 42px pitch and the vendor rows at 74px. Every value in it was
+# correct and it still read as broken, because the eye takes uneven spacing as
+# a claim — "these two belong together and those don't" — and there was no such
+# claim to make. Rows of the same kind get ROW_PITCH. A genuine change of
+# category gets GROUP_GAP, once, and it should be obvious why.
+S1, S2, S3, S4, S5, S6 = 8, 12, 16, 24, 32, 48
+GUTTER = 40          # figure edge → content
+PAD = 18             # card edge → text inside it
+ROW_PITCH = 56       # baseline-to-baseline for rows of the same kind
+ROW_H = 30           # the drawn height of one such row
+GROUP_GAP = 28       # extra space where the kind of row genuinely changes
+
+
+def wrap(text: str, width_px: float, size: float) -> list:
+    """Break text to fit a box. SVG has no line-breaking of its own.
+
+    ~0.55em per character is the measured average for this stack at these
+    sizes; it errs narrow, which is the safe direction — a short line looks
+    considered, an overflowing one looks broken.
+    """
+    per = size * 0.55
+    limit = max(8, int(width_px / per))
+    line, out = "", []
+    for word in text.split():
+        if len(line) + len(word) + 1 > limit and line:
+            out.append(line)
+            line = word
+        else:
+            line = f"{line} {word}".strip()
+    if line:
+        out.append(line)
+    return out
+
+
 
 def esc(s: str) -> str:
     return (str(s).replace("&", "&amp;").replace("<", "&lt;")
@@ -61,20 +101,24 @@ def facts() -> dict:
     plans = json.loads((ENGINE / "plans.json").read_text(encoding="utf-8"))
     insights = (ENGINE / "insights.py").read_text(encoding="utf-8")
 
-    collectors = sorted(
-        p.stem for p in (ENGINE / "collectors").glob("*.py")
-        if p.stem not in {"__init__", "base", "generic"}
-    )
-    specs = sorted(p.stem for p in (ENGINE / "collectors" / "specs").glob("*.json"))
     # Detectors are the `def detect_*` functions; counting them here means the
     # figure and the README can never claim a number the code does not back.
     detectors = re.findall(r"^def (detect_\w+)", insights, re.M)
 
+    # Deliberately NOT counted here: the number of built-in collectors. It was
+    # on the figure as "4 tools" and it did the opposite of its job — a reader
+    # scanning for "what will this cost me" reads a tool count as four things
+    # to install. Coverage belongs in the README's table, where someone is
+    # actually looking for whether their own agent is supported.
+    all_vendors = {m.get("vendor") for m in pricing.get("models", {}).values()}
+    checked = {k for k in pricing.get("vendors", {}) if not k.startswith("_")}
+
     return {
-        "collectors": collectors,
-        "specs": specs,
         "models": len(pricing.get("models", {})),
+        "vendors_total": len(all_vendors - {None}),
+        "vendors_unchecked": len((all_vendors - {None}) - checked),
         "windows": pricing.get("windows", {}),
+        "vendors": pricing.get("vendors", {}),
         "verified": pricing.get("_verified_on", "—"),
         "currencies": len(plans.get("currencies", {})),
         "plans": len(plans.get("plans", {})),
@@ -85,85 +129,94 @@ def facts() -> dict:
 # ── Figure 1: the pipeline ───────────────────────────────────────────────────
 
 def pipeline(theme: str, f: dict) -> str:
+    """What the reader gives up, and what they get back.
+
+    An earlier version of this figure led with counts — collectors, models,
+    plans. Inventory is not value. A stranger reading a landing page is asking
+    one question, "what does this cost me and what do I get", and every panel
+    here answers a half of it.
+    """
     c = THEME[theme]
     W, H = 1200, 300
     steps = [
-        ("Transcripts", f"{len(f['collectors'])} tools, on disk",
-         "Files your agent already wrote"),
-        ("Collect", "read-only, ~0.2 s", "Zero tokens. No API, no proxy"),
-        ("Normalise", "counts only", "No prompts, code or paths stored"),
-        ("Detect", f"{f['detectors']} checks",
-         f"Priced from {f['models']} models, {f['currencies']} currencies"),
-        ("Decide", "ranked list", "Evidence, action, value per month"),
+        ("Already on disk", "0 minutes of setup",
+         "Your agent already wrote the logs. Nothing to install."),
+        ("Read", "0 tokens, ~0.2 s",
+         "Read-only, on your machine. No API key, no proxy, no account."),
+        ("Priced", "at the rate in force",
+         "Every turn costed at what it actually cost, in your currency."),
+        ("Ranked", f"{f['detectors']} checks",
+         "The few changes worth making, each worth a figure per month."),
     ]
-    bw, gap = 200, 40
-    x0 = (W - (len(steps) * bw + (len(steps) - 1) * gap)) // 2
-    top, bh = 84, 128
+    gap = 32
+    bw = (W - 2 * GUTTER - (len(steps) - 1) * gap) // len(steps)
+    x0 = GUTTER
+    top = 96
+
+    # Height follows the copy, not the other way round. Guessing a fixed height
+    # is what put the third line of box 01 through its own bottom stroke; the
+    # tallest note now sets the height for every card, so they stay a row and
+    # no line can fall out of one. 20px minimum below the last baseline.
+    notes = [wrap(n, bw - 2 * PAD, 12) for _, _, n in steps]
+    lines = max(len(n) for n in notes)
+    bh = 104 + (lines - 1) * 15 + 20
 
     parts = [
         f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {W} {H}" '
         f'width="{W}" height="{H}" role="img" '
-        f'aria-label="How AI Observatory turns local agent transcripts into a '
-        f'ranked list of changes: {" then ".join(s[0] for s in steps)}.">',
+        f'aria-label="What it costs to run AI Observatory and what it returns: '
+        f'no setup, no tokens, about a fifth of a second, and a ranked list of '
+        f'changes each worth a figure per month.">',
         f'<rect width="{W}" height="{H}" fill="{c["bg"]}"/>',
-        f'<text x="{x0}" y="42" font-family="{FONT}" font-size="19" '
-        f'font-weight="650" fill="{c["ink"]}" letter-spacing="-0.3">'
-        f'From files you already have to a decision you can act on</text>',
-        f'<text x="{x0}" y="65" font-family="{FONT}" font-size="13" '
-        f'fill="{c["faint"]}">Nothing on this line touches the network.</text>',
+        f'<text x="{x0}" y="46" font-family="{FONT}" font-size="21" '
+        f'font-weight="650" fill="{c["ink"]}" letter-spacing="-0.4">'
+        f'Costs you nothing to run. Tells you what to stop paying for.</text>',
+        f'<text x="{x0}" y="72" font-family="{FONT}" font-size="13.5" '
+        f'fill="{c["faint"]}">No install, no instrumentation, no network — and '
+        f'the whole thing finishes before you look up.</text>',
     ]
 
-    for i, (title, sub, note) in enumerate(steps):
+    for i, (title, sub, _note) in enumerate(steps):
         x = x0 + i * (bw + gap)
         lead = i == len(steps) - 1
         parts += [
-            f'<rect x="{x}" y="{top}" width="{bw}" height="{bh}" rx="14" '
+            f'<rect x="{x}" y="{top}" width="{bw}" height="{bh}" rx="16" '
             f'fill="{c["panel"]}" stroke="{c["accent"] if lead else c["line"]}" '
             f'stroke-width="{2 if lead else 1}"/>',
-            f'<text x="{x + 18}" y="{top + 30}" font-family="{FONT}" '
+            f'<text x="{x + PAD}" y="{top + 32}" font-family="{FONT}" '
             f'font-size="11" font-weight="700" letter-spacing="1.4" '
             f'fill="{c["faint"]}">{i + 1:02d}</text>',
-            f'<text x="{x + 18}" y="{top + 58}" font-family="{FONT}" '
-            f'font-size="17" font-weight="640" fill="{c["ink"]}">{esc(title)}</text>',
-            f'<text x="{x + 18}" y="{top + 80}" font-family="{FONT}" '
+            f'<text x="{x + PAD}" y="{top + 60}" font-family="{FONT}" '
+            f'font-size="17.5" font-weight="640" fill="{c["ink"]}">{esc(title)}</text>',
+            f'<text x="{x + PAD}" y="{top + 82}" font-family="{FONT}" '
             f'font-size="13" font-weight="600" '
             f'fill="{c["accent"]}">{esc(sub)}</text>',
         ]
-        # Wrap the note by hand: ~26 characters is what fits inside the box at
-        # 12px, and an SVG has no line-breaking of its own.
-        line, lines = "", []
-        for word in note.split():
-            if len(line) + len(word) + 1 > 26:
-                lines.append(line); line = word
-            else:
-                line = f"{line} {word}".strip()
-        lines.append(line)
-        for n, text in enumerate(lines[:2]):
+        for n, text in enumerate(notes[i]):
             parts.append(
-                f'<text x="{x + 18}" y="{top + 102 + n * 16}" '
+                f'<text x="{x + PAD}" y="{top + 104 + n * 15}" '
                 f'font-family="{FONT}" font-size="12" '
                 f'fill="{c["muted"]}">{esc(text)}</text>')
 
         if i < len(steps) - 1:
-            ax = x + bw + 10
+            ax = x + bw + 9
             parts.append(
-                f'<path d="M{ax} {top + bh / 2} h{gap - 20} m-7 -5 l7 5 l-7 5" '
+                f'<path d="M{ax} {top + bh / 2} h{gap - 18} m-7 -5 l7 5 l-7 5" '
                 f'fill="none" stroke="{c["faint"]}" stroke-width="1.6" '
                 f'stroke-linecap="round" stroke-linejoin="round"/>')
 
-    chips = [f"{len(f['collectors'])} built-in collectors",
-             "+ any tool via one JSON spec",
-             f"{f['models']} models priced",
-             f"{f['plans']} plans",
-             f"{f['currencies']} currencies",
+    # Kept: the facts that make the promise checkable. Dropped: anything a
+    # reader could mistake for a list of things they have to obtain.
+    chips = ["Nothing to install", "No account", "Nothing leaves your machine",
+             f"{f['models']} models priced", f"{f['currencies']} currencies",
              f"rates verified {f['verified']}"]
     x = x0
     for chip in chips:
-        w = 11 + int(len(chip) * 6.7)
+        w = 13 + int(len(chip) * 6.7)
         parts += [
-            f'<rect x="{x}" y="248" width="{w}" height="26" rx="13" '
+            f'<rect x="{x}" y="{top + bh + 24}" width="{w}" height="26" rx="13" '
             f'fill="{c["track"]}"/>',
-            f'<text x="{x + w / 2}" y="265" text-anchor="middle" '
+            f'<text x="{x + w / 2}" y="{top + bh + 41}" text-anchor="middle" '
             f'font-family="{FONT}" font-size="12" '
             f'fill="{c["muted"]}">{esc(chip)}</text>',
         ]
@@ -176,112 +229,162 @@ def pipeline(theme: str, f: dict) -> str:
 # ── Figure 2: the peak/off-peak clock ────────────────────────────────────────
 
 def peak_clock(theme: str, f: dict) -> str:
-    """Where a published peak window lands in a Southeast Asian working day.
+    """Where the same tokens cost less, and who offers that at all.
 
-    The whole regional argument in one picture, and every hour of it comes out
-    of `pricing.json` — including the overlap percentages, which are computed
-    here rather than asserted.
+    The regional argument in one picture, and every hour of it comes out of
+    `pricing.json` — including the overlap percentages, which are computed here
+    rather than asserted.
+
+    Vendors with no cheaper lane are drawn too. Charting only the ones with a
+    discount would quietly imply the rest were never checked, and "this vendor
+    has no cheaper lane" is a finding a buyer wants.
     """
     c = THEME[theme]
     W = 1200
-    left, right = 252, 96
+    left, right = 258, 132
     span = W - left - right
     hour = span / 24
-    rows = [(k, v) for k, v in f["windows"].items() if "legacy" not in k]
-    H = 150 + len(rows) * 74 + 128
+
+    windows = {k: v for k, v in f["windows"].items() if "legacy" not in k}
+    vendors = {k: v for k, v in f["vendors"].items() if not k.startswith("_")}
 
     work = (9, 18)                     # a local working day
     zones = [("UTC+7", 7, "Jakarta · Bangkok · Hanoi"),
              ("UTC+8", 8, "Singapore · Manila · KL")]
 
+    # Rows, in one list, so a single loop lays them all out on one pitch.
+    # kind: "zone" (a working day), "clock" (time-priced), "flat" (everything
+    # else). Time-priced vendors first — they are the ones with something to
+    # act on today.
+    rows = []
+    for label, off, cities in zones:
+        rows.append({"kind": "zone", "label": f"{label}  09–18", "sub": cities,
+                     "offset": off})
+    for name, win in windows.items():
+        rows.append({"kind": "clock", "label": name,
+                     "sub": (f'{win.get("vendor", "")}'
+                             f'{" · weekdays" if win.get("days") else ""} · '
+                             f'off-peak {win.get("off_peak_mult", 1):g}×'),
+                     "peaks": [tuple(w) for w in win.get("peak_utc", [])]})
+    for name in sorted(vendors):
+        spec = vendors[name]
+        if not spec.get("flat"):
+            continue                    # already drawn from its window above
+        batch = spec.get("batch_mult")
+        rows.append({"kind": "flat", "label": name,
+                     "sub": ("same price every hour"
+                             + (f" · batch {batch:g}×" if batch else "")),
+                     "batch": batch})
+    # One row for everything not yet looked at. Drawing those as flat would
+    # claim "we checked and there is nothing", which is a different sentence
+    # from "we have not checked", and the reader cannot tell them apart.
+    if f["vendors_unchecked"]:
+        rows.append({"kind": "todo",
+                     "label": f"{f['vendors_unchecked']} more vendors",
+                     "sub": "in the rate card, not yet checked"})
+
+    # One pitch for every row; one extra gap where the kind genuinely changes.
+    kinds = [r["kind"] for r in rows]
+    breaks = {i for i in range(1, len(rows)) if kinds[i] != kinds[i - 1]}
+    head = 124
+    def row_y(i):
+        return head + i * ROW_PITCH + GROUP_GAP * len([b for b in breaks if b <= i])
+    H = row_y(len(rows) - 1) + ROW_H + 96
+
     def overlap(peaks, offset):
         """Hours of a 09:00–18:00 local day that fall inside a peak window."""
-        hits = 0
-        for local in range(work[0], work[1]):
-            utc = (local - offset) % 24
-            if any(a <= utc < b for a, b in peaks):
-                hits += 1
-        return hits
+        return sum(1 for local in range(*work)
+                   if any(a <= (local - offset) % 24 < b for a, b in peaks))
+
+    words = {1: "One", 2: "Two", 3: "Three", 4: "Four", 5: "five", 6: "six",
+             7: "seven", 8: "eight", 9: "nine", 10: "ten"}
+    n_clock = words.get(len(windows), len(windows))
+    n_checked = words.get(len(vendors), len(vendors))
 
     p = [f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {W} {H}" '
-         f'width="{W}" height="{H}" role="img" aria-label="Published peak '
-         f'pricing windows for time-priced vendors, plotted against a 09:00 to '
-         f'18:00 working day in UTC+7 and UTC+8.">',
+         f'width="{W}" height="{H}" role="img" aria-label="Every vendor in the '
+         f'rate card, showing which ones change price by the hour and which '
+         f'charge the same all day, plotted against a 09:00 to 18:00 working '
+         f'day in UTC+7 and UTC+8.">',
          f'<rect width="{W}" height="{H}" fill="{c["bg"]}"/>',
-         f'<text x="{left}" y="40" font-family="{FONT}" font-size="19" '
-         f'font-weight="650" fill="{c["ink"]}" letter-spacing="-0.3">'
-         f'Peak pricing lands in the middle of a Southeast Asian workday</text>',
-         f'<text x="{left}" y="63" font-family="{FONT}" font-size="13" '
-         f'fill="{c["faint"]}">Same tokens, up to twice the price, decided by '
-         f'the clock. Windows from pricing.json — verified {esc(f["verified"])}.</text>']
+         f'<text x="{GUTTER}" y="46" font-family="{FONT}" font-size="21" '
+         f'font-weight="650" fill="{c["ink"]}" letter-spacing="-0.4">'
+         f'The same tokens cost less at the right hour — if your vendor '
+         f'charges by the clock</text>',
+         f'<text x="{GUTTER}" y="72" font-family="{FONT}" font-size="13.5" '
+         f'fill="{c["faint"]}">{n_clock} of the {n_checked} vendors checked so far '
+         f'change price by the hour. For the rest the cheaper lane is the '
+         f'batch queue. From pricing.json — verified '
+         f'{esc(f["verified"])}.</text>']
 
     # Hour axis
-    y_axis = 96
+    y_axis = head - 22
     for h in range(0, 25, 3):
         x = left + h * hour
-        p += [f'<line x1="{x:.1f}" y1="{y_axis + 6}" x2="{x:.1f}" '
-              f'y2="{H - 74}" stroke="{c["line"]}" stroke-width="1"/>',
+        p += [f'<line x1="{x:.1f}" y1="{y_axis + 8}" x2="{x:.1f}" '
+              f'y2="{H - 76}" stroke="{c["line"]}" stroke-width="1"/>',
               f'<text x="{x:.1f}" y="{y_axis}" text-anchor="middle" '
               f'font-family="{FONT}" font-size="12" '
               f'fill="{c["faint"]}">{h:02d}</text>']
-    p.append(f'<text x="{left - 20}" y="{y_axis}" text-anchor="end" '
-             f'font-family="{FONT}" font-size="12" font-weight="640" '
-             f'fill="{c["muted"]}">UTC</text>')
-    # Header for the right-hand column, so the number below needs no caption
-    # crowded in beside the legend.
-    p.append(f'<text x="{left + span + 12}" y="{y_axis}" '
-             f'font-family="{FONT}" font-size="11" font-weight="640" '
-             f'letter-spacing="0.6" fill="{c["faint"]}">IN&#8201;WORKDAY</text>')
+    p += [f'<text x="{left - S4}" y="{y_axis}" text-anchor="end" '
+          f'font-family="{FONT}" font-size="12" font-weight="640" '
+          f'fill="{c["muted"]}">UTC</text>',
+          f'<text x="{left + span + S2}" y="{y_axis}" font-family="{FONT}" '
+          f'font-size="11" font-weight="640" letter-spacing="0.6" '
+          f'fill="{c["faint"]}">IN&#8201;WORKDAY</text>']
 
-    # Working-day bands, one per zone
-    y = y_axis + 22
-    for label, off, cities in zones:
-        a = (work[0] - off) % 24
-        b = a + (work[1] - work[0])
-        p += [f'<text x="{left - 14}" y="{y + 18}" text-anchor="end" '
+    for i, r in enumerate(rows):
+        y = row_y(i)
+        p += [f'<text x="{left - S4}" y="{y + 19}" text-anchor="end" '
               f'font-family="{FONT}" font-size="13" font-weight="640" '
-              f'fill="{c["ink"]}">{esc(label)} 09–18</text>',
-              f'<text x="{left - 14}" y="{y + 34}" text-anchor="end" '
+              f'fill="{c["ink"]}">{esc(r["label"])}</text>',
+              f'<text x="{left - S4}" y="{y + 35}" text-anchor="end" '
               f'font-family="{FONT}" font-size="11" '
-              f'fill="{c["faint"]}">{esc(cities)}</text>']
-        for s, e in ([(a, min(b, 24))] + ([(0, b - 24)] if b > 24 else [])):
-            p.append(f'<rect x="{left + s * hour:.1f}" y="{y}" '
-                     f'width="{(e - s) * hour:.1f}" height="26" rx="6" '
-                     f'fill="{c["ok"]}" opacity="0.18"/>')
-        y += 42
+              f'fill="{c["faint"]}">{esc(r["sub"])}</text>']
 
-    # One row per published window
-    y += 10
-    for name, win in rows:
-        peaks = [tuple(w) for w in win.get("peak_utc", [])]
-        days = win.get("days")
-        off_mult = win.get("off_peak_mult", 1)
-        p += [f'<text x="{left - 14}" y="{y + 20}" text-anchor="end" '
-              f'font-family="{FONT}" font-size="13" font-weight="640" '
-              f'fill="{c["ink"]}">{esc(name)}</text>',
-              f'<text x="{left - 14}" y="{y + 37}" text-anchor="end" '
-              f'font-family="{FONT}" font-size="11" fill="{c["faint"]}">'
-              f'{esc(win.get("vendor", ""))}'
-              f'{" · weekdays" if days else ""} · off-peak '
-              f'{off_mult:g}×</text>',
-              f'<rect x="{left}" y="{y}" width="{span}" height="30" rx="8" '
-              f'fill="{c["track"]}"/>']
-        for a, b in peaks:
-            p.append(f'<rect x="{left + a * hour:.1f}" y="{y}" '
-                     f'width="{(b - a) * hour:.1f}" height="30" rx="8" '
-                     f'fill="{c["high"]}" opacity="0.85"/>')
-        hits = [overlap(peaks, off) for _, off, _ in zones]
-        worst = max(hits)
-        p.append(f'<text x="{left + span + 12}" y="{y + 20}" '
-                 f'font-family="{FONT}" font-size="13" font-weight="650" '
-                 f'fill="{c["high"] if worst else c["muted"]}">'
-                 f'{worst}/9 h</text>')
-        y += 74
+        if r["kind"] == "zone":
+            a = (work[0] - r["offset"]) % 24
+            b = a + (work[1] - work[0])
+            for s0, e0 in [(a, min(b, 24))] + ([(0, b - 24)] if b > 24 else []):
+                p.append(f'<rect x="{left + s0 * hour:.1f}" y="{y}" '
+                         f'width="{(e0 - s0) * hour:.1f}" height="{ROW_H}" '
+                         f'rx="8" fill="{c["ok"]}" opacity="0.18"/>')
+            continue
 
-    # Legend
+        dash = ' stroke-dasharray="5 4" stroke="' + c["line"] + '" fill="none"' \
+            if r["kind"] == "todo" else f' fill="{c["track"]}"'
+        p.append(f'<rect x="{left}" y="{y}" width="{span}" height="{ROW_H}" '
+                 f'rx="8"{dash}/>')
+
+        if r["kind"] == "clock":
+            for a, b in r["peaks"]:
+                p.append(f'<rect x="{left + a * hour:.1f}" y="{y}" '
+                         f'width="{(b - a) * hour:.1f}" height="{ROW_H}" '
+                         f'rx="8" fill="{c["high"]}" opacity="0.85"/>')
+            worst = max(overlap(r["peaks"], off) for _, off, _ in zones)
+            p.append(f'<text x="{left + span + S2}" y="{y + 20}" '
+                     f'font-family="{FONT}" font-size="13" font-weight="650" '
+                     f'fill="{c["high"] if worst else c["muted"]}">'
+                     f'{worst}/9 h</text>')
+        elif r["kind"] == "flat":
+            # A flat row carries no shape of its own, so the label goes inside
+            # it rather than leaving an empty bar the reader has to interpret.
+            p.append(f'<text x="{left + span / 2:.1f}" y="{y + 20}" '
+                     f'text-anchor="middle" font-family="{FONT}" font-size="12" '
+                     f'fill="{c["faint"]}">no hour is cheaper</text>')
+            p.append(f'<text x="{left + span + S2}" y="{y + 20}" '
+                     f'font-family="{FONT}" font-size="13" font-weight="650" '
+                     f'fill="{c["ok"]}">batch {r["batch"]:g}×</text>')
+        else:
+            p.append(f'<text x="{left + span / 2:.1f}" y="{y + 20}" '
+                     f'text-anchor="middle" font-family="{FONT}" font-size="12" '
+                     f'fill="{c["faint"]}">nobody has looked — a one-line '
+                     f'PR fixes that</text>')
+
+    # Legend, on its own line, clear of the last row's sub-label.
     ly = H - 34
-    p.append(f'<line x1="{left}" y1="{ly - 34}" x2="{left + span}" '
-             f'y2="{ly - 34}" stroke="{c["line"]}" stroke-width="1"/>')
+    p.append(f'<line x1="{left}" y1="{ly - S5}" x2="{left + span}" '
+             f'y2="{ly - S5}" stroke="{c["line"]}" stroke-width="1"/>')
     x = left
     for fill, op, text in [(c["high"], 0.85, "Peak — full rate"),
                            (c["track"], 1, "Off-peak"),
@@ -291,6 +394,9 @@ def peak_clock(theme: str, f: dict) -> str:
               f'<text x="{x + 30}" y="{ly}" font-family="{FONT}" '
               f'font-size="12" fill="{c["muted"]}">{esc(text)}</text>']
         x += 60 + int(len(text) * 6.9)
+    p.append(f'<text x="{W - GUTTER}" y="{ly}" text-anchor="end" '
+             f'font-family="{FONT}" font-size="12" fill="{c["faint"]}">'
+             f'Batch = same tokens, results within 24h</text>')
 
     p.append("</svg>")
     return "\n".join(p)
@@ -342,7 +448,7 @@ def main() -> int:
             print(f"  {path.relative_to(ROOT)}  "
                   f"{path.stat().st_size / 1024:.0f} KB")
     print(f"diagrams: {f['detectors']} detectors, {f['models']} models, "
-          f"{len(f['collectors'])} collectors, {f['currencies']} currencies")
+          f"{len(f['vendors']) - 2} vendors, {f['currencies']} currencies")
     return 0
 
 

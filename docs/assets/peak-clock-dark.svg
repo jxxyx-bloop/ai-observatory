@@ -1,49 +1,69 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 426" width="1200" height="426" role="img" aria-label="Published peak pricing windows for time-priced vendors, plotted against a 09:00 to 18:00 working day in UTC+7 and UTC+8.">
-<rect width="1200" height="426" fill="#0a0a0f"/>
-<text x="252" y="40" font-family="ui-sans-serif,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif" font-size="19" font-weight="650" fill="#ededf3" letter-spacing="-0.3">Peak pricing lands in the middle of a Southeast Asian workday</text>
-<text x="252" y="63" font-family="ui-sans-serif,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif" font-size="13" fill="#74748a">Same tokens, up to twice the price, decided by the clock. Windows from pricing.json — verified 2026-08-19.</text>
-<line x1="252.0" y1="102" x2="252.0" y2="352" stroke="#2a2a33" stroke-width="1"/>
-<text x="252.0" y="96" text-anchor="middle" font-family="ui-sans-serif,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif" font-size="12" fill="#74748a">00</text>
-<line x1="358.5" y1="102" x2="358.5" y2="352" stroke="#2a2a33" stroke-width="1"/>
-<text x="358.5" y="96" text-anchor="middle" font-family="ui-sans-serif,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif" font-size="12" fill="#74748a">03</text>
-<line x1="465.0" y1="102" x2="465.0" y2="352" stroke="#2a2a33" stroke-width="1"/>
-<text x="465.0" y="96" text-anchor="middle" font-family="ui-sans-serif,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif" font-size="12" fill="#74748a">06</text>
-<line x1="571.5" y1="102" x2="571.5" y2="352" stroke="#2a2a33" stroke-width="1"/>
-<text x="571.5" y="96" text-anchor="middle" font-family="ui-sans-serif,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif" font-size="12" fill="#74748a">09</text>
-<line x1="678.0" y1="102" x2="678.0" y2="352" stroke="#2a2a33" stroke-width="1"/>
-<text x="678.0" y="96" text-anchor="middle" font-family="ui-sans-serif,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif" font-size="12" fill="#74748a">12</text>
-<line x1="784.5" y1="102" x2="784.5" y2="352" stroke="#2a2a33" stroke-width="1"/>
-<text x="784.5" y="96" text-anchor="middle" font-family="ui-sans-serif,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif" font-size="12" fill="#74748a">15</text>
-<line x1="891.0" y1="102" x2="891.0" y2="352" stroke="#2a2a33" stroke-width="1"/>
-<text x="891.0" y="96" text-anchor="middle" font-family="ui-sans-serif,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif" font-size="12" fill="#74748a">18</text>
-<line x1="997.5" y1="102" x2="997.5" y2="352" stroke="#2a2a33" stroke-width="1"/>
-<text x="997.5" y="96" text-anchor="middle" font-family="ui-sans-serif,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif" font-size="12" fill="#74748a">21</text>
-<line x1="1104.0" y1="102" x2="1104.0" y2="352" stroke="#2a2a33" stroke-width="1"/>
-<text x="1104.0" y="96" text-anchor="middle" font-family="ui-sans-serif,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif" font-size="12" fill="#74748a">24</text>
-<text x="232" y="96" text-anchor="end" font-family="ui-sans-serif,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif" font-size="12" font-weight="640" fill="#a2a2b4">UTC</text>
-<text x="1116" y="96" font-family="ui-sans-serif,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif" font-size="11" font-weight="640" letter-spacing="0.6" fill="#74748a">IN&#8201;WORKDAY</text>
-<text x="238" y="136" text-anchor="end" font-family="ui-sans-serif,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif" font-size="13" font-weight="640" fill="#ededf3">UTC+7 09–18</text>
-<text x="238" y="152" text-anchor="end" font-family="ui-sans-serif,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif" font-size="11" fill="#74748a">Jakarta · Bangkok · Hanoi</text>
-<rect x="323.0" y="118" width="319.5" height="26" rx="6" fill="#63c194" opacity="0.18"/>
-<text x="238" y="178" text-anchor="end" font-family="ui-sans-serif,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif" font-size="13" font-weight="640" fill="#ededf3">UTC+8 09–18</text>
-<text x="238" y="194" text-anchor="end" font-family="ui-sans-serif,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif" font-size="11" fill="#74748a">Singapore · Manila · KL</text>
-<rect x="287.5" y="160" width="319.5" height="26" rx="6" fill="#63c194" opacity="0.18"/>
-<text x="238" y="232" text-anchor="end" font-family="ui-sans-serif,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif" font-size="13" font-weight="640" fill="#ededf3">deepseek-v4</text>
-<text x="238" y="249" text-anchor="end" font-family="ui-sans-serif,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif" font-size="11" fill="#74748a">deepseek · off-peak 0.5×</text>
-<rect x="252" y="212" width="852" height="30" rx="8" fill="#1d1d26"/>
-<rect x="287.5" y="212" width="106.5" height="30" rx="8" fill="#e8836b" opacity="0.85"/>
-<rect x="465.0" y="212" width="142.0" height="30" rx="8" fill="#e8836b" opacity="0.85"/>
-<text x="1116" y="232" font-family="ui-sans-serif,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif" font-size="13" font-weight="650" fill="#e8836b">7/9 h</text>
-<text x="238" y="306" text-anchor="end" font-family="ui-sans-serif,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif" font-size="13" font-weight="640" fill="#ededf3">glm-coding</text>
-<text x="238" y="323" text-anchor="end" font-family="ui-sans-serif,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif" font-size="11" fill="#74748a">zhipu · weekdays · off-peak 0.5×</text>
-<rect x="252" y="286" width="852" height="30" rx="8" fill="#1d1d26"/>
-<rect x="465.0" y="286" width="142.0" height="30" rx="8" fill="#e8836b" opacity="0.85"/>
-<text x="1116" y="306" font-family="ui-sans-serif,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif" font-size="13" font-weight="650" fill="#e8836b">4/9 h</text>
-<line x1="252" y1="358" x2="1104" y2="358" stroke="#2a2a33" stroke-width="1"/>
-<rect x="252" y="381" width="22" height="14" rx="4" fill="#e8836b" opacity="0.85"/>
-<text x="282" y="392" font-family="ui-sans-serif,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif" font-size="12" fill="#a2a2b4">Peak — full rate</text>
-<rect x="422" y="381" width="22" height="14" rx="4" fill="#1d1d26" opacity="1"/>
-<text x="452" y="392" font-family="ui-sans-serif,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif" font-size="12" fill="#a2a2b4">Off-peak</text>
-<rect x="537" y="381" width="22" height="14" rx="4" fill="#63c194" opacity="0.18"/>
-<text x="567" y="392" font-family="ui-sans-serif,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif" font-size="12" fill="#a2a2b4">A 09:00–18:00 working day</text>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 726" width="1200" height="726" role="img" aria-label="Every vendor in the rate card, showing which ones change price by the hour and which charge the same all day, plotted against a 09:00 to 18:00 working day in UTC+7 and UTC+8.">
+<rect width="1200" height="726" fill="#0a0a0f"/>
+<text x="40" y="46" font-family="ui-sans-serif,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif" font-size="21" font-weight="650" fill="#ededf3" letter-spacing="-0.4">The same tokens cost less at the right hour — if your vendor charges by the clock</text>
+<text x="40" y="72" font-family="ui-sans-serif,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif" font-size="13.5" fill="#74748a">Two of the five vendors checked so far change price by the hour. For the rest the cheaper lane is the batch queue. From pricing.json — verified 2026-08-19.</text>
+<line x1="258.0" y1="110" x2="258.0" y2="650" stroke="#2a2a33" stroke-width="1"/>
+<text x="258.0" y="102" text-anchor="middle" font-family="ui-sans-serif,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif" font-size="12" fill="#74748a">00</text>
+<line x1="359.2" y1="110" x2="359.2" y2="650" stroke="#2a2a33" stroke-width="1"/>
+<text x="359.2" y="102" text-anchor="middle" font-family="ui-sans-serif,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif" font-size="12" fill="#74748a">03</text>
+<line x1="460.5" y1="110" x2="460.5" y2="650" stroke="#2a2a33" stroke-width="1"/>
+<text x="460.5" y="102" text-anchor="middle" font-family="ui-sans-serif,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif" font-size="12" fill="#74748a">06</text>
+<line x1="561.8" y1="110" x2="561.8" y2="650" stroke="#2a2a33" stroke-width="1"/>
+<text x="561.8" y="102" text-anchor="middle" font-family="ui-sans-serif,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif" font-size="12" fill="#74748a">09</text>
+<line x1="663.0" y1="110" x2="663.0" y2="650" stroke="#2a2a33" stroke-width="1"/>
+<text x="663.0" y="102" text-anchor="middle" font-family="ui-sans-serif,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif" font-size="12" fill="#74748a">12</text>
+<line x1="764.2" y1="110" x2="764.2" y2="650" stroke="#2a2a33" stroke-width="1"/>
+<text x="764.2" y="102" text-anchor="middle" font-family="ui-sans-serif,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif" font-size="12" fill="#74748a">15</text>
+<line x1="865.5" y1="110" x2="865.5" y2="650" stroke="#2a2a33" stroke-width="1"/>
+<text x="865.5" y="102" text-anchor="middle" font-family="ui-sans-serif,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif" font-size="12" fill="#74748a">18</text>
+<line x1="966.8" y1="110" x2="966.8" y2="650" stroke="#2a2a33" stroke-width="1"/>
+<text x="966.8" y="102" text-anchor="middle" font-family="ui-sans-serif,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif" font-size="12" fill="#74748a">21</text>
+<line x1="1068.0" y1="110" x2="1068.0" y2="650" stroke="#2a2a33" stroke-width="1"/>
+<text x="1068.0" y="102" text-anchor="middle" font-family="ui-sans-serif,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif" font-size="12" fill="#74748a">24</text>
+<text x="234" y="102" text-anchor="end" font-family="ui-sans-serif,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif" font-size="12" font-weight="640" fill="#a2a2b4">UTC</text>
+<text x="1080" y="102" font-family="ui-sans-serif,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif" font-size="11" font-weight="640" letter-spacing="0.6" fill="#74748a">IN&#8201;WORKDAY</text>
+<text x="234" y="143" text-anchor="end" font-family="ui-sans-serif,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif" font-size="13" font-weight="640" fill="#ededf3">UTC+7  09–18</text>
+<text x="234" y="159" text-anchor="end" font-family="ui-sans-serif,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif" font-size="11" fill="#74748a">Jakarta · Bangkok · Hanoi</text>
+<rect x="325.5" y="124" width="303.8" height="30" rx="8" fill="#63c194" opacity="0.18"/>
+<text x="234" y="199" text-anchor="end" font-family="ui-sans-serif,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif" font-size="13" font-weight="640" fill="#ededf3">UTC+8  09–18</text>
+<text x="234" y="215" text-anchor="end" font-family="ui-sans-serif,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif" font-size="11" fill="#74748a">Singapore · Manila · KL</text>
+<rect x="291.8" y="180" width="303.8" height="30" rx="8" fill="#63c194" opacity="0.18"/>
+<text x="234" y="283" text-anchor="end" font-family="ui-sans-serif,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif" font-size="13" font-weight="640" fill="#ededf3">deepseek-v4</text>
+<text x="234" y="299" text-anchor="end" font-family="ui-sans-serif,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif" font-size="11" fill="#74748a">deepseek · off-peak 0.5×</text>
+<rect x="258" y="264" width="810" height="30" rx="8" fill="#1d1d26"/>
+<rect x="291.8" y="264" width="101.2" height="30" rx="8" fill="#e8836b" opacity="0.85"/>
+<rect x="460.5" y="264" width="135.0" height="30" rx="8" fill="#e8836b" opacity="0.85"/>
+<text x="1080" y="284" font-family="ui-sans-serif,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif" font-size="13" font-weight="650" fill="#e8836b">7/9 h</text>
+<text x="234" y="339" text-anchor="end" font-family="ui-sans-serif,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif" font-size="13" font-weight="640" fill="#ededf3">glm-coding</text>
+<text x="234" y="355" text-anchor="end" font-family="ui-sans-serif,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif" font-size="11" fill="#74748a">zhipu · weekdays · off-peak 0.5×</text>
+<rect x="258" y="320" width="810" height="30" rx="8" fill="#1d1d26"/>
+<rect x="460.5" y="320" width="135.0" height="30" rx="8" fill="#e8836b" opacity="0.85"/>
+<text x="1080" y="340" font-family="ui-sans-serif,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif" font-size="13" font-weight="650" fill="#e8836b">4/9 h</text>
+<text x="234" y="423" text-anchor="end" font-family="ui-sans-serif,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif" font-size="13" font-weight="640" fill="#ededf3">anthropic</text>
+<text x="234" y="439" text-anchor="end" font-family="ui-sans-serif,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif" font-size="11" fill="#74748a">same price every hour · batch 0.5×</text>
+<rect x="258" y="404" width="810" height="30" rx="8" fill="#1d1d26"/>
+<text x="663.0" y="424" text-anchor="middle" font-family="ui-sans-serif,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif" font-size="12" fill="#74748a">no hour is cheaper</text>
+<text x="1080" y="424" font-family="ui-sans-serif,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif" font-size="13" font-weight="650" fill="#63c194">batch 0.5×</text>
+<text x="234" y="479" text-anchor="end" font-family="ui-sans-serif,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif" font-size="13" font-weight="640" fill="#ededf3">google</text>
+<text x="234" y="495" text-anchor="end" font-family="ui-sans-serif,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif" font-size="11" fill="#74748a">same price every hour · batch 0.5×</text>
+<rect x="258" y="460" width="810" height="30" rx="8" fill="#1d1d26"/>
+<text x="663.0" y="480" text-anchor="middle" font-family="ui-sans-serif,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif" font-size="12" fill="#74748a">no hour is cheaper</text>
+<text x="1080" y="480" font-family="ui-sans-serif,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif" font-size="13" font-weight="650" fill="#63c194">batch 0.5×</text>
+<text x="234" y="535" text-anchor="end" font-family="ui-sans-serif,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif" font-size="13" font-weight="640" fill="#ededf3">openai</text>
+<text x="234" y="551" text-anchor="end" font-family="ui-sans-serif,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif" font-size="11" fill="#74748a">same price every hour · batch 0.5×</text>
+<rect x="258" y="516" width="810" height="30" rx="8" fill="#1d1d26"/>
+<text x="663.0" y="536" text-anchor="middle" font-family="ui-sans-serif,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif" font-size="12" fill="#74748a">no hour is cheaper</text>
+<text x="1080" y="536" font-family="ui-sans-serif,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif" font-size="13" font-weight="650" fill="#63c194">batch 0.5×</text>
+<text x="234" y="619" text-anchor="end" font-family="ui-sans-serif,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif" font-size="13" font-weight="640" fill="#ededf3">8 more vendors</text>
+<text x="234" y="635" text-anchor="end" font-family="ui-sans-serif,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif" font-size="11" fill="#74748a">in the rate card, not yet checked</text>
+<rect x="258" y="600" width="810" height="30" rx="8" stroke-dasharray="5 4" stroke="#2a2a33" fill="none"/>
+<text x="663.0" y="620" text-anchor="middle" font-family="ui-sans-serif,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif" font-size="12" fill="#74748a">nobody has looked — a one-line PR fixes that</text>
+<line x1="258" y1="660" x2="1068" y2="660" stroke="#2a2a33" stroke-width="1"/>
+<rect x="258" y="681" width="22" height="14" rx="4" fill="#e8836b" opacity="0.85"/>
+<text x="288" y="692" font-family="ui-sans-serif,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif" font-size="12" fill="#a2a2b4">Peak — full rate</text>
+<rect x="428" y="681" width="22" height="14" rx="4" fill="#1d1d26" opacity="1"/>
+<text x="458" y="692" font-family="ui-sans-serif,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif" font-size="12" fill="#a2a2b4">Off-peak</text>
+<rect x="543" y="681" width="22" height="14" rx="4" fill="#63c194" opacity="0.18"/>
+<text x="573" y="692" font-family="ui-sans-serif,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif" font-size="12" fill="#a2a2b4">A 09:00–18:00 working day</text>
+<text x="1160" y="692" text-anchor="end" font-family="ui-sans-serif,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif" font-size="12" fill="#74748a">Batch = same tokens, results within 24h</text>
 </svg>

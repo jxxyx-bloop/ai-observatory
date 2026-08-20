@@ -37,6 +37,13 @@ function usd(n) {
     {minimumFractionDigits: d, maximumFractionDigits: d});
 }
 function pctOf(a, b) { return b ? (100 * a / b) : 0; }
+/* One-off lookup for strings used inside a chart, where re-rendering on a
+   language switch is cheaper than tagging every generated node. */
+function t18(key, fallback) {
+  if (typeof I18N === "undefined") return fallback;
+  var v = I18N.dict(document.documentElement.getAttribute("data-lang") || "en")[key];
+  return v || fallback;
+}
 
 /* ---- metric explainers ---------------------------------------------------
    Every behavioral metric gets a small ⓘ affordance carrying its own formula
@@ -294,47 +301,218 @@ function dayAxis(days, L, step, base, PH) {
   return s;
 }
 
-// Weekday x hour heatmap — replaces the old flat 24-bar chart with a richer
-// view of the same `hours` cube: single-hue accent ramp, empty cells stay a
-// visible neutral track rather than vanishing, so the grid shape always reads.
-function heatmap(F) {
-  var grid = [];
+/* ---- the meter: your hours against your vendors' clocks -------------------
+   The single most actionable view on this page, and the one the rest of the
+   product argues for. The working-hours heatmap already showed *when* you
+   work. On its own that is trivia. Drawn against the hours your vendors
+   actually charge more for, the same grid answers "which of my habits is
+   costing me money" — and, because the off-peak columns are right there,
+   "where would I move it to".
+
+   Deliberately 2D. A third axis here would encode nothing the colour ramp does
+   not already carry, and would make neighbouring cells occlude each other —
+   the comparison this chart exists to support. */
+function peakHoursSet(F) {
+  // Which local hours are peak, for the vendors actually present in the
+  // current filter. A window nobody uses is not a finding, it is noise.
+  var wins = D.windows || {}, tz = Number(CUR.tz_offset_hours || 0);
+  var used = {};
+  agg(D.cube, CUBE, F, ["provider"]).forEach(function (r) { used[r.provider] = true; });
+
+  var hours = {}, vendors = [];
+  Object.keys(wins).forEach(function (name) {
+    var w = wins[name];
+    // The engine already resolved which providers bill on this window. Matching
+    // on the vendor name here would silently drop GLM, whose events carry
+    // provider "glm" against a window keyed to vendor "zhipu".
+    var on = (w.providers || []).some(function (p) { return used[p]; });
+    if (!on) return;
+    (w.providers || []).forEach(function (p) {
+      if (vendors.indexOf(p) < 0) vendors.push(p);
+    });
+    (w.peak_utc || []).forEach(function (pair) {
+      for (var h = pair[0]; h < pair[1]; h++) {
+        // Fractional offsets (UTC+5:30) shift the boundary; the hour a turn is
+        // bucketed into is the one that decides its price, so round the same
+        // way the pricing does — down.
+        var local = ((Math.floor(h + tz)) % 24 + 24) % 24;
+        hours[local] = (hours[local] || []);
+        (w.providers || []).forEach(function (p) {
+          if (used[p] && hours[local].indexOf(p) < 0) hours[local].push(p);
+        });
+      }
+    });
+  });
+  return {hours: hours, vendors: vendors, days: null};
+}
+
+function meter(F) {
+  var pk = peakHoursSet(F);
+  var grid = [], total = 0;
   for (var w = 0; w < 7; w++) grid.push(new Array(24).fill(0));
-  var total = 0;
   agg(D.hours, HOURS, F, ["date", "hour"]).forEach(function (r) {
     var h = parseInt(r.hour, 10);
     if (isNaN(h) || h < 0 || h > 23) return;
     grid[parse(r.date).getUTCDay()][h] += r.turns;
     total += r.turns;
   });
-  if (!total) return '<p class="empty">Nothing in this range.</p>';
-  var peak = 1;
-  grid.forEach(function (row) { row.forEach(function (v) { if (v > peak) peak = v; }); });
+  if (!total) return {svg: '<p class="empty">Nothing in this range.</p>', note: ""};
 
-  var W = 720, L = 40, TOP = 18, CH = 17, GAP = 3, cw = (W - L - 8) / 24;
-  var H = TOP + 7 * (CH + GAP) + 18;
-  var s = '<svg viewBox="0 0 ' + W + ' ' + H + '" role="img" preserveAspectRatio="xMinYMin meet">'
-    + '<text x="' + (W - 4) + '" y="12" text-anchor="end" class="axis">'
-    + "turns by weekday × hour, " + esc(CUR.tz_label) + "</text>";
+  var peak = 1, inPeak = 0;
+  for (var a = 0; a < 7; a++) for (var b = 0; b < 24; b++) {
+    if (grid[a][b] > peak) peak = grid[a][b];
+    if (pk.hours[b]) inPeak += grid[a][b];
+  }
+
+  var W = 760, L = 38, TOP = 34, CH = 20, GAP = 4, cw = (W - L - 10) / 24;
+  var H = TOP + 7 * (CH + GAP) + 34;
+  var s = '<svg viewBox="0 0 ' + W + ' ' + H + '" role="img" '
+    + 'preserveAspectRatio="xMinYMin meet" aria-label="Turns by weekday and hour, '
+    + 'with peak-priced hours marked">';
+
+  // Peak columns first, behind everything: a band the eye reads as "the
+  // expensive part of the day" before it reads any individual cell.
+  var bandTop = TOP - 16, bandH = 7 * (CH + GAP) + 14;
+  Object.keys(pk.hours).forEach(function (h) {
+    s += '<rect x="' + (L + h * cw).toFixed(1) + '" y="' + bandTop + '" width="'
+      + Math.max(1, cw - 1.5).toFixed(1) + '" height="' + bandH + '" rx="4" '
+      + 'fill="var(--high)" opacity="0.10"/>';
+  });
+  s += '<text x="' + L + '" y="' + (bandTop - 6) + '" class="axis" '
+    + 'fill="var(--high)">' + esc(t18("m_peak", "PEAK — full rate") + " · "
+    + pk.vendors.join(", ")) + "</text>";
+
   for (var w2 = 0; w2 < 7; w2++) {
     var y = TOP + w2 * (CH + GAP);
     s += '<text x="' + (L - 8) + '" y="' + (y + CH / 2 + 3.5).toFixed(1)
       + '" text-anchor="end" class="axis">' + DOW[w2] + "</text>";
     for (var h2 = 0; h2 < 24; h2++) {
-      var v = grid[w2][h2], x = L + h2 * cw;
-      var fill = v ? "var(--accent)" : "var(--track)";
-      var op = v ? Math.max(0.15, v / peak).toFixed(2) : "1";
-      s += '<rect class="heatcell" data-tt="' + esc(DOW[w2] + " " + String(h2).padStart(2, "0")
-        + ":00 " + CUR.tz_label + " — " + num(v) + " turns") + '" x="' + x.toFixed(1) + '" y="' + y.toFixed(1)
-        + '" width="' + Math.max(1, cw - 1.5).toFixed(1) + '" height="' + CH + '" rx="2" fill="'
-        + fill + '" opacity="' + op + '"/>';
+      var v = grid[w2][h2], x = L + h2 * cw, hot = !!pk.hours[h2];
+      var op = v ? Math.max(0.16, v / peak).toFixed(2) : "1";
+      var tip = DOW[w2] + " " + String(h2).padStart(2, "0") + ":00 " + CUR.tz_label
+        + " — " + num(v) + " turns"
+        + (hot ? " · " + t18("m_at_peak", "at peak rate") + " (" + pk.hours[h2].join(", ") + ")"
+               : " · " + t18("m_off", "off-peak"));
+      s += '<rect class="heatcell" data-tt="' + esc(tip) + '" x="' + x.toFixed(1)
+        + '" y="' + y.toFixed(1) + '" width="' + Math.max(1, cw - 1.5).toFixed(1)
+        + '" height="' + CH + '" rx="3" fill="' + (v ? "var(--accent)" : "var(--track)")
+        + '" opacity="' + op + '"/>';
+      // The ring, not a second fill: volume stays encoded by opacity alone, so
+      // "busy" and "expensive" never compete for the same visual channel.
+      if (hot && v) {
+        s += '<rect x="' + x.toFixed(1) + '" y="' + y.toFixed(1) + '" width="'
+          + Math.max(1, cw - 1.5).toFixed(1) + '" height="' + CH
+          + '" rx="3" fill="none" stroke="var(--high)" stroke-width="1.6" '
+          + 'pointer-events="none"/>';
+      }
     }
   }
-  var by = TOP + 7 * (CH + GAP) + 12;
+  var by = TOP + 7 * (CH + GAP) + 14;
   for (var h3 = 0; h3 < 24; h3 += 3) {
     s += '<text x="' + (L + h3 * cw + cw / 2).toFixed(1) + '" y="' + by.toFixed(1)
       + '" text-anchor="middle" class="axis">' + String(h3).padStart(2, "0") + "</text>";
   }
+  s += '<text x="' + (W - 4) + '" y="' + by.toFixed(1) + '" text-anchor="end" '
+    + 'class="axis">' + esc(CUR.tz_label) + "</text></svg>";
+
+  // The number that makes the picture matter, and the hours to move work to:
+  // quiet enough to be cheap, close enough to when you already work.
+  var pct = pctOf(inPeak, total);
+  var byHour = new Array(24).fill(0);
+  for (var c = 0; c < 7; c++) for (var d = 0; d < 24; d++) byHour[d] += grid[c][d];
+  var offNeighbours = [];
+  for (var e = 0; e < 24; e++) {
+    if (pk.hours[e] || !byHour[e]) continue;
+    offNeighbours.push({h: e, v: byHour[e]});
+  }
+  offNeighbours.sort(function (m, n) { return n.v - m.v; });
+  var best = offNeighbours.slice(0, 3).sort(function (m, n) { return m.h - n.h; })
+    .map(function (o) { return String(o.h).padStart(2, "0") + ":00"; });
+
+  var note = t18("m_share", "%P% of your turns on time-priced vendors land in a peak window.")
+    .replace("%P%", pct.toFixed(0) + "%");
+  if (best.length) {
+    note += " " + t18("m_move", "You already work at %H% — those hours are off-peak.")
+      .replace("%H%", best.join(", "));
+  }
+  return {svg: s, note: note};
+}
+
+/* ---- the long view: one square per day ------------------------------------
+   The daily chart answers "what did this month look like". It cannot answer
+   "am I busier than I was in March", because a range that wide compresses each
+   day below a pixel. A calendar grid can hold a year without shrinking a day
+   below a readable square, which is exactly the question the bar chart drops.
+
+   Not 3D. Extruding each day into a block is the well-known version of this
+   chart, and it trades the one thing the grid is good at — comparing any two
+   days at a glance — for an angle that hides the back rows behind the front
+   ones. See docs/design/DESIGN-SYSTEM.md; the repo's own chart rules call
+   3D on a quantitative chart chartjunk, and this is why. */
+function calendar() {
+  var days = {}, maxv = 0;
+  D.by_day.forEach(function (r) { days[r.date] = r.turns; });
+  var first = parse(FIRST), last = parse(LAST);
+  // Start on the Sunday on or before the first day, so every column is a full
+  // week and the weekday rows line up down the whole grid.
+  var start = new Date(first.getTime());
+  start.setUTCDate(start.getUTCDate() - start.getUTCDay());
+  var weeks = Math.ceil((last - start) / 6048e5) + 1;
+  if (weeks < 1) return "";
+
+  Object.keys(days).forEach(function (k) { if (days[k] > maxv) maxv = days[k]; });
+  if (!maxv) return "";
+
+  var CELL = 11, G = 3, L = 26, TOP = 18;
+  var W = Math.max(L + weeks * (CELL + G) + 8, 260);
+  var H = TOP + 7 * (CELL + G) + 24;
+  // Explicit width/height, not just a viewBox: this is the one chart on the
+  // page that must NOT stretch to its container. A day is a fixed-size square
+  // or it is not a calendar — nine weeks of data blown up to 1100px reads as
+  // a bar chart with square bars.
+  var s = '<svg width="' + W + '" height="' + H + '" viewBox="0 0 ' + W + ' '
+    + H + '" role="img" preserveAspectRatio="xMinYMin meet" '
+    + 'aria-label="One square per day, darker means more turns">';
+  var lastMonth = -1;
+  for (var w = 0; w < weeks; w++) {
+    for (var d = 0; d < 7; d++) {
+      var day = new Date(start.getTime());
+      day.setUTCDate(day.getUTCDate() + w * 7 + d);
+      if (day < first || day > last) continue;
+      var key = day.toISOString().slice(0, 10), v = days[key] || 0;
+      var x = L + w * (CELL + G), y = TOP + d * (CELL + G);
+      if (d === 0 && day.getUTCMonth() !== lastMonth) {
+        lastMonth = day.getUTCMonth();
+        s += '<text x="' + x + '" y="' + (TOP - 6) + '" class="axis">'
+          + MON[lastMonth] + "</text>";
+      }
+      s += '<rect class="calcell" data-tt="' + esc(key + " — " + num(v) + " turns")
+        + '" data-day="' + key + '" x="' + x + '" y="' + y + '" width="' + CELL
+        + '" height="' + CELL + '" rx="2.5" fill="'
+        + (v ? "var(--accent)" : "var(--track)") + '" opacity="'
+        + (v ? Math.max(0.18, v / maxv).toFixed(2) : "1") + '"/>';
+    }
+  }
+  ["Mon", "Wed", "Fri"].forEach(function (lbl, i) {
+    var row = [1, 3, 5][i];
+    s += '<text x="' + (L - 6) + '" y="' + (TOP + row * (CELL + G) + CELL - 1)
+      + '" text-anchor="end" class="axis">' + lbl + "</text>";
+  });
+  // Ramp legend. Without it a pale square is ambiguous between "a quiet day"
+  // and "no data", which are different facts.
+  var ly = TOP + 7 * (CELL + G) + 11, lx = L;
+  s += '<text x="' + lx + '" y="' + ly + '" class="axis">'
+    + esc(t18("c_less", "less")) + "</text>";
+  lx += 30;
+  [0, 0.25, 0.5, 0.75, 1].forEach(function (v) {
+    s += '<rect x="' + lx + '" y="' + (ly - CELL + 2) + '" width="' + CELL
+      + '" height="' + CELL + '" rx="2.5" fill="'
+      + (v ? "var(--accent)" : "var(--track)") + '" opacity="'
+      + (v ? Math.max(0.18, v).toFixed(2) : "1") + '"/>';
+    lx += CELL + G;
+  });
+  s += '<text x="' + (lx + 4) + '" y="' + ly + '" class="axis">'
+    + esc(t18("c_more", "more")) + "</text>";
   return s + "</svg>";
 }
 
@@ -522,7 +700,9 @@ function dayFilter(F) {
                : F;
 }
 
+var drawn = false;
 function draw() {
+  drawn = true;
   var F = state();
   if (F.from > F.to) { F.from = F.to; $("from").value = F.to; }
   if (F.day && (F.day < F.from || F.day > F.to)) { F.day = selectedDay = null; }
@@ -558,12 +738,14 @@ function draw() {
     ? "Showing the busiest repository. Pick one on the left to hold it."
     : "";
 
-  $("models").innerHTML = bars(agg(D.cube, CUBE, DF, ["model"]).sort(byOutput),
+  $("models-chart").innerHTML = bars(agg(D.cube, CUBE, DF, ["model"]).sort(byOutput),
     function (r) { return r.model; }, function (r) { return r.output; }, num);
   $("efforts").innerHTML = bars(agg(D.cube, CUBE, DF, ["effort"])
     .sort(function (a, b) { return b.turns - a.turns; }),
     function (r) { return r.effort; }, function (r) { return r.turns; }, num);
-  $("hours").innerHTML = heatmap(DF);
+  var mt = meter(DF);
+  $("meter").innerHTML = mt.svg;
+  $("meterNote").textContent = mt.note;
   $("tools").innerHTML = bars(agg(D.tools, TOOLS, DF, ["tool"])
     .sort(function (a, b) { return b.calls - a.calls; }).slice(0, 10),
     function (r) { return r.tool; }, function (r) { return r.calls; }, num);
@@ -580,7 +762,7 @@ function draw() {
 
   // Trends always span the full selected range, ignoring the day drill-down
   // above it — a single day has no week-over-week shape to show.
-  $("trends").innerHTML = behavioralTrends(F);
+  $("trends-charts").innerHTML = behavioralTrends(F);
 }
 
 /* ---- controls ----------------------------------------------------------- */
@@ -610,17 +792,95 @@ function ancestor(node, sel) {
   }
   return null;
 }
-function fillSelect(el, rows, key) {
-  el.innerHTML = '<option value="All">All</option>' + rows.map(function (r) {
-    return '<option value="' + esc(r[key]) + '">' + esc(r[key]) + "</option>";
-  }).join("");
+function fillSelect(el, rows, key, allLabel) {
+  el.innerHTML = '<option value="All">' + esc(allLabel) + "</option>"
+    + rows.map(function (r) {
+        return '<option value="' + esc(r[key]) + '">' + esc(r[key]) + "</option>";
+      }).join("");
+}
+
+/* Re-run on a language change too: the "All providers" text inside each option
+   is copy, not data, so it has to be rebuilt rather than translated in place. */
+function fillSelects() {
+  var t = (typeof I18N !== "undefined")
+    ? I18N.dict(document.documentElement.getAttribute("data-lang") || "en")
+    : {f_all_provider: "All providers", f_all_lane: "All lanes", f_all_repo: "All repos"};
+  var keep = {provider: $("provider").value, lane: $("lane").value, repo: $("repo").value};
+  fillSelect($("provider"), D.by_provider, "provider", t.f_all_provider);
+  fillSelect($("lane"), D.by_lane, "lane", t.f_all_lane);
+  fillSelect($("repo"), D.by_repo, "repo", t.f_all_repo);
+  Object.keys(keep).forEach(function (k) { if (keep[k]) $(k).value = keep[k]; });
+}
+
+/* ---- rail: scroll spy ---------------------------------------------------
+   Lights the tile for whatever section owns the top third of the viewport.
+   IntersectionObserver rather than a scroll listener, so it costs nothing on
+   a page this tall; without it the rail is a menu that never tells you where
+   you are, which is worse than no rail. */
+/* Clicking a day in the calendar filters to that week, matching the drill-down
+   the daily chart already teaches. A whole week rather than a day: at this
+   scale the target is 11px, and a mis-click that lands on the wrong single day
+   shows an empty page. */
+function initCalendar() {
+  var el = $("calendar");
+  if (!el) return;
+  el.addEventListener("click", function (e) {
+    var c = ancestor(e.target, "rect[data-day]");
+    if (!c) return;
+    var d = parse(c.getAttribute("data-day"));
+    var mon = new Date(d.getTime());
+    mon.setUTCDate(mon.getUTCDate() - mon.getUTCDay());
+    var sun = new Date(mon.getTime());
+    sun.setUTCDate(sun.getUTCDate() + 6);
+    $("from").value = mon.toISOString().slice(0, 10);
+    $("to").value = min(sun.toISOString().slice(0, 10), LAST);
+    markPreset(null);
+    draw();
+    var t = document.getElementById("overview");
+    if (t) t.scrollIntoView({behavior: "smooth", block: "start"});
+  });
+}
+function min(a, b) { return a < b ? a : b; }
+
+function initRail() {
+  var nav = $("railnav");
+  if (!nav) return;
+  var links = [].slice.call(nav.querySelectorAll("a[data-sec]"));
+
+  links.forEach(function (a) {
+    a.addEventListener("click", function (e) {
+      var el = document.getElementById(a.getAttribute("data-sec"));
+      if (!el) return;
+      e.preventDefault();
+      el.scrollIntoView({behavior: "smooth", block: "start"});
+      try { history.replaceState({}, "", "#" + a.getAttribute("data-sec")); } catch (err) {}
+    });
+  });
+
+  function light(id) {
+    links.forEach(function (a) {
+      if (a.getAttribute("data-sec") === id) a.setAttribute("aria-current", "true");
+      else a.removeAttribute("aria-current");
+    });
+  }
+  light(links[0] && links[0].getAttribute("data-sec"));
+
+  if (!("IntersectionObserver" in window)) return;
+  var seen = {};
+  var io = new IntersectionObserver(function (entries) {
+    entries.forEach(function (en) { seen[en.target.id] = en.isIntersecting; });
+    for (var i = 0; i < links.length; i++) {
+      var id = links[i].getAttribute("data-sec");
+      if (seen[id]) { light(id); return; }
+    }
+  }, {rootMargin: "-12% 0px -66% 0px"});
+  links.forEach(function (a) {
+    var el = document.getElementById(a.getAttribute("data-sec"));
+    if (el) io.observe(el);
+  });
 }
 
 function init() {
-  var hn = $("hoursNote");
-  if (hn) hn.textContent = "Weekday \u00d7 hour, in " + CUR.tz_label
-    + " \u2014 the timezone the work actually happens in, not wherever the collecting "
-    + "machine's clock is set.";
   $("span").textContent = FIRST + " → " + LAST + " · " + D.window.days
     + " active days · " + D.by_provider.map(function (p) { return p.provider; }).join(" + ");
 
@@ -636,9 +896,10 @@ function init() {
     $(id).addEventListener("change", function () { markPreset(null); draw(); });
   });
 
-  fillSelect($("provider"), D.by_provider, "provider");
-  fillSelect($("lane"), D.by_lane, "lane");
-  fillSelect($("repo"), D.by_repo, "repo");
+  fillSelects();
+  var cal = calendar();
+  $("calendar").innerHTML = cal;
+  if (!cal) $("calendar").closest ? 0 : 0;
   ["provider", "lane", "repo"].forEach(function (id) {
     $(id).addEventListener("change", draw);
   });
@@ -800,6 +1061,12 @@ function initLang() {
 
     // Only shown when the interface is not in the language the engine writes.
     each(".lang-note", function (el) { el.hidden = (lang === "en"); });
+    if (typeof fillSelects === "function" && $("provider")) fillSelects();
+    // Charts write their own text — the meter's summary sentence, the
+    // calendar's ramp legend — so translating the DOM is not enough; they have
+    // to be drawn again. Guarded because initLang runs before the first draw
+    // on a cold load, and drawing twice there is just wasted work.
+    if (drawn) { draw(); $("calendar").innerHTML = calendar(); }
 
     if (code) {
       I18N.LOCALES.forEach(function (l) { if (l[0] === lang) code.textContent = l[2]; });
@@ -829,6 +1096,8 @@ function initLang() {
 }
 
 initTheme();
-initLang();
 init();
+initLang();
+initCalendar();
+initRail();
 })();

@@ -209,6 +209,10 @@ def build_digest(events, pricing: dict) -> dict:
     by_phase: dict = defaultdict(_blank_bucket)
     peak_premium = 0.0
     tool_counts: dict = defaultdict(int)
+    # window key -> the providers in THIS dataset that bill on it. A window is
+    # keyed by vendor ("zhipu") and an event carries a provider ("glm"); those
+    # are two names for one company and nothing downstream can bridge them.
+    window_providers: dict = defaultdict(set)
     sessions: dict = {}
     sidechain = _blank_bucket()
     first_ts = last_ts = None
@@ -252,6 +256,10 @@ def build_digest(events, pricing: dict) -> dict:
                      "lane": ev.get("lane"), "repo": ev.get("repo")}
         cube.add(*_cube_row(ev, cost, ts, pricing))
         hours.add(dict(slice_key, hour=ts[11:13] or "??"), [1])
+        _win = (pricing.get("models", {}).get(ev.get("model"), {}) or {}).get("window")
+        if _win:
+            window_providers[_win].add(ev.get("provider"))
+
         for name in ev.get("tools") or []:
             tool_counts[name] += 1
             tools.add(dict(slice_key, tool=name), [1])
@@ -259,6 +267,21 @@ def build_digest(events, pricing: dict) -> dict:
 
     return {
         "schema": 1,
+        # The peak schedules travel with the digest so the dashboard can draw
+        # them over the reader's own hours. A few hundred bytes, and without
+        # them the page can say *when* you work but not *what that hour costs*
+        # — which is the only reason the hour matters.
+        "windows": {
+            name: {
+                "vendor": w.get("vendor"),
+                "peak_utc": w.get("peak_utc") or [],
+                "days": w.get("days"),
+                "off_peak_mult": w.get("off_peak_mult", 1),
+                "providers": sorted(p for p in window_providers.get(name, ()) if p),
+            }
+            for name, w in (pricing.get("windows") or {}).items()
+            if "legacy" not in name and window_providers.get(name)
+        },
         "window": {
             "first": first_ts, "last": last_ts,
             "days": len(by_day),

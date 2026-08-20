@@ -11,7 +11,7 @@
 
 Coding agent Anda sudah mencatat setiap giliran. Alat ini membaca catatan itu dan menyebut beberapa perubahan yang layak dilakukan — masing-masing dengan angkanya.
 
-`Nol token` · `Tanpa akun` · `Tidak ada data yang keluar`
+`Siap dalam kurang dari satu menit` · `Tanpa akun` · `Tidak ada data yang keluar`
 
 **[Buka demo langsung](https://ai-observatory.workers.dev/demo/)** · [AI Observatory](https://ai-observatory.workers.dev/id/) · [GitHub](https://github.com/jxxyx-bloop/ai-observatory)
 
@@ -80,7 +80,7 @@ Hanya pustaka standar Python 3. Tanpa instalasi, tanpa dependensi, tanpa build.
 | | | |
 |---|---|---|
 | **01 Baca** | **02 Ukur** | **03 Bertindak** |
-| Agent Anda menulis transkrip untuk tiap sesi. Kami membaca berkas itu di tempatnya. | Token, cache, waktu, dan biaya — dihitung pada tarif yang benar-benar berlaku saat itu. | Daftar perubahan berperingkat, lengkap dengan buktinya dan nilainya per bulan. |
+| Agent Anda sudah menulis lognya. Kami membaca berkas itu di tempatnya — tidak ada yang perlu dipasang atau dinyalakan. | Token, cache, waktu, dan biaya — dihitung pada tarif yang benar-benar berlaku saat itu. | Daftar perubahan berperingkat, lengkap dengan buktinya dan nilainya per bulan. |
 
 Tanpa kunci API, tanpa proxy, tanpa akun, tanpa jaringan. Pengumpulan data memakai nol token.
 

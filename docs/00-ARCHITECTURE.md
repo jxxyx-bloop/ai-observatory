@@ -30,6 +30,13 @@ file in the repo permitted to contain a literal colour, and every surface
 inlines it before its own layout sheet — see
 [`docs/design/DESIGN-SYSTEM.md`](design/DESIGN-SYSTEM.md).
 
+The dashboard is a side rail plus one scrolling column of eight sections. The
+rail is the only persistent surface: section navigation, the link home, the
+theme toggle and the language switcher. `windows` in the digest carries each
+vendor's peak schedule *and the providers in this dataset that bill on it*, so
+the client can draw price over the reader's own hours — see
+[ADR-017](adr/ADR-017-Dashboard-Shell-And-The-Meter.md).
+
 | Surface | Built by | Language strategy |
 |---|---|---|
 | Landing page | `site/build.py` | One static page per locale, cross-linked with `hreflang` |

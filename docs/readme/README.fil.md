@@ -11,7 +11,7 @@
 
 Nakatala na ng iyong agent ang bawat turn. Binabasa ito ng tool at sinasabi ang iilang pagbabagong sulit gawin — bawat isa ay may kasamang numero.
 
-`Zero token` · `Walang account` · `Walang lumalabas ng makina mo`
+`Handa sa wala pang isang minuto` · `Walang account` · `Walang lumalabas ng makina mo`
 
 **[Buksan ang live demo](https://ai-observatory.workers.dev/demo/)** · [AI Observatory](https://ai-observatory.workers.dev/fil/) · [GitHub](https://github.com/jxxyx-bloop/ai-observatory)
 
@@ -80,7 +80,7 @@ Python 3 standard library lang. Walang install, walang dependency, walang build.
 | | | |
 |---|---|---|
 | **01 Basahin** | **02 Sukatin** | **03 Kumilos** |
-| May transcript ang agent mo sa bawat session. Binabasa namin ang mga file na iyon kung nasaan sila. | Token, cache, oras at gastos — sa presyong talagang umiiral noong tumakbo ang trabaho. | Nakaranggong listahan ng mga pagbabago, may ebidensiya at halaga kada buwan. |
+| Naisulat na ng agent mo ang mga log. Binabasa namin ang mga file na iyon kung nasaan sila — walang i-install, walang buksan. | Token, cache, oras at gastos — sa presyong talagang umiiral noong tumakbo ang trabaho. | Nakaranggong listahan ng mga pagbabago, may ebidensiya at halaga kada buwan. |
 
 Walang API key, walang proxy, walang account, walang network. Zero token ang gastos ng pangongolekta.
 

@@ -11,7 +11,7 @@
 
 編碼 Agent 已經把每一輪對話寫進日誌。本工具讀取這些日誌，告訴你少數幾件值得改的事——每一件都附上一個數字。
 
-`零 token 消耗` · `免帳號` · `資料不離開本機`
+`一分鐘內就能跑起來` · `免帳號` · `資料不離開本機`
 
 **[開啟線上示範](https://ai-observatory.workers.dev/demo/)** · [AI Observatory](https://ai-observatory.workers.dev/zh-hant/) · [GitHub](https://github.com/jxxyx-bloop/ai-observatory)
 
@@ -80,7 +80,7 @@ python3 observe.py all
 | | | |
 |---|---|---|
 | **01 讀取** | **02 計量** | **03 行動** |
-| Agent 會為每次 session 寫下完整記錄。我們就地解析這些檔案。 | token、快取、時段與成本——依工作實際執行當下生效的價格計算。 | 一份排序過的改進清單，每條都附證據，以及每月值多少錢。 |
+| Agent 已經把日誌寫好了。我們就地讀取這些檔案——免安裝，也不必啟用任何東西。 | token、快取、時段與成本——依工作實際執行當下生效的價格計算。 | 一份排序過的改進清單，每條都附證據，以及每月值多少錢。 |
 
 免 API key、免 proxy、免帳號、不連網。蒐集本身消耗零 token。
 
