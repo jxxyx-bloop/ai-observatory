@@ -51,6 +51,9 @@ section+section{padding-top:var(--s8)}
 .tools{display:flex;align-items:center;gap:var(--s1);margin-left:auto}
 .tools .code{font-size:var(--t-micro);font-weight:650;letter-spacing:.04em;
   text-transform:uppercase}
+/* A name, not a code — GitHub keeps its own capitalisation rather than
+   taking the language switcher's all-caps treatment. */
+.tools .label{font-size:var(--t-micro);font-weight:650;letter-spacing:.02em}
 
 /* Language menu — a native <details>, so it opens with a click or a keyboard
    and needs no script to be usable. */

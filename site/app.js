@@ -46,13 +46,19 @@ if (menu) {
 
 /* ---- finding deck ------------------------------------------------------
    One finding is the product's whole pitch; three of them make the point that
-   it is a ranked list rather than a lucky example. Auto-advance stops on any
-   deliberate interaction and never restarts, because a card that moves while
-   you are reading it is worse than no card. */
+   it is a ranked list rather than a lucky example, so it cycles on its own —
+   nobody should have to click just to see the other two. It pauses the
+   instant a pointer or keyboard focus lands anywhere on the deck or its
+   controls, because a card that moves out from under someone reading it is
+   worse than no motion, and resumes the moment they leave rather than
+   staying stopped for the rest of the page view. Skipped entirely for
+   prefers-reduced-motion, same as every other animation on this page. */
 var deck = $("deck");
 if (deck) {
   var cards = [].slice.call(deck.querySelectorAll(".find"));
   var dots = $("dots"), i = 0, timer = null;
+  var reduceMotion = window.matchMedia &&
+    window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   if (cards.length > 1 && dots) {
     cards.forEach(function (card, n) {
@@ -60,18 +66,29 @@ if (deck) {
       b.type = "button";
       b.setAttribute("role", "tab");
       b.setAttribute("aria-label", String(n + 1));
-      b.addEventListener("click", function () { stop(); show(n); });
+      b.addEventListener("click", function () { show(n); });
       dots.appendChild(b);
     });
 
     show(0);
-    timer = setInterval(function () { show(i + 1); }, 7000);
+    if (!reduceMotion) start();
 
     var prev = $("prev"), next = $("next");
-    if (prev) prev.addEventListener("click", function () { stop(); show(i - 1); });
-    if (next) next.addEventListener("click", function () { stop(); show(i + 1); });
-    deck.addEventListener("mouseenter", stop);
-    deck.addEventListener("focusin", stop);
+    if (prev) prev.addEventListener("click", function () { show(i - 1); });
+    if (next) next.addEventListener("click", function () { show(i + 1); });
+
+    if (!reduceMotion) {
+      // The whole act — card plus its arrows and dots — pauses as one region;
+      // a reader aiming for the "next" arrow should not have the card change
+      // under their cursor first.
+      var act = $("finding") || deck;
+      act.addEventListener("mouseenter", stop);
+      act.addEventListener("mouseleave", start);
+      act.addEventListener("focusin", stop);
+      act.addEventListener("focusout", function (e) {
+        if (!act.contains(e.relatedTarget)) start();
+      });
+    }
   } else {
     cards.forEach(function (c) { c.classList.add("on"); });
   }
@@ -87,6 +104,7 @@ if (deck) {
       b.setAttribute("aria-selected", k === i ? "true" : "false");
     });
   }
+  function start() { if (!timer) timer = setInterval(function () { show(i + 1); }, 7000); }
   function stop() { if (timer) { clearInterval(timer); timer = null; } }
 }
 
