@@ -1,123 +1,140 @@
-<h1 align="center">AI Observatory</h1>
+<div align="center">
 
-<p align="center">
-  <strong>Your AI coding usage, measured locally — and told what to change.</strong><br>
-  <sub>Built for the way developers in Southeast Asia and China actually buy AI:
-  flat monthly plans, tokens priced by the hour, and a currency that isn't the dollar.</sub>
-</p>
+<img src="docs/assets/mark.svg" width="72" height="72" alt="">
 
-<p align="center">
-  <a href="#quick-start">Quick start</a> ·
-  <a href="#what-makes-this-different">What's different</a> ·
-  <a href="#privacy">Privacy</a> ·
-  <a href="CONTRIBUTING.md">Contributing</a> ·
-  <a href="README.zh-Hans.md">简体中文</a>
-</p>
+# AI&nbsp;Observatory
+
+**Know what to change about your AI coding.**
+
+Your coding agent already logs every turn. This reads those logs and tells you
+the few changes worth making — each with a number attached.
+
+[![ci](https://github.com/jxxyx-bloop/ai-observatory/actions/workflows/ci.yml/badge.svg)](https://github.com/jxxyx-bloop/ai-observatory/actions/workflows/ci.yml)
+[![site](https://github.com/jxxyx-bloop/ai-observatory/actions/workflows/site.yml/badge.svg)](https://github.com/jxxyx-bloop/ai-observatory/actions/workflows/site.yml)
+![python](https://img.shields.io/badge/python-3.9%2B-4f46e5)
+![dependencies](https://img.shields.io/badge/dependencies-none-20724d)
+![licence](https://img.shields.io/badge/licence-MIT-5c5c69)
+
+**[Live demo](https://ai-observatory.workers.dev/demo/)** ·
+[Quick start](#quick-start) ·
+[Why it's different](#why-its-different) ·
+[Privacy](#privacy) ·
+[Docs](docs/)
+
+<sub>
+<a href="https://ai-observatory.workers.dev/">English</a> ·
+<a href="docs/readme/README.zh-Hans.md">简体中文</a> ·
+<a href="docs/readme/README.zh-Hant.md">繁體中文</a> ·
+<a href="docs/readme/README.ja.md">日本語</a> ·
+<a href="docs/readme/README.ko.md">한국어</a> ·
+<a href="docs/readme/README.hi.md">हिन्दी</a> ·
+<a href="docs/readme/README.id.md">Indonesia</a> ·
+<a href="docs/readme/README.vi.md">Tiếng Việt</a> ·
+<a href="docs/readme/README.th.md">ไทย</a> ·
+<a href="docs/readme/README.ms.md">Melayu</a> ·
+<a href="docs/readme/README.fil.md">Filipino</a> ·
+<a href="docs/readme/README.pt-BR.md">Português</a> ·
+<a href="docs/readme/README.es.md">Español</a>
+</sub>
+
+<br>
+
+<a href="https://ai-observatory.workers.dev/demo/">
+<img src="docs/assets/demo-light.png#gh-light-mode-only" alt="The dashboard: spend, cache efficiency, daily rhythm and a ranked list of what to change">
+<img src="docs/assets/demo-dark.png#gh-dark-mode-only" alt="The dashboard in dark mode">
+</a>
+
+<sub>Every image in this file is generated from the live product — see
+[Self-updating visuals](#self-updating-visuals).</sub>
+
+</div>
 
 ---
 
-Every other token tracker is an **odometer** — it tells you how much you spent.
-This one is a **coach**: fifteen deterministic detectors turn your own
-transcripts into ranked findings, each with the evidence behind it, an action,
-a confidence level, and — where it can be defended — what a fix is worth per
-month.
+## The output
 
-Collection costs **zero tokens**. It reads the JSONL transcripts your coding
-agent already wrote to disk. No API keys, no proxy, no account, no network.
+Not a number. A next move.
+
+```text
+[HIGH]   You're paying peak rates you didn't have to              ≈ $34/mo
+         61% of your spend on time-priced models landed inside a peak window,
+         where the same tokens cost up to twice as much.
+      →  Queue the work that doesn't need watching — tests, migrations, doc
+         sweeps — for an off-peak hour.
+
+[MEDIUM] Context is being rebuilt, not reused                     ≈ $61/mo
+         Cache reuse sits at 38%. Rebuilding context costs ~12× reading it.
+      →  Keep one session across related tasks instead of restarting.
+
+[LOW]    Your $18 plan returned 23× what you paid              23× return
+         Metered, the same work would have cost $412. Nothing to fix here.
+```
+
+Fifteen checks. Anything worth under **$15/month is demoted**, so the top of the
+list always means something — and **healthy usage is reported as healthy**. A
+tool that invents problems to look useful is a tool you stop believing.
+
+## How it works
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/assets/pipeline-dark.svg">
+  <img src="docs/assets/pipeline-light.svg" alt="Five steps: transcripts on disk, read-only collection in about 0.2 seconds, normalisation to counts only, fifteen detectors priced from 50 models and 13 currencies, then a ranked list with evidence and a monthly value.">
+</picture>
 
 ## Quick start
 
 ```bash
 git clone https://github.com/jxxyx-bloop/ai-observatory
 cd ai-observatory/observatory
-
-# See the whole product on 60 days of synthetic data, right now
-python3 observe.py demo digest report
+python3 observe.py demo digest report      # 60 days of sample data → dist/observatory.html
 ```
 
-Open `dist/observatory.html`. Python 3 standard library only — **no dependencies,
-no install, no build step, no account, no network.**
-
-> `demo` exists because every tool in this category has the same problem: the
-> dashboard is the pitch, and you can't see it until you have weeks of your own
-> data. This fills that gap deterministically, so everyone sees the same numbers
-> and can argue about them in an issue.
-
-### Your first five minutes
-
-**1. Run it on your own usage.**
+Then on your own usage:
 
 ```bash
-rm -rf ../data ../dist        # clear the demo data first — it must not mix with yours
-python3 observe.py all        # sync -> digest -> report
+rm -rf ../data ../dist        # sample data must not mix with yours
+python3 observe.py all        # sync → digest → report
 ```
 
-`observe.py demo` refuses to run once real events exist, but the reverse is on
-you: clear `data/` before your first real sync.
+**Python 3 standard library only.** No install, no dependencies, no build step,
+no account, no network.
 
-**2. Tell it where your repos live.** Open
-[`topology.json`](observatory/topology.json) and put your actual code
-directories in `code_roots`. This is the one edit worth making on day one —
-without it, work shows as `unattributed` rather than by project.
+<details>
+<summary><b>Your first five minutes</b> — the three edits that are worth making</summary>
+
+<br>
+
+**1. Say where your repos live.** Put your code directories in `code_roots` in
+[`topology.json`](observatory/topology.json). Without this, work shows as
+`unattributed` instead of by project.
 
 ```bash
-python3 observe.py sync --full digest report   # --full is needed after a topology change
+python3 observe.py sync --full digest report   # --full after any topology change
 ```
 
-**3. Set three things in [`settings.json`](observatory/settings.json).**
+**2. Set three fields** in [`settings.json`](observatory/settings.json):
 
 | Field | Set it to |
 |---|---|
-| `timezone_offset_hours` | `8` for SG/CN/MY/PH/HK, `7` for ID/TH/VN, `9` for JP/KR, `5.5` for IN |
-| `currency` | `IDR`, `VND`, `THB`, `PHP`, `MYR`, `SGD`, `CNY` … or leave `USD` |
-| `plan` | your subscription id from [`plans.json`](observatory/plans.json), or `none` if you pay per token |
+| `timezone_offset_hours` | `8` SG/CN/MY/PH/HK · `7` ID/TH/VN · `9` JP/KR · `5.5` IN |
+| `currency` | `IDR`, `VND`, `THB`, `PHP`, `MYR`, `SGD`, `CNY`… or leave `USD` |
+| `plan` | your subscription id from [`plans.json`](observatory/plans.json), or `none` |
 
 Setting `plan` is what turns the dollar figure from a number you don't
 recognise into *"your $18 plan returned 23× what you paid."*
 
-**4. Read the top finding and do something about it.**
-
-```bash
-python3 observe.py insights
-```
-
-The list is sorted most-material first. If the top item is `info`, your usage
-is healthy and the tool will say so rather than inventing a problem.
-
-**5. Make it a habit.** A daily cron costs nothing to run (zero tokens, ~0.2 s):
+**3. Make it a habit.** Zero tokens, ~0.2 s:
 
 ```cron
 0 9 * * *  cd /path/to/ai-observatory/observatory && python3 observe.py all
 ```
 
-### What it can read
+</details>
 
-Collection is read-only and costs zero tokens — it parses transcripts these
-tools already wrote to disk.
+<details>
+<summary><b>Commands</b></summary>
 
-| Tool | Reads from |
-|---|---|
-| Claude Code | `~/.claude/projects/**/*.jsonl` |
-| Codex | `~/.codex/sessions/**/*.jsonl` |
-| Kimi Code | `~/.kimi-code/sessions/**/wire.jsonl` |
-| Antigravity | `~/.gemini/antigravity/brain/**` |
-| Anything else | a [declarative spec](observatory/collectors/specs/README.md) — one JSON file |
-
-**Your tool missing?** If it writes JSONL with token counts on a record, adding
-it needs no Python — see [CONTRIBUTING.md](CONTRIBUTING.md). You have the
-transcripts to test against, which the maintainers do not.
-
-### If something looks wrong
-
-| Symptom | Cause |
-|---|---|
-| `no events found` | None of the paths above exist. Check with `ls ~/.claude/projects`. |
-| Everything is `unattributed` | `code_roots` in `topology.json` doesn't match where your repos are. |
-| Repo names look wrong after editing `topology.json` | Attribution is baked in at sync time — re-run with `sync --full`. |
-| Costs look implausible | Check `_verified_on` in [`pricing.json`](observatory/pricing.json). Rates go stale; correcting one is a one-line PR. |
-| A finding seems wrong | That's a bug worth an issue — credibility is the whole product. |
-
-## Commands
+<br>
 
 | Command | What it does |
 |---|---|
@@ -131,177 +148,190 @@ transcripts to test against, which the maintainers do not.
 
 Commands compose: `observe.py sync digest report` is one process.
 
-## What makes this different
+</details>
 
-### 1. It tells you what to change, not just what you spent
+<details>
+<summary><b>If something looks wrong</b></summary>
 
-```
-[HIGH] You are buying tokens at peak rates you did not have to pay        ~$34/mo
-  61.4% of your spend on time-priced vendors (deepseek, zhipu) landed inside a
-  peak window, where the same tokens cost up to twice the off-peak rate.
-  -> Peak windows are published and narrow. Anything that does not need you
-     watching — test generation, migrations, doc sweeps — can be queued for an
-     off-peak hour at no cost to you.
-```
+<br>
 
-A materiality gate demotes anything worth under $15/month, so the top of the
-list always means something. **Healthy usage is reported as healthy** — a tool
-that invents problems to look useful is a tool you stop believing.
+| Symptom | Cause |
+|---|---|
+| `no events found` | None of the collector paths exist. Check `ls ~/.claude/projects`. |
+| Everything is `unattributed` | `code_roots` doesn't match where your repos are. |
+| Repo names wrong after editing `topology.json` | Attribution bakes in at sync time — re-run `sync --full`. |
+| Costs look implausible | Check `_verified_on` in [`pricing.json`](observatory/pricing.json). Correcting a rate is a one-line PR. |
+| A finding seems wrong | That's a bug worth an issue — credibility is the whole product. |
 
-### 2. It prices tokens the way your vendor actually does
+</details>
 
-- **Peak/off-peak windows.** DeepSeek bills full rate 01:00–04:00 and
-  06:00–10:00 UTC and half rate otherwise. GLM peaks 14:00–18:00 UTC+8 on
-  weekdays only. For anyone in UTC+7 to +9 that second window *is* the working
-  afternoon — you are paying peak rates by accident, every day. We price each
-  turn at the rate in force when it ran, and quote the premium as arithmetic on
-  your own tokens. **No other open-source tracker models this.**
-- **Per-vendor cache economics.** The 0.1× cache-hit discount is an Anthropic
-  convention, not a law — Kimi K2.6 sits near 0.074×. Cache is where the money
-  is, so a wrong multiplier misprices the most important number on the page.
-- **Plan value, not fake dollars.** On a $18/month GLM plan, "you spent $412" is
-  a shadow price, not a bill. The number that matters is **23× return** — or,
-  when it goes the other way, *"you are paying for headroom you never use."*
-- **Thirteen currencies**, including IDR, VND, THB, PHP and MYR — with the
-  figure framed against a median local day rate, because `$412` means something
-  very different in Jakarta than in San Francisco.
+## Why it's different
 
-### 3. Adding your tool is a JSON file, not a pull request someone has to write
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/assets/peak-clock-dark.svg">
+  <img src="docs/assets/peak-clock-light.svg" alt="A 24-hour chart. DeepSeek bills full rate 01:00–04:00 and 06:00–10:00 UTC; GLM peaks 06:00–10:00 UTC on weekdays. Seven of the nine hours of a UTC+7 working day fall inside a peak window.">
+</picture>
 
-Coverage is what makes a tracker relevant to a stranger, and it is normally
-bottlenecked on a maintainer reverse-engineering formats they don't use. Here a
-provider is a [declarative spec](observatory/collectors/specs/README.md) plus a
-fixture. If you use Lingma, Qwen Code, CodeBuddy or Comate, **you are the only
-person who can add it correctly** — and it costs you one file.
+| | Typical token tracker | AI Observatory |
+|---|---|---|
+| Reports what you spent | ✅ | ✅ |
+| Tells you what to change | — | **15 detectors, with evidence** |
+| Peak / off-peak pricing | flat rate for every vendor | **priced at the rate in force** |
+| Plan value vs metered cost | — | **return multiple, or "downgrade"** |
+| Local currency | usually USD only | **13, against a local day rate** |
+| Leaderboard ranks | total tokens burned | **efficiency** |
+| Runs with no account | usually | **always** |
 
-### 4. The community layer ranks efficiency, not consumption
+<details>
+<summary><b>The four claims above, in detail</b></summary>
 
-Existing leaderboards rank by total tokens burned. The top of that board is,
-definitionally, whoever wasted the most — which is a novelty where a $200/month
-seat is routine and an insult where the median plan is $18.
+<br>
 
-We rank **cache reuse, tokens per change, cost per active hour, peak-window
-discipline and plan-value multiple.** Total spend is shown and never ranked.
-Efficiency is improvable, so the board is a reason to come back; and a student
-in Da Nang competes with a staff engineer in Singapore on the same axis.
+**Priced on your vendor's clock.** DeepSeek bills full rate 01:00–04:00 and
+06:00–10:00 UTC, half otherwise. GLM peaks 14:00–18:00 UTC+8 on weekdays only.
+For anyone in UTC+7 to +9, that second window *is* the working afternoon — you
+pay peak rates by accident, every day. Each turn is priced at the rate in force
+when it ran, and the premium is arithmetic on your own tokens.
+**No other open-source tracker models this.**
 
+**Per-vendor cache economics.** The 0.1× cache-hit discount is an Anthropic
+convention, not a law — Kimi K2.6 sits near 0.074×. Cache is where the money
+is, so a wrong multiplier misprices the most important number on the page.
+
+**Plan value, not fake dollars.** On an $18/month plan, "you spent $412" is a
+shadow price, not a bill. The number that matters is **23× return** — or, when
+it goes the other way, *"you are paying for headroom you never use."*
+
+**Adding your tool is one JSON file.** A provider is a
+[declarative spec](observatory/collectors/specs/README.md) plus a fixture — no
+engine code. If you use Lingma, Qwen Code, CodeBuddy or Comate, **you are the
+only person who can add it correctly.**
+
+**The community layer ranks efficiency, not consumption.** Existing leaderboards
+rank total tokens burned; the top of that board is whoever wasted the most. We
+rank cache reuse, tokens per change, cost per active hour, peak discipline and
+plan-value multiple. Improvable, and fair across budgets.
 *Opt-in, default off, not yet shipped —
 see the [protocol](docs/specs/Community-Share-Protocol.md).*
 
-## What it measures
-
-Cache efficiency (the biggest lever — rebuilding context costs ~12.5× reading
-it) · model mix and premium-tier usage on light work · peak vs off-peak spend ·
-per-session shape and peak context · produce-to-explore ratio · subagent
-delegation · tool distribution · working hours · investment by repository and by
-folder inside it · plan value and vendor concentration.
+</details>
 
 ## Privacy
 
 **Nothing leaves your machine unless you edit a file to say so.**
 
-Never stored, anywhere: prompt text · completion text · thinking content · file
-contents · tool argument values · shell commands · absolute paths.
-
-What *is* stored: counts, model names, tool names, and coarse derived labels —
-a repository name and a folder bucket like `app:checkout` — enforced at the parse
-boundary rather than by a later redaction step
-([ADR-006](docs/adr/ADR-006-Metadata-Only.md),
-[ADR-008](docs/adr/ADR-008-Derived-Path-Labels.md)).
-
-The rendered dashboard makes **zero external requests** — no CDN, no fonts, no
-analytics.
-
-If you ever opt into the community layer, the payload is under a kilobyte,
-carries bucket indices rather than values, and contains no repository name, no
-session id and no identifier. `observe.py share` prints the whole thing and has
-no network code path. Read
-[`share.py`](observatory/share.py) — it is deliberately short enough to read
-before you consent.
-
-## Configure
-
-| File | What it's for |
+| | |
 |---|---|
-| [`settings.json`](observatory/settings.json) | Timezone, currency, your plan, community opt-in |
-| [`topology.json`](observatory/topology.json) | Where your repos live, folder taxonomy, work/personal lanes |
-| [`pricing.json`](observatory/pricing.json) | The rate card — 50 models, peak/off-peak schedules |
-| [`plans.json`](observatory/plans.json) | Subscription plans, quota units, currencies |
+| **Never stored** | prompt text · completion text · thinking content · file contents · tool arguments · shell commands · absolute paths |
+| **What is stored** | counts, model names, tool names, and coarse derived labels like `app:checkout` |
+| **Where it's enforced** | at the parse boundary, not by a later redaction step — a leak past it is a bug, not a policy question ([ADR-006](docs/adr/ADR-006-Metadata-Only.md), [ADR-008](docs/adr/ADR-008-Derived-Path-Labels.md)) |
+| **Network** | the dashboard and the site make **zero external requests**. No CDN, no fonts, no analytics. |
 
-Editing `topology.json` needs `observe.py sync --full` to take effect.
+If you ever opt into the community layer, the payload is under a kilobyte of
+bucket indices — no repository name, no session id, no identifier.
+[`observe.py share`](observatory/share.py) prints the whole thing and has no
+network code path at all.
 
-## Deploy your own
+## What it can read
 
-The whole local product needs no server. If you want the landing page and a
-hosted demo — or a private community instance under your own jurisdiction —
-[`docs/setup/DEPLOY.md`](docs/setup/DEPLOY.md) is the walkthrough, and
-[ADR-015](docs/adr/ADR-015-Hosting-And-Data-Residency.md) is why the stack is
-what it is (about **$1/month at launch, ~$6/month at 100k users**).
+| Tool | Reads from |
+|---|---|
+| Claude Code | `~/.claude/projects/**/*.jsonl` |
+| Codex | `~/.codex/sessions/**/*.jsonl` |
+| Kimi Code | `~/.kimi-code/sessions/**/wire.jsonl` |
+| Antigravity | `~/.gemini/antigravity/brain/**` |
+| **Anything else** | a [declarative spec](observatory/collectors/specs/README.md) — one JSON file, no Python |
+
+Collection is read-only and costs zero tokens.
+**Especially wanted:** Qwen Code, iFlow CLI, CodeBuddy, Trae, Lingma / 通义灵码,
+Comate, Doubao, CodeGeeX, Cline, Roo Code, Aider, OpenCode, Goose, Zed.
+
+## The site
+
+<div align="center">
+<img src="docs/assets/landing-light.png#gh-light-mode-only" width="70%" alt="Landing page">
+<img src="docs/assets/landing-mobile-light.png#gh-light-mode-only" width="23%" alt="Landing page on a phone">
+<img src="docs/assets/landing-dark.png#gh-dark-mode-only" width="70%" alt="Landing page">
+<img src="docs/assets/landing-mobile-dark.png#gh-dark-mode-only" width="23%" alt="Landing page on a phone">
+</div>
 
 ```bash
-python3 site/build.py     # -> site/dist/  (landing page + live demo dashboard)
+python3 site/build.py     # → site/dist/  (13 locales + the live demo dashboard)
 ```
+
+Thirteen languages, dark mode, and a demo built from the same code you run
+locally — not a screenshot. Design rules live in
+[`docs/design/DESIGN-SYSTEM.md`](docs/design/DESIGN-SYSTEM.md); every surface
+inlines the same [token file](observatory/assets/tokens.css).
 
 CI only **verifies** that the site builds — it never deploys, so there are no
 secrets in GitHub and nothing to leak. Deployment is Cloudflare's own Git
-integration, and the root [`wrangler.toml`](wrangler.toml) declares both the
-build command and the output directory, so **there is nothing to configure in
-any dashboard**.
+integration, and the root [`wrangler.toml`](wrangler.toml) declares the build
+command and output directory, so **there is nothing to configure in any
+dashboard**. About **$1/month at launch, ~$6/month at 100k users**
+([ADR-015](docs/adr/ADR-015-Hosting-And-Data-Residency.md),
+[DEPLOY.md](docs/setup/DEPLOY.md)).
 
-Self-hosting the community layer is a first-class path, not an enterprise tier —
-[`server/schema.sql`](server/schema.sql) applies unchanged to a plain
-`sqlite3` file. For anyone under Indonesia's PDP Law, Vietnam's PDPL, Thailand's
-PDPA or China's PIPL, that may be the only acceptable option.
+### Self-updating visuals
 
-## Tests
+Nothing in this README is drawn by hand.
 
-```bash
-observatory/tests/run.sh
-```
+| Asset | Generated by | From |
+|---|---|---|
+| `pipeline-*.svg`, `peak-clock-*.svg` | [`site/tools/diagrams.py`](site/tools/diagrams.py) | `pricing.json`, `plans.json`, `insights.py`, `collectors/` |
+| `landing-*.png`, `demo-*.png` | [`site/tools/shots.js`](site/tools/shots.js) | headless Chromium against the real built site |
 
-Engine, collector specs, provider fixtures, and a headless run of the dashboard.
-No test framework — stdlib Python and one optional node script.
+[`visuals.yml`](.github/workflows/visuals.yml) reruns both on every push that
+touches the site or the rate card and commits what changed, and
+[`site.yml`](.github/workflows/site.yml) fails a PR whose figures no longer
+match the data. A redesign updates its own documentation.
 
-## Documentation
+## Docs
 
 | Path | Contents |
 |---|---|
 | [`docs/strategy/`](docs/strategy/) | **Competitive teardown · positioning · the SEA/China thesis · growth flywheel · risks** |
-| [`docs/00-*.md`](docs/) | Vision, engineering principles, architecture, decision log |
+| [`docs/design/`](docs/design/) | **The design system** — tokens, voice, and the zero-network rule |
+| [`docs/00-*.md`](docs/) | Vision · engineering principles · architecture · decision log |
 | [`docs/adr/`](docs/adr/) | Fifteen decision records, including what was rejected and why |
-| [`docs/specs/`](docs/specs/) | Event schema · cost estimation · peak/off-peak · plans and quotas · community protocol · auth |
+| [`docs/specs/`](docs/specs/) | Event schema · cost estimation · peak/off-peak · plans · community protocol · auth |
 | [`docs/context/`](docs/context/) | Glossary · **known limitations** |
 
-**Read [Known-Limitations](docs/context/Known-Limitations.md) before trusting any
-finding about value.** This tool measures where effort went precisely, and what
-it produced only by proxy.
-
-## Contributing
-
-The three most useful contributions, in ascending order of effort:
-
-1. **Fix a stale price** in `pricing.json` — one line and a citation.
-2. **Add a plan** to `plans.json`.
-3. **Add your coding tool** via a [collector spec](observatory/collectors/specs/README.md)
-   and a fixture.
-
-See [CONTRIBUTING.md](CONTRIBUTING.md). Especially wanted: Qwen Code, iFlow CLI,
-CodeBuddy, Trae, Lingma / 通义灵码, Comate, Doubao, CodeGeeX, Cline, Roo Code,
-Aider, OpenCode, Goose, Zed.
+> **Read [Known-Limitations](docs/context/Known-Limitations.md) before trusting
+> any finding about value.** This tool measures where effort went precisely, and
+> what it produced only by proxy.
 
 ## Status
-
-Early, and honest about which parts are which.
 
 | | |
 |---|---|
 | Engine, collectors, dashboard, 15 detectors | **working, tested** |
 | Peak/off-peak pricing, plan value, currency | **working, tested** |
-| Landing page + hosted demo, deploy pipeline | **working** |
-| Community layer (accounts, cohorts, leaderboard) | **specified, not built** — `observe.py share` builds and audits a payload locally and has no network code path at all |
+| Landing page (13 locales), hosted demo, deploy | **working** |
+| Community layer — accounts, cohorts, leaderboard | **specified, not built** |
 
-See [ROADMAP.md](docs/ROADMAP.md) and
-[Known-Limitations](docs/context/Known-Limitations.md).
+See [ROADMAP.md](docs/ROADMAP.md).
+
+## Contributing
+
+Three useful contributions, in ascending order of effort:
+
+1. **Fix a stale price** in `pricing.json` — one line and a citation.
+2. **Add a plan** to `plans.json`.
+3. **Add your coding tool** via a [collector spec](observatory/collectors/specs/README.md) and a fixture.
+
+A fourth: **improve a translation.** All landing-page copy is in
+[`site/i18n.py`](site/i18n.py), all dashboard copy in
+[`observatory/assets/i18n.js`](observatory/assets/i18n.js) — one dict per
+language, no framework.
+
+```bash
+observatory/tests/run.sh                 # engine, collectors, dashboard
+python3 site/build.py                    # every locale
+python3 site/tools/check_no_remote.py site/dist
+```
+
+See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Licence
 

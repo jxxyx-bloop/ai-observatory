@@ -37,6 +37,13 @@ function usd(n) {
     {minimumFractionDigits: d, maximumFractionDigits: d});
 }
 function pctOf(a, b) { return b ? (100 * a / b) : 0; }
+/* One-off lookup for strings used inside a chart, where re-rendering on a
+   language switch is cheaper than tagging every generated node. */
+function t18(key, fallback) {
+  if (typeof I18N === "undefined") return fallback;
+  var v = I18N.dict(document.documentElement.getAttribute("data-lang") || "en")[key];
+  return v || fallback;
+}
 
 /* ---- metric explainers ---------------------------------------------------
    Every behavioral metric gets a small ⓘ affordance carrying its own formula
@@ -294,47 +301,301 @@ function dayAxis(days, L, step, base, PH) {
   return s;
 }
 
-// Weekday x hour heatmap — replaces the old flat 24-bar chart with a richer
-// view of the same `hours` cube: single-hue accent ramp, empty cells stay a
-// visible neutral track rather than vanishing, so the grid shape always reads.
-function heatmap(F) {
-  var grid = [];
+/* ---- the meter: your hours against your vendors' clocks -------------------
+   The single most actionable view on this page, and the one the rest of the
+   product argues for. The working-hours heatmap already showed *when* you
+   work. On its own that is trivia. Drawn against the hours your vendors
+   actually charge more for, the same grid answers "which of my habits is
+   costing me money" — and, because the off-peak columns are right there,
+   "where would I move it to".
+
+   Deliberately 2D. A third axis here would encode nothing the colour ramp does
+   not already carry, and would make neighbouring cells occlude each other —
+   the comparison this chart exists to support. */
+function peakHoursSet(F) {
+  /* A 7x24 mask of which of YOUR local hours are peak-priced, built only from
+     the vendors present in the current filter.
+
+     Two things this must get right, and an earlier version got neither:
+
+     1. **Only vendors you use.** Most people never touch a time-priced model.
+        Drawing DeepSeek's window over their week would invent a problem they
+        cannot have — and the honest answer, "no hour you worked cost more than
+        another", is itself useful.
+     2. **Weekdays are part of the window.** GLM peaks 14:00-18:00 UTC+8 on
+        weekdays *only*; weekends are entirely off-peak. Treating the window as
+        a plain set of hours ringed Saturday and Sunday cells that were never
+        charged a premium — the exact false positive this product cannot
+        afford. Hence a mask over (weekday, hour), not over hour alone. */
+  var wins = D.windows || {}, tz = Number(CUR.tz_offset_hours || 0);
+  var used = {};
+  agg(D.cube, CUBE, F, ["provider"]).forEach(function (r) { used[r.provider] = true; });
+
+  var mask = [], vendors = [];
+  for (var i = 0; i < 7; i++) mask.push(new Array(24).fill(null));
+
+  Object.keys(wins).forEach(function (name) {
+    var w = wins[name];
+    // The engine resolved which providers bill on this window. Matching on the
+    // vendor name here would silently drop GLM, whose events carry provider
+    // "glm" against a window keyed to vendor "zhipu".
+    var mine = (w.providers || []).filter(function (p) { return used[p]; });
+    if (!mine.length) return;
+    mine.forEach(function (p) { if (vendors.indexOf(p) < 0) vendors.push(p); });
+
+    // `days` are UTC weekdays; absent means every day.
+    var days = w.days && w.days.length ? w.days : [0, 1, 2, 3, 4, 5, 6];
+    (w.peak_utc || []).forEach(function (pair) {
+      for (var h = pair[0]; h < pair[1]; h++) {
+        days.forEach(function (d) {
+          // A timezone shift moves the weekday as well as the hour: 23:00 UTC
+          // Monday is 07:00 Tuesday at UTC+8. Floor, because the hour a turn
+          // is bucketed into is the one that decides its price.
+          var shifted = Math.floor(h + tz);
+          var lh = ((shifted % 24) + 24) % 24;
+          var ld = ((d + Math.floor(shifted / 24)) % 7 + 7) % 7;
+          mask[ld][lh] = (mask[ld][lh] || []);
+          mine.forEach(function (p) {
+            if (mask[ld][lh].indexOf(p) < 0) mask[ld][lh].push(p);
+          });
+        });
+      }
+    });
+  });
+  return {mask: mask, vendors: vendors};
+}
+
+function meter(F) {
+  var pk = peakHoursSet(F);
+  var hasPeak = pk.vendors.length > 0;
+  var grid = [], total = 0;
   for (var w = 0; w < 7; w++) grid.push(new Array(24).fill(0));
-  var total = 0;
   agg(D.hours, HOURS, F, ["date", "hour"]).forEach(function (r) {
     var h = parseInt(r.hour, 10);
     if (isNaN(h) || h < 0 || h > 23) return;
     grid[parse(r.date).getUTCDay()][h] += r.turns;
     total += r.turns;
   });
-  if (!total) return '<p class="empty">Nothing in this range.</p>';
-  var peak = 1;
-  grid.forEach(function (row) { row.forEach(function (v) { if (v > peak) peak = v; }); });
+  if (!total) {
+    return {svg: '<p class="empty">Nothing in this range.</p>', note: "",
+            hasPeak: false};
+  }
 
-  var W = 720, L = 40, TOP = 18, CH = 17, GAP = 3, cw = (W - L - 8) / 24;
-  var H = TOP + 7 * (CH + GAP) + 18;
-  var s = '<svg viewBox="0 0 ' + W + ' ' + H + '" role="img" preserveAspectRatio="xMinYMin meet">'
-    + '<text x="' + (W - 4) + '" y="12" text-anchor="end" class="axis">'
-    + "turns by weekday × hour, " + esc(CUR.tz_label) + "</text>";
+  var peak = 1, inPeak = 0;
+  for (var a = 0; a < 7; a++) for (var b = 0; b < 24; b++) {
+    if (grid[a][b] > peak) peak = grid[a][b];
+    if (pk.mask[a][b]) inPeak += grid[a][b];
+  }
+
+  var W = 760, L = 38, TOP = hasPeak ? 34 : 20, CH = 20, GAP = 4;
+  var cw = (W - L - 10) / 24;
+  var H = TOP + 7 * (CH + GAP) + 34;
+  var s = '<svg viewBox="0 0 ' + W + ' ' + H + '" role="img" '
+    + 'preserveAspectRatio="xMinYMin meet" aria-label="'
+    + (hasPeak ? "Turns by weekday and hour, with peak-priced hours marked"
+               : "Turns by weekday and hour") + '">';
+
+  if (hasPeak) {
+    // Tinted per cell rather than as a full-height column: GLM's window is
+    // weekdays only, so a column band would wash Saturday and Sunday in a
+    // premium they were never charged. Adjacent tints touch, so where a window
+    // does run all week it still reads as one band.
+    for (var d0 = 0; d0 < 7; d0++) {
+      for (var h0 = 0; h0 < 24; h0++) {
+        if (!pk.mask[d0][h0]) continue;
+        s += '<rect x="' + (L + h0 * cw - 0.75).toFixed(1) + '" y="'
+          + (TOP + d0 * (CH + GAP) - 2) + '" width="' + (cw + 0.5).toFixed(1)
+          + '" height="' + (CH + 4) + '" fill="var(--high)" opacity="0.10"/>';
+      }
+    }
+    s += '<text x="' + L + '" y="' + (TOP - 12) + '" class="axis" '
+      + 'fill="var(--high)">' + esc(t18("m_peak", "PEAK — full rate") + " · "
+      + pk.vendors.join(", ")) + "</text>";
+  }
+
   for (var w2 = 0; w2 < 7; w2++) {
     var y = TOP + w2 * (CH + GAP);
     s += '<text x="' + (L - 8) + '" y="' + (y + CH / 2 + 3.5).toFixed(1)
       + '" text-anchor="end" class="axis">' + DOW[w2] + "</text>";
     for (var h2 = 0; h2 < 24; h2++) {
-      var v = grid[w2][h2], x = L + h2 * cw;
-      var fill = v ? "var(--accent)" : "var(--track)";
-      var op = v ? Math.max(0.15, v / peak).toFixed(2) : "1";
-      s += '<rect class="heatcell" data-tt="' + esc(DOW[w2] + " " + String(h2).padStart(2, "0")
-        + ":00 " + CUR.tz_label + " — " + num(v) + " turns") + '" x="' + x.toFixed(1) + '" y="' + y.toFixed(1)
-        + '" width="' + Math.max(1, cw - 1.5).toFixed(1) + '" height="' + CH + '" rx="2" fill="'
-        + fill + '" opacity="' + op + '"/>';
+      var v = grid[w2][h2], x = L + h2 * cw, hot = pk.mask[w2][h2];
+      var op = v ? Math.max(0.16, v / peak).toFixed(2) : "1";
+      var tip = DOW[w2] + " " + String(h2).padStart(2, "0") + ":00 " + CUR.tz_label
+        + " — " + num(v) + " turns";
+      // No phase suffix at all when nothing you use is time-priced: labelling
+      // every cell "off-peak" implies a peak somewhere that does not exist.
+      if (hasPeak) {
+        tip += hot
+          ? " · " + t18("m_at_peak", "at peak rate") + " (" + hot.join(", ") + ")"
+          : " · " + t18("m_off", "off-peak");
+      }
+      s += '<rect class="heatcell" data-tt="' + esc(tip) + '" x="' + x.toFixed(1)
+        + '" y="' + y.toFixed(1) + '" width="' + Math.max(1, cw - 1.5).toFixed(1)
+        + '" height="' + CH + '" rx="3" fill="' + (v ? "var(--accent)" : "var(--track)")
+        + '" opacity="' + op + '"/>';
+      // The ring, not a second fill: volume stays encoded by opacity alone, so
+      // "busy" and "expensive" never compete for the same visual channel.
+      if (hot && v) {
+        s += '<rect x="' + x.toFixed(1) + '" y="' + y.toFixed(1) + '" width="'
+          + Math.max(1, cw - 1.5).toFixed(1) + '" height="' + CH
+          + '" rx="3" fill="none" stroke="var(--high)" stroke-width="1.6" '
+          + 'pointer-events="none"/>';
+      }
     }
   }
-  var by = TOP + 7 * (CH + GAP) + 12;
+  var by = TOP + 7 * (CH + GAP) + 14;
   for (var h3 = 0; h3 < 24; h3 += 3) {
     s += '<text x="' + (L + h3 * cw + cw / 2).toFixed(1) + '" y="' + by.toFixed(1)
       + '" text-anchor="middle" class="axis">' + String(h3).padStart(2, "0") + "</text>";
   }
+  s += '<text x="' + (W - 4) + '" y="' + by.toFixed(1) + '" text-anchor="end" '
+    + 'class="axis">' + esc(CUR.tz_label) + "</text></svg>";
+
+  if (!hasPeak) {
+    // Worth saying out loud rather than leaving a plain grid to be read as a
+    // missing feature.
+    return {svg: s, hasPeak: false,
+            note: t18("m_none", "None of the vendors you used price by the hour, "
+                      + "so no hour here cost more than another.")};
+  }
+
+  var pct = pctOf(inPeak, total);
+  var byHour = new Array(24).fill(0), offHour = new Array(24).fill(0);
+  for (var c = 0; c < 7; c++) for (var d = 0; d < 24; d++) {
+    byHour[d] += grid[c][d];
+    if (!pk.mask[c][d]) offHour[d] += grid[c][d];
+  }
+  var best = [];
+  for (var e = 0; e < 24; e++) if (offHour[e]) best.push({h: e, v: offHour[e]});
+  best.sort(function (m, n) { return n.v - m.v; });
+  best = best.slice(0, 3).sort(function (m, n) { return m.h - n.h; })
+    .map(function (o) { return String(o.h).padStart(2, "0") + ":00"; });
+
+  var note = t18("m_share", "%P% of your turns on time-priced vendors land in a peak window.")
+    .replace("%P%", pct.toFixed(0) + "%");
+  if (best.length) {
+    note += " " + t18("m_move", "You already work at %H% — those hours are off-peak.")
+      .replace("%H%", best.join(", "));
+  }
+  return {svg: s, note: note, hasPeak: true};
+}
+
+/* ---- the long view: one square per day ------------------------------------
+   The daily chart answers "what did this month look like". It cannot answer
+   "am I busier than I was in March", because a range that wide compresses each
+   day below a pixel. A calendar grid can hold a year without shrinking a day
+   below a readable square, which is exactly the question the bar chart drops.
+
+   Not 3D. Extruding each day into a block is the well-known version of this
+   chart, and it trades the one thing the grid is good at — comparing any two
+   days at a glance — for an angle that hides the back rows behind the front
+   ones. See docs/design/DESIGN-SYSTEM.md; the repo's own chart rules call
+   3D on a quantitative chart chartjunk, and this is why. */
+function calendar() {
+  var days = {}, maxv = 0;
+  D.by_day.forEach(function (r) { days[r.date] = r.turns; });
+  var first = parse(FIRST), last = parse(LAST);
+  // Start on the Sunday on or before the first day, so every column is a full
+  // week and the weekday rows line up down the whole grid.
+  var start = new Date(first.getTime());
+  start.setUTCDate(start.getUTCDate() - start.getUTCDay());
+  var weeks = Math.ceil((last - start) / 6048e5) + 1;
+  if (weeks < 1) return "";
+
+  Object.keys(days).forEach(function (k) { if (days[k] > maxv) maxv = days[k]; });
+  if (!maxv) return "";
+
+  /* Every weekday labelled, not every other one.
+
+     GitHub labels only Mon/Wed/Fri because its squares are 10px and seven
+     labels would collide. That trade buys tidiness at the cost of the reader
+     counting rows to work out whether a dark square is a Tuesday or a
+     Thursday — which is the one question this chart exists to answer. We take
+     the extra 3px of pitch instead and label all seven. */
+  var CELL = 12, G = 4, PITCH = CELL + G;
+  var L = 34, TOP = 26;
+  var W = Math.max(L + weeks * PITCH + 10, 300);
+  var H = TOP + 7 * PITCH + 26;
+
+  // Which month owns each week column: the month of that column's first day
+  // that falls inside the collected range. Label and separator both anchor
+  // here, so they can never disagree about where a month starts.
+  var colMonth = [];
+  for (var w = 0; w < weeks; w++) {
+    colMonth[w] = null;
+    for (var d = 0; d < 7; d++) {
+      var day = new Date(start.getTime());
+      day.setUTCDate(day.getUTCDate() + w * 7 + d);
+      if (day < first || day > last) continue;
+      colMonth[w] = day.getUTCMonth();
+      break;
+    }
+  }
+
+  var s = '<svg width="' + W + '" height="' + H + '" viewBox="0 0 ' + W + ' '
+    + H + '" role="img" preserveAspectRatio="xMinYMin meet" '
+    + 'aria-label="One square per day, darker means more turns">';
+
+  /* Month boundaries. GitHub itself draws none — it relies on the label row
+     alone — which is fine at a glance and poor when you are trying to say
+     "that spike was in July". A hairline costs almost nothing and removes the
+     guess, so: GitHub's label placement, plus a rule.
+
+     It sits between week columns, which is an approximation: a month starts
+     mid-week about six times in seven. The rule marks the first *column* of
+     the new month, which is exactly what the label above it already claims,
+     so the two agree even though neither is to-the-day precise. */
+  var prev = null;
+  for (var w1 = 0; w1 < weeks; w1++) {
+    if (colMonth[w1] === null || colMonth[w1] === prev) continue;
+    var x1 = L + w1 * PITCH - G / 2;
+    if (prev !== null) {
+      // Starts below the label baseline: a rule running through "Aug" is
+      // worse than no rule at all.
+      s += '<line x1="' + x1.toFixed(1) + '" y1="' + (TOP - 4) + '" x2="'
+        + x1.toFixed(1) + '" y2="' + (TOP + 7 * PITCH - G + 2)
+        + '" stroke="var(--line)" stroke-width="1"/>';
+    }
+    s += '<text x="' + (L + w1 * PITCH + 2) + '" y="' + (TOP - 9)
+      + '" class="axis">' + MON[colMonth[w1]] + "</text>";
+    prev = colMonth[w1];
+  }
+
+  for (var w2 = 0; w2 < weeks; w2++) {
+    for (var d2 = 0; d2 < 7; d2++) {
+      var cd = new Date(start.getTime());
+      cd.setUTCDate(cd.getUTCDate() + w2 * 7 + d2);
+      if (cd < first || cd > last) continue;
+      var key = cd.toISOString().slice(0, 10), v = days[key] || 0;
+      s += '<rect class="calcell" data-tt="' + esc(DOW[d2] + " " + key + " — "
+        + num(v) + " turns") + '" data-day="' + key + '" x="' + (L + w2 * PITCH)
+        + '" y="' + (TOP + d2 * PITCH) + '" width="' + CELL + '" height="' + CELL
+        + '" rx="2.5" fill="' + (v ? "var(--accent)" : "var(--track)")
+        + '" opacity="' + (v ? Math.max(0.18, v / maxv).toFixed(2) : "1") + '"/>';
+    }
+  }
+
+  // All seven, aligned to the middle of their own row.
+  for (var d3 = 0; d3 < 7; d3++) {
+    s += '<text x="' + (L - 7) + '" y="' + (TOP + d3 * PITCH + CELL - 2)
+      + '" text-anchor="end" class="axis dow">' + DOW[d3] + "</text>";
+  }
+
+  // Ramp legend. Without it a pale square is ambiguous between "a quiet day"
+  // and "no data", which are different facts.
+  var ly = TOP + 7 * PITCH + 12, lx = L;
+  s += '<text x="' + lx + '" y="' + ly + '" class="axis">'
+    + esc(t18("c_less", "less")) + "</text>";
+  lx += 30;
+  [0, 0.25, 0.5, 0.75, 1].forEach(function (v) {
+    s += '<rect x="' + lx + '" y="' + (ly - CELL + 2) + '" width="' + CELL
+      + '" height="' + CELL + '" rx="2.5" fill="'
+      + (v ? "var(--accent)" : "var(--track)") + '" opacity="'
+      + (v ? Math.max(0.18, v).toFixed(2) : "1") + '"/>';
+    lx += PITCH;
+  });
+  s += '<text x="' + (lx + 4) + '" y="' + ly + '" class="axis">'
+    + esc(t18("c_more", "more")) + "</text>";
   return s + "</svg>";
 }
 
@@ -522,7 +783,9 @@ function dayFilter(F) {
                : F;
 }
 
+var drawn = false;
 function draw() {
+  drawn = true;
   var F = state();
   if (F.from > F.to) { F.from = F.to; $("from").value = F.to; }
   if (F.day && (F.day < F.from || F.day > F.to)) { F.day = selectedDay = null; }
@@ -558,12 +821,23 @@ function draw() {
     ? "Showing the busiest repository. Pick one on the left to hold it."
     : "";
 
-  $("models").innerHTML = bars(agg(D.cube, CUBE, DF, ["model"]).sort(byOutput),
+  $("models-chart").innerHTML = bars(agg(D.cube, CUBE, DF, ["model"]).sort(byOutput),
     function (r) { return r.model; }, function (r) { return r.output; }, num);
   $("efforts").innerHTML = bars(agg(D.cube, CUBE, DF, ["effort"])
     .sort(function (a, b) { return b.turns - a.turns; }),
     function (r) { return r.effort; }, function (r) { return r.turns; }, num);
-  $("hours").innerHTML = heatmap(DF);
+  var mt = meter(DF);
+  $("meter").innerHTML = mt.svg;
+  $("meterNote").textContent = mt.note;
+  // The panel is two panels depending on the reader's vendors: a priced meter,
+  // or a plain picture of when they work. Promising "peak windows drawn over
+  // them" to someone who uses none is worse than saying nothing.
+  $("meterTitle").textContent = mt.hasPeak
+    ? t18("s_meter", "Your week against the meter")
+    : t18("s_hours", "Working hours");
+  $("meterHint").textContent = mt.hasPeak
+    ? t18("n_meter", "Your own hours, with every vendor's peak window drawn over them.")
+    : t18("n_hours", "Weekday \u00d7 hour, in your configured timezone.");
   $("tools").innerHTML = bars(agg(D.tools, TOOLS, DF, ["tool"])
     .sort(function (a, b) { return b.calls - a.calls; }).slice(0, 10),
     function (r) { return r.tool; }, function (r) { return r.calls; }, num);
@@ -580,7 +854,7 @@ function draw() {
 
   // Trends always span the full selected range, ignoring the day drill-down
   // above it — a single day has no week-over-week shape to show.
-  $("trends").innerHTML = behavioralTrends(F);
+  $("trends-charts").innerHTML = behavioralTrends(F);
 }
 
 /* ---- controls ----------------------------------------------------------- */
@@ -610,17 +884,95 @@ function ancestor(node, sel) {
   }
   return null;
 }
-function fillSelect(el, rows, key) {
-  el.innerHTML = '<option value="All">All</option>' + rows.map(function (r) {
-    return '<option value="' + esc(r[key]) + '">' + esc(r[key]) + "</option>";
-  }).join("");
+function fillSelect(el, rows, key, allLabel) {
+  el.innerHTML = '<option value="All">' + esc(allLabel) + "</option>"
+    + rows.map(function (r) {
+        return '<option value="' + esc(r[key]) + '">' + esc(r[key]) + "</option>";
+      }).join("");
+}
+
+/* Re-run on a language change too: the "All providers" text inside each option
+   is copy, not data, so it has to be rebuilt rather than translated in place. */
+function fillSelects() {
+  var t = (typeof I18N !== "undefined")
+    ? I18N.dict(document.documentElement.getAttribute("data-lang") || "en")
+    : {f_all_provider: "All providers", f_all_lane: "All lanes", f_all_repo: "All repos"};
+  var keep = {provider: $("provider").value, lane: $("lane").value, repo: $("repo").value};
+  fillSelect($("provider"), D.by_provider, "provider", t.f_all_provider);
+  fillSelect($("lane"), D.by_lane, "lane", t.f_all_lane);
+  fillSelect($("repo"), D.by_repo, "repo", t.f_all_repo);
+  Object.keys(keep).forEach(function (k) { if (keep[k]) $(k).value = keep[k]; });
+}
+
+/* ---- rail: scroll spy ---------------------------------------------------
+   Lights the tile for whatever section owns the top third of the viewport.
+   IntersectionObserver rather than a scroll listener, so it costs nothing on
+   a page this tall; without it the rail is a menu that never tells you where
+   you are, which is worse than no rail. */
+/* Clicking a day in the calendar filters to that week, matching the drill-down
+   the daily chart already teaches. A whole week rather than a day: at this
+   scale the target is 11px, and a mis-click that lands on the wrong single day
+   shows an empty page. */
+function initCalendar() {
+  var el = $("calendar");
+  if (!el) return;
+  el.addEventListener("click", function (e) {
+    var c = ancestor(e.target, "rect[data-day]");
+    if (!c) return;
+    var d = parse(c.getAttribute("data-day"));
+    var mon = new Date(d.getTime());
+    mon.setUTCDate(mon.getUTCDate() - mon.getUTCDay());
+    var sun = new Date(mon.getTime());
+    sun.setUTCDate(sun.getUTCDate() + 6);
+    $("from").value = mon.toISOString().slice(0, 10);
+    $("to").value = min(sun.toISOString().slice(0, 10), LAST);
+    markPreset(null);
+    draw();
+    var t = document.getElementById("overview");
+    if (t) t.scrollIntoView({behavior: "smooth", block: "start"});
+  });
+}
+function min(a, b) { return a < b ? a : b; }
+
+function initRail() {
+  var nav = $("railnav");
+  if (!nav) return;
+  var links = [].slice.call(nav.querySelectorAll("a[data-sec]"));
+
+  links.forEach(function (a) {
+    a.addEventListener("click", function (e) {
+      var el = document.getElementById(a.getAttribute("data-sec"));
+      if (!el) return;
+      e.preventDefault();
+      el.scrollIntoView({behavior: "smooth", block: "start"});
+      try { history.replaceState({}, "", "#" + a.getAttribute("data-sec")); } catch (err) {}
+    });
+  });
+
+  function light(id) {
+    links.forEach(function (a) {
+      if (a.getAttribute("data-sec") === id) a.setAttribute("aria-current", "true");
+      else a.removeAttribute("aria-current");
+    });
+  }
+  light(links[0] && links[0].getAttribute("data-sec"));
+
+  if (!("IntersectionObserver" in window)) return;
+  var seen = {};
+  var io = new IntersectionObserver(function (entries) {
+    entries.forEach(function (en) { seen[en.target.id] = en.isIntersecting; });
+    for (var i = 0; i < links.length; i++) {
+      var id = links[i].getAttribute("data-sec");
+      if (seen[id]) { light(id); return; }
+    }
+  }, {rootMargin: "-12% 0px -66% 0px"});
+  links.forEach(function (a) {
+    var el = document.getElementById(a.getAttribute("data-sec"));
+    if (el) io.observe(el);
+  });
 }
 
 function init() {
-  var hn = $("hoursNote");
-  if (hn) hn.textContent = "Weekday \u00d7 hour, in " + CUR.tz_label
-    + " \u2014 the timezone the work actually happens in, not wherever the collecting "
-    + "machine's clock is set.";
   $("span").textContent = FIRST + " → " + LAST + " · " + D.window.days
     + " active days · " + D.by_provider.map(function (p) { return p.provider; }).join(" + ");
 
@@ -636,9 +988,10 @@ function init() {
     $(id).addEventListener("change", function () { markPreset(null); draw(); });
   });
 
-  fillSelect($("provider"), D.by_provider, "provider");
-  fillSelect($("lane"), D.by_lane, "lane");
-  fillSelect($("repo"), D.by_repo, "repo");
+  fillSelects();
+  var cal = calendar();
+  $("calendar").innerHTML = cal;
+  if (!cal) $("calendar").closest ? 0 : 0;
   ["provider", "lane", "repo"].forEach(function (id) {
     $(id).addEventListener("change", draw);
   });
@@ -721,30 +1074,122 @@ function initTooltip() {
   });
 }
 
-/* ---- theme toggle --------------------------------------------------------
-   Defaults to the OS preference (the existing prefers-color-scheme CSS);
-   an explicit choice here overrides it via [data-theme] and persists. */
+/* ---- page chrome: theme, language, breadcrumb ---------------------------
+   The same two controls the landing page carries, reading and writing the same
+   two localStorage keys — so a choice made on either side survives the jump to
+   the other. The theme is already stamped on <html> by the inline script in
+   <head>; this only wires the toggle. */
 function initTheme() {
   var btn = $("themeToggle");
   if (!btn) return;
   var root = document.documentElement;
-  var dark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
-  var saved = null;
-  try { saved = localStorage.getItem("observatory-theme"); } catch (e) { /* private mode */ }
-  var mode = saved || (dark ? "dark" : "light");
-  apply(mode);
-
-  function apply(m) {
-    root.setAttribute("data-theme", m);
-    btn.textContent = m === "dark" ? "☾" : "☼";
+  if (!root.getAttribute("data-theme")) {
+    var dark = window.matchMedia &&
+               window.matchMedia("(prefers-color-scheme: dark)").matches;
+    root.setAttribute("data-theme", dark ? "dark" : "light");
   }
   btn.addEventListener("click", function () {
-    mode = mode === "dark" ? "light" : "dark";
-    apply(mode);
-    try { localStorage.setItem("observatory-theme", mode); } catch (e) { /* private mode */ }
+    var next = root.getAttribute("data-theme") === "dark" ? "light" : "dark";
+    root.setAttribute("data-theme", next);
+    try { localStorage.setItem("observatory-theme", next); } catch (e) { /* private mode */ }
   });
+}
+
+/* Interface strings only. Findings and the method notes are generated by the
+   engine in English and stay that way — see the header of assets/i18n.js for
+   why, and note_en, which says so on the page in any other language. */
+function initLang() {
+  if (typeof I18N === "undefined") return;      // e.g. the headless smoke test
+  var root = document.documentElement;
+  var sheet = $("langsheet"), code = $("langcode"), menu = $("langmenu");
+  var current = root.getAttribute("data-lang");
+  if (!current || !I18N.has(current)) current = I18N.detect();
+
+  if (sheet) {
+    I18N.LOCALES.forEach(function (l) {
+      var a = document.createElement("a");
+      a.href = "#";
+      a.lang = l[0];
+      a.setAttribute("data-lang", l[0]);
+      a.textContent = l[1];
+      a.addEventListener("click", function (e) {
+        e.preventDefault();
+        apply(l[0]);
+        try { localStorage.setItem("observatory-lang", l[0]); } catch (err) {}
+        if (menu) menu.open = false;
+      });
+      sheet.appendChild(a);
+    });
+  }
+
+  if (menu) {
+    document.addEventListener("click", function (e) {
+      if (menu.open && !menu.contains(e.target)) menu.open = false;
+    });
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "Escape" && menu.open) menu.open = false;
+    });
+  }
+
+  apply(current);
+
+  function apply(lang) {
+    var t = I18N.dict(lang);
+    root.setAttribute("data-lang", lang);
+    root.setAttribute("lang", lang);
+
+    each("[data-i18n]", function (el) {
+      var v = t[el.getAttribute("data-i18n")];
+      if (v) el.textContent = v;
+    });
+    each("[data-i18n-title]", function (el) {
+      var v = t[el.getAttribute("data-i18n-title")];
+      if (v) el.setAttribute("title", v);
+    });
+    each("[data-i18n-aria]", function (el) {
+      var v = t[el.getAttribute("data-i18n-aria")];
+      if (v) el.setAttribute("aria-label", v);
+    });
+
+    // Only shown when the interface is not in the language the engine writes.
+    each(".lang-note", function (el) { el.hidden = (lang === "en"); });
+    if (typeof fillSelects === "function" && $("provider")) fillSelects();
+    // Charts write their own text — the meter's summary sentence, the
+    // calendar's ramp legend — so translating the DOM is not enough; they have
+    // to be drawn again. Guarded because initLang runs before the first draw
+    // on a cold load, and drawing twice there is just wasted work.
+    if (drawn) { draw(); $("calendar").innerHTML = calendar(); }
+
+    if (code) {
+      I18N.LOCALES.forEach(function (l) { if (l[0] === lang) code.textContent = l[2]; });
+    }
+
+    /* A reader who arrived from the Thai landing page should get back to the
+       Thai landing page, not the English one. Only rewritten on the hosted
+       copy, which is the only place those sibling directories exist. */
+    var crumb = $("crumbHome");
+    if (crumb && crumb.getAttribute("data-locale-home")) {
+      I18N.LOCALES.forEach(function (l) {
+        if (l[0] === lang) crumb.href = "../" + (l[3] ? l[3] + "/" : "");
+      });
+    }
+    if (sheet) {
+      each("[data-lang]", function (el) {
+        if (el.getAttribute("data-lang") === lang) el.setAttribute("aria-current", "true");
+        else el.removeAttribute("aria-current");
+      }, sheet);
+    }
+  }
+
+  function each(sel, fn, scope) {
+    var list = (scope || document).querySelectorAll(sel);
+    for (var i = 0; i < list.length; i++) fn(list[i]);
+  }
 }
 
 initTheme();
 init();
+initLang();
+initCalendar();
+initRail();
 })();

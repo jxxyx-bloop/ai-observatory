@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 300" width="1200" height="300" role="img" aria-label="What it costs to run AI Observatory and what it returns: no setup, no tokens, about a fifth of a second, and a ranked list of changes each worth a figure per month.">
+<rect width="1200" height="300" fill="#fbfbfd"/>
+<text x="40" y="46" font-family="ui-sans-serif,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif" font-size="21" font-weight="650" fill="#15151b" letter-spacing="-0.4">Costs you nothing to run. Tells you what to stop paying for.</text>
+<text x="40" y="72" font-family="ui-sans-serif,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif" font-size="13.5" fill="#8b8b99">No install, no instrumentation, no network — and the whole thing finishes before you look up.</text>
+<rect x="40" y="96" width="256" height="139" rx="16" fill="#ffffff" stroke="#e6e6ec" stroke-width="1"/>
+<text x="58" y="128" font-family="ui-sans-serif,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif" font-size="11" font-weight="700" letter-spacing="1.4" fill="#8b8b99">01</text>
+<text x="58" y="156" font-family="ui-sans-serif,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif" font-size="17.5" font-weight="640" fill="#15151b">Already on disk</text>
+<text x="58" y="178" font-family="ui-sans-serif,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif" font-size="13" font-weight="600" fill="#4f46e5">0 minutes of setup</text>
+<text x="58" y="200" font-family="ui-sans-serif,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif" font-size="12" fill="#5c5c69">Your agent already wrote the</text>
+<text x="58" y="215" font-family="ui-sans-serif,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif" font-size="12" fill="#5c5c69">logs. Nothing to install.</text>
+<path d="M305 165.5 h14 m-7 -5 l7 5 l-7 5" fill="none" stroke="#8b8b99" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+<rect x="328" y="96" width="256" height="139" rx="16" fill="#ffffff" stroke="#e6e6ec" stroke-width="1"/>
+<text x="346" y="128" font-family="ui-sans-serif,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif" font-size="11" font-weight="700" letter-spacing="1.4" fill="#8b8b99">02</text>
+<text x="346" y="156" font-family="ui-sans-serif,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif" font-size="17.5" font-weight="640" fill="#15151b">Read</text>
+<text x="346" y="178" font-family="ui-sans-serif,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif" font-size="13" font-weight="600" fill="#4f46e5">0 tokens, ~0.2 s</text>
+<text x="346" y="200" font-family="ui-sans-serif,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif" font-size="12" fill="#5c5c69">Read-only, on your machine. No</text>
+<text x="346" y="215" font-family="ui-sans-serif,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif" font-size="12" fill="#5c5c69">API key, no proxy, no account.</text>
+<path d="M593 165.5 h14 m-7 -5 l7 5 l-7 5" fill="none" stroke="#8b8b99" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+<rect x="616" y="96" width="256" height="139" rx="16" fill="#ffffff" stroke="#e6e6ec" stroke-width="1"/>
+<text x="634" y="128" font-family="ui-sans-serif,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif" font-size="11" font-weight="700" letter-spacing="1.4" fill="#8b8b99">03</text>
+<text x="634" y="156" font-family="ui-sans-serif,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif" font-size="17.5" font-weight="640" fill="#15151b">Priced</text>
+<text x="634" y="178" font-family="ui-sans-serif,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif" font-size="13" font-weight="600" fill="#4f46e5">at the rate in force</text>
+<text x="634" y="200" font-family="ui-sans-serif,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif" font-size="12" fill="#5c5c69">Every turn costed at what it</text>
+<text x="634" y="215" font-family="ui-sans-serif,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif" font-size="12" fill="#5c5c69">actually cost, in your currency.</text>
+<path d="M881 165.5 h14 m-7 -5 l7 5 l-7 5" fill="none" stroke="#8b8b99" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+<rect x="904" y="96" width="256" height="139" rx="16" fill="#ffffff" stroke="#4f46e5" stroke-width="2"/>
+<text x="922" y="128" font-family="ui-sans-serif,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif" font-size="11" font-weight="700" letter-spacing="1.4" fill="#8b8b99">04</text>
+<text x="922" y="156" font-family="ui-sans-serif,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif" font-size="17.5" font-weight="640" fill="#15151b">Ranked</text>
+<text x="922" y="178" font-family="ui-sans-serif,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif" font-size="13" font-weight="600" fill="#4f46e5">15 checks</text>
+<text x="922" y="200" font-family="ui-sans-serif,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif" font-size="12" fill="#5c5c69">The few changes worth making,</text>
+<text x="922" y="215" font-family="ui-sans-serif,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif" font-size="12" fill="#5c5c69">each worth a figure per month.</text>
+<rect x="40" y="259" width="133" height="26" rx="13" fill="#f1f1f5"/>
+<text x="106.5" y="276" text-anchor="middle" font-family="ui-sans-serif,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif" font-size="12" fill="#5c5c69">Nothing to install</text>
+<rect x="183" y="259" width="80" height="26" rx="13" fill="#f1f1f5"/>
+<text x="223.0" y="276" text-anchor="middle" font-family="ui-sans-serif,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif" font-size="12" fill="#5c5c69">No account</text>
+<rect x="273" y="259" width="193" height="26" rx="13" fill="#f1f1f5"/>
+<text x="369.5" y="276" text-anchor="middle" font-family="ui-sans-serif,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif" font-size="12" fill="#5c5c69">Nothing leaves your machine</text>
+<rect x="476" y="259" width="120" height="26" rx="13" fill="#f1f1f5"/>
+<text x="536.0" y="276" text-anchor="middle" font-family="ui-sans-serif,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif" font-size="12" fill="#5c5c69">50 models priced</text>
+<rect x="606" y="259" width="100" height="26" rx="13" fill="#f1f1f5"/>
+<text x="656.0" y="276" text-anchor="middle" font-family="ui-sans-serif,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif" font-size="12" fill="#5c5c69">13 currencies</text>
+<rect x="716" y="259" width="180" height="26" rx="13" fill="#f1f1f5"/>
+<text x="806.0" y="276" text-anchor="middle" font-family="ui-sans-serif,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif" font-size="12" fill="#5c5c69">rates verified 2026-08-20</text>
+</svg>

@@ -17,10 +17,51 @@ Provider files          Collectors        Store            Aggregate       Insig
 
 Collectors are provider-specific. Everything downstream consumes only normalized events.
 
-The last hop is split in two. `render.py` assembles `engine/assets/{page.html,app.css,app.js}`
-into one self-contained file; `app.js` re-aggregates the digest's fact cube in the
+The last hop is split in two. `render.py` assembles
+`observatory/assets/{page.html,tokens.css,app.css,i18n.js,app.js}` into one
+self-contained file; `app.js` re-aggregates the digest's fact cube in the
 browser so a date range or a slicer costs nothing to change. It re-aggregates — it
 never computes a metric the digest does not already define.
+
+## The presentation layer
+
+Three surfaces, one design system. `observatory/assets/tokens.css` is the only
+file in the repo permitted to contain a literal colour, and every surface
+inlines it before its own layout sheet — see
+[`docs/design/DESIGN-SYSTEM.md`](design/DESIGN-SYSTEM.md).
+
+The dashboard is a side rail plus one scrolling column of eight sections. The
+rail is the only persistent surface: section navigation, the link home, the
+theme toggle and the language switcher. `windows` in the digest carries each
+vendor's peak schedule *and the providers in this dataset that bill on it*, so
+the client can draw price over the reader's own hours — see
+[ADR-017](adr/ADR-017-Dashboard-Shell-And-The-Meter.md).
+
+| Surface | Built by | Language strategy |
+|---|---|---|
+| Landing page | `site/build.py` | One static page per locale, cross-linked with `hreflang` |
+| Hosted demo | `site/build.py` → `render.py` | One page, switched in the browser |
+| Local dashboard | `observe.py report` → `render.py` | Same page, opened from `file://` |
+
+The split is not inconsistency. A landing page wants crawlable URLs per
+language; a dashboard is also opened from `file://` on a laptop, where there is
+no set of sibling URLs to link between, so its whole locale table travels inside
+the page. Both read the same `observatory-lang` and `observatory-theme` keys, so
+a language or theme chosen on one carries to the other.
+
+`render.py` takes a `home` argument that decides where the breadcrumb goes: the
+hosted demo passes `"../"` and leads back to the landing page; a locally
+rendered dashboard passes nothing and links to the repository, because there is
+no site next to it to return to. On the hosted copy the crumb is then rewritten
+client-side to the reader's own locale directory — someone who arrived from
+`/th/` goes back to `/th/`, not to the English root. Each locale page records
+its own language on load, so a reader who arrives from a search result and never
+touches the switcher still gets the demo in their language.
+
+Both locale tables (`site/i18n.py` and `observatory/assets/i18n.js`) are
+compared on every build. They have to be separate — one runs at build time in
+Python, the other in a browser opened from `file://` — and two lists that can
+disagree eventually will.
 
 ## The four tiers, and why each exists
 

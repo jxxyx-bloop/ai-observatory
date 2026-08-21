@@ -4,102 +4,198 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="referrer" content="no-referrer">
 <meta name="robots" content="noindex,nofollow">
+<meta name="color-scheme" content="light dark">
 <title>AI Observatory</title>
 <style>/*CSS*/</style>
+<script>
+/* Theme and language before first paint, from the same two keys the landing
+   page writes. Anything later and the page flashes the wrong one. */
+(function(){var r=document.documentElement;try{
+var t=localStorage.getItem("observatory-theme");
+if(t!=="dark"&&t!=="light"){t=matchMedia("(prefers-color-scheme:dark)").matches?"dark":"light";}
+r.setAttribute("data-theme",t);
+var l=localStorage.getItem("observatory-lang");if(l)r.setAttribute("data-lang",l);
+}catch(e){}r.className+=" js";})();
+</script>
 </head><body>
-<div class="wrap">
-  <header>
-    <h1>AI Observatory</h1>
+
+<div class="shell">
+
+<!-- ── Side rail ───────────────────────────────────────────────────────────
+     One persistent surface for the whole page. This dashboard scrolls a long
+     way; without it, reaching "what to change" from the top means a scroll
+     with no landmarks and no way back. The rail also holds the two settings
+     that belong to the page rather than to any section — theme and language —
+     so nothing floats over the content. -->
+<nav class="rail noprint" aria-label="Sections">
+  <a class="railmark" href="<!--HOME-->" id="crumbHome"<!--HOMEATTR-->
+     data-i18n-title="<!--HOMEKEY-->" data-i18n-aria="<!--HOMEKEY-->"
+     title="<!--HOMELABEL-->" aria-label="<!--HOMELABEL-->">
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <circle cx="12" cy="12" r="8.5"></circle><circle cx="12" cy="12" r="3"></circle>
+      <path d="M12 3.5v3M12 17.5v3M3.5 12h3M17.5 12h3"></path>
+    </svg>
+  </a>
+
+  <ul class="railnav" id="railnav">
+    <li><a href="#overview" data-sec="overview">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19V10M9.3 19V5M14.7 19v-6M20 19v-9"></path></svg>
+      <span data-i18n="nav_overview">Overview</span></a></li>
+    <li><a href="#rhythm" data-sec="rhythm">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 14.5c2.6 0 2.6-7 5.2-7s2.6 7 5.2 7 2.6-7 5.2-7 2.6 4 2.6 4"></path></svg>
+      <span data-i18n="nav_rhythm">Rhythm</span></a></li>
+    <li><a href="#effort" data-sec="effort">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h11M4 18h7"></path></svg>
+      <span data-i18n="nav_effort">Effort</span></a></li>
+    <li><a href="#models" data-sec="models">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"></circle><circle cx="12" cy="12" r="8.5"></circle></svg>
+      <span data-i18n="nav_models">Models</span></a></li>
+    <li><a href="#timing" data-sec="timing">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"></circle><path d="M12 7v5.3l3.4 2"></path></svg>
+      <span data-i18n="nav_timing">Timing</span></a></li>
+    <li><a href="#trends" data-sec="trends">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 16l5-5 3.5 3.5L20 7m0 0h-4.5M20 7v4.5"></path></svg>
+      <span data-i18n="nav_trends">Trends</span></a></li>
+    <li><a href="#work" data-sec="work">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4H5a1 1 0 0 0-1 1v4M15 4h4a1 1 0 0 1 1 1v4M9 20H5a1 1 0 0 1-1-1v-4M15 20h4a1 1 0 0 0 1-1v-4M9 9h6v6H9z"></path></svg>
+      <span data-i18n="nav_work">Sessions</span></a></li>
+    <li><a href="#change" data-sec="change">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l2.4 5.3 5.6.7-4.2 3.9 1.2 5.6L12 15.7 6.9 18.5l1.2-5.6L4 9l5.6-.7Z"></path></svg>
+      <span data-i18n="nav_change">To change</span></a></li>
+  </ul>
+
+  <div class="railfoot">
+    <details class="menu" id="langmenu">
+      <summary class="railbtn" data-i18n-title="lang_label" title="Language"
+               data-i18n-aria="lang_label" aria-label="Language">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle>
+          <path d="M3 12h18M12 3c2.6 2.7 2.6 15.3 0 18M12 3c-2.6 2.7-2.6 15.3 0 18"></path></svg>
+        <span class="code" id="langcode">EN</span>
+      </summary>
+      <div class="sheet" id="langsheet" role="menu"></div>
+    </details>
+    <button class="railbtn" id="themeToggle" type="button"
+            data-i18n-title="theme_label" title="Light / dark"
+            data-i18n-aria="theme_label" aria-label="Light / dark">
+      <svg class="ico-sun" viewBox="0 0 24 24" aria-hidden="true">
+        <circle cx="12" cy="12" r="4.2"></circle>
+        <path d="M12 2v2.4M12 19.6V22M2 12h2.4M19.6 12H22M4.9 4.9l1.7 1.7M17.4 17.4l1.7 1.7M19.1 4.9l-1.7 1.7M6.6 17.4l-1.7 1.7"></path>
+      </svg>
+      <svg class="ico-moon" viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M20 14.2A8.4 8.4 0 1 1 9.8 4a6.6 6.6 0 0 0 10.2 10.2Z"></path>
+      </svg>
+    </button>
+  </div>
+</nav>
+
+<main class="wrap">
+  <header class="pagehead">
+    <h1 data-i18n="title">Your AI coding, measured.</h1>
     <p class="sub" id="span">Loading…</p>
   </header>
 
-  <div class="controls">
-    <div class="ctl"><span class="lbl">Range</span><div class="seg" id="presets"></div></div>
-    <div class="ctl"><span class="lbl">From</span><input type="date" id="from">
-      <span class="lbl">To</span><input type="date" id="to"></div>
-    <div class="ctl"><span class="lbl">Provider</span><select id="provider"></select></div>
-    <div class="ctl"><span class="lbl">Lane</span><select id="lane"></select></div>
-    <div class="ctl"><span class="lbl">Repo</span><select id="repo"></select></div>
-    <button id="reset" type="button">Reset</button>
+  <!-- Filters: one row, no stacked captions. Each control names itself in its
+       own default option ("All providers"), which is both shorter and what a
+       screen reader wanted anyway. -->
+  <div class="controls" role="group" data-i18n-aria="f_group" aria-label="Filters">
+    <div class="seg" id="presets"></div>
+    <div class="dates">
+      <input type="date" id="from" data-i18n-aria="f_from" aria-label="From">
+      <span aria-hidden="true">–</span>
+      <input type="date" id="to" data-i18n-aria="f_to" aria-label="To">
+    </div>
+    <select id="provider" data-i18n-aria="f_provider" aria-label="Provider"></select>
+    <select id="lane" data-i18n-aria="f_lane" aria-label="Lane"></select>
+    <select id="repo" data-i18n-aria="f_repo" aria-label="Repo"></select>
+    <button id="reset" type="button" class="resetbtn"
+            data-i18n-title="f_reset" title="Reset"
+            data-i18n-aria="f_reset" aria-label="Reset">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 10a8 8 0 1 1 .7 5"></path><path d="M4 5v5h5"></path></svg>
+    </button>
   </div>
   <p class="scope" id="scope"></p>
 
-  <div class="kpis" id="kpis"></div>
+  <section id="overview"><h2 data-i18n="s_overview">Where you stand</h2>
+    <div class="kpis" id="kpis"></div>
+  </section>
 
-  <section><h2>Daily rhythm</h2>
-    <p class="sub note">Every day in the selected range, labelled. Quiet days show as
-      gaps rather than being skipped, so the shape of a week stays visible. Click a day
-      to drill every panel below into just that day; click it again to clear.</p>
+  <section id="rhythm"><h2 data-i18n="s_daily">Daily rhythm</h2>
+    <p class="sub note" data-i18n="n_daily">Every day in range. Click a day to filter
+      the page to it; click again to clear.</p>
     <div class="panel">
       <div class="chartbar"><div class="seg small" id="dailyMetric"></div>
         <span class="legend" id="dailyLegend"></span></div>
       <div id="daily"></div>
     </div>
+    <div class="panel calpanel"><h2 data-i18n="s_calendar">The long view</h2>
+      <p class="sub note" data-i18n="n_calendar">Every day since collection began, one
+        square each. Click a week to filter to it.</p>
+      <div id="calendar"></div>
+    </div>
   </section>
 
-  <section><h2>Where the investment goes</h2>
-    <p class="sub note">Repository first, then the folders inside it. Click a bar to
-      filter the whole page to that repository.</p>
+  <section id="effort"><h2 data-i18n="s_invest">Where the effort goes</h2>
+    <p class="sub note" data-i18n="n_invest">Repository first, then the folders inside.
+      Click a bar to filter.</p>
     <div class="grid2">
-      <div class="panel"><h2>By repository</h2><div id="repos"></div></div>
-      <div class="panel"><h2 id="surfaceTitle">Inside</h2><div id="surfaces"></div>
+      <div class="panel"><h2 data-i18n="s_byrepo">By repository</h2><div id="repos"></div></div>
+      <div class="panel"><h2 id="surfaceTitle" data-i18n="s_inside">Inside</h2><div id="surfaces"></div>
         <p class="sub foot" id="surfaceNote"></p></div>
     </div>
   </section>
 
-  <section><h2>Model mix</h2>
+  <section id="models"><h2 data-i18n="s_models">Model mix</h2>
     <div class="grid2">
-      <div class="panel"><h2>Output by model</h2><div id="models"></div></div>
-      <div class="panel"><h2>Turns by reasoning effort</h2><div id="efforts"></div></div>
+      <div class="panel"><h2 data-i18n="s_output_model">Output by model</h2><div id="models-chart"></div></div>
+      <div class="panel"><h2 data-i18n="s_efforts">Turns by reasoning effort</h2><div id="efforts"></div></div>
     </div>
   </section>
 
-  <section id="phaseSection" hidden><h2>Peak and off-peak<span class="info" tabindex="0"
-      role="img" aria-label="What this measures" data-tt="Some vendors price tokens by the
-      hour — DeepSeek bills full rate 01:00-04:00 and 06:00-10:00 UTC and half rate the rest
-      of the day; Z.ai's GLM peaks only 14:00-18:00 UTC+8 on weekdays. Flat-priced vendors are
-      excluded from both bars: they were never time-priced, so there is nothing to shift.">i</span></h2>
-    <p class="sub note">Only vendors that publish a peak schedule appear here. The
-      <em>premium</em> is what the peak-hour turns cost above the same tokens at the same
-      vendor's off-peak rate — arithmetic on your own usage, not a projection.</p>
-    <div class="panel"><div id="phase"></div>
-      <p class="sub foot" id="phaseNote"></p></div>
+  <section id="timing"><h2 data-i18n="s_timing">When you work, and what it costs</h2>
+
+    <!-- Heading and hint are written by draw(), not by the translator: which of
+         the two this panel is depends on whether the reader uses a time-priced
+         vendor at all. -->
+    <div class="panel"><h2 id="meterTitle">Your week against the meter</h2>
+      <p class="sub note" id="meterHint">Your own hours, with every vendor's peak
+        window drawn over them.</p>
+      <div id="meter"></div>
+      <p class="sub foot" id="meterNote"></p>
+    </div>
+
+    <div class="panel" id="phaseSection" hidden><h2><span data-i18n="s_phase">Peak and off-peak</span><span class="info" tabindex="0"
+          role="img" aria-label="What this measures" data-tt="Some vendors price tokens by the
+          hour — DeepSeek bills full rate 01:00-04:00 and 06:00-10:00 UTC and half rate the rest
+          of the day; Z.ai's GLM peaks only 14:00-18:00 UTC+8 on weekdays. Flat-priced vendors are
+          excluded from both bars: they were never time-priced, so there is nothing to shift.">i</span></h2>
+      <div id="phase"></div>
+      <p class="sub foot" id="phaseNote"></p>
+    </div>
   </section>
 
-  <section><h2>Working hours<span class="info" tabindex="0" role="img"
-      aria-label="What this measures" data-tt="When turns actually happen, in your configured
-      timezone — darker = more turns in that hour, that weekday, across the whole synced
-      window.">i</span></h2>
-    <p class="sub note" id="hoursNote">Weekday × hour, in your configured timezone — the one
-      the work actually happens in, not wherever the collecting machine's clock is set.</p>
-    <div class="panel"><div id="hours"></div></div>
+  <section id="trends"><h2 data-i18n="s_trends">Are you getting better at this?</h2>
+    <p class="sub note" data-i18n="n_trends">7-day rolling mean across the whole
+      range.</p>
+    <div id="trends-charts"></div>
   </section>
 
-  <section><h2>Behavioral trends</h2>
-    <p class="sub note">7-day rolling mean of each metric, over the whole selected range —
-      not narrowed by a day drilled into above, since one day has no week-over-week shape
-      to show. This is the direct answer to "am I getting better at this."</p>
-    <div id="trends"></div>
-  </section>
-
-  <section><h2>Tools and delegation</h2>
+  <section id="work"><h2 data-i18n="s_tools">Tools, delegation and the heaviest sessions</h2>
     <div class="grid2">
-      <div class="panel"><h2>Tool calls</h2><div id="tools"></div></div>
-      <div class="panel"><h2>Named subagents</h2><div id="agents"></div>
+      <div class="panel"><h2 data-i18n="s_toolcalls">Tool calls</h2><div id="tools"></div></div>
+      <div class="panel"><h2 data-i18n="s_agents">Named subagents</h2><div id="agents"></div>
         <p class="sub foot" id="agentsNote"></p></div>
     </div>
+    <div class="panel"><h2 data-i18n="s_sessions">Heaviest sessions</h2>
+      <p class="sub note" data-i18n="n_sessions">Writes/reads is the produce-to-explore
+        ratio. Peak context is the largest single-turn context.</p>
+      <div id="sessions"></div></div>
   </section>
 
-  <section><h2>Heaviest sessions</h2>
-    <p class="sub note">Writes/reads is the produce-to-explore ratio. Peak context is
-      the largest single-turn context the session carried.</p>
-    <div class="panel"><div id="sessions"></div></div>
-  </section>
-
-  <section><h2>What to change</h2>
-    <p class="sub note">Ordered by severity, then by what it is worth. Every finding
-      names its evidence. Computed once over the whole window — the filters above do
-      not change it.</p>
+  <section id="change"><h2 data-i18n="s_change">What to change</h2>
+    <p class="sub note" data-i18n="n_change">Ordered by severity, then by what it is
+      worth. Computed over the whole window — the filters above do not change it.</p>
+    <p class="sub note lang-note" data-i18n="note_en" hidden>Findings and the method
+      notes below are generated in English.</p>
     <!--FINDINGS-->
   </section>
 
@@ -124,10 +220,11 @@
     Generated <!--GENERATED--> UTC. Regenerate with
     <code>python3 engine/observe.py all</code>.</p>
   </footer>
+</main>
 </div>
-<button id="themeToggle" class="theme-toggle" type="button"
-  aria-label="Switch between light and dark theme" title="Light / dark theme">◐</button>
+
 <div id="tt" class="tt" role="tooltip" aria-hidden="true"></div>
 <script id="digest" type="application/json">/*PAYLOAD*/</script>
+<script>/*I18N*/</script>
 <script>/*JS*/</script>
 </body></html>

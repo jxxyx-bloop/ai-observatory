@@ -1,45 +1,38 @@
-/* One protagonist colour, everything else grey. --accent marks the single
-   thing a chart is about; --high stays a true red so a severity badge can
-   never be mistaken for a chart accent. Indigo rather than the usual
-   developer-tool green because green already means "passing" everywhere else
-   in a terminal, and this dashboard's whole job is to be read, not scanned
-   for pass/fail. Both themes are defined explicitly — see docs/design. */
-:root{
-  --bg:#f2f3f5; --panel:#fff; --line:#e6e6e9; --ink:#1a1a1e; --muted:#6b6b75;
-  --faint:#9a9aa3; --accent:#5b5bd6; --track:#f7f7f8; --sel:#e9e9fb;
-  --high:#c62828; --med:#a8792a; --low:#5d7a8c; --info:#5b5bd6;
-  --r:3px; --pad:clamp(16px,4vw,28px);
-}
-@media (prefers-color-scheme:dark){
-  :root{--bg:#131318; --panel:#1b1b22; --line:#2c2c36; --ink:#e8e8ef;
-        --muted:#9c9cae; --faint:#70707f; --accent:#8f8ff5; --track:#25252e;
-        --sel:#282842; --high:#e0785f; --med:#d6a44e; --low:#8fb0c4; --info:#8f8ff5;}
-}
-:root[data-theme="dark"]{--bg:#131318; --panel:#1b1b22; --line:#2c2c36; --ink:#e8e8ef;
-  --muted:#9c9cae; --faint:#70707f; --accent:#8f8ff5; --track:#25252e; --sel:#282842;
-  --high:#e0785f; --med:#d6a44e; --low:#8fb0c4; --info:#8f8ff5;}
-:root[data-theme="light"]{--bg:#f2f3f5; --panel:#fff; --line:#e6e6e9; --ink:#1a1a1e;
-  --muted:#6b6b75; --faint:#9a9aa3; --accent:#5b5bd6; --track:#f7f7f8; --sel:#e9e9fb;
-  --high:#c62828; --med:#a8792a; --low:#5d7a8c; --info:#5b5bd6;}
+/* Dashboard layout and charts.
+   Every colour, size, radius and duration comes from assets/tokens.css, which
+   render.py inlines ahead of this file — this stylesheet must not introduce a
+   literal colour. Rationale: docs/design/DESIGN-SYSTEM.md.
 
-*{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--ink);
-  font:15px/1.55 ui-sans-serif,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
-  -webkit-font-smoothing:antialiased}
-.wrap{max-width:1080px;margin:0 auto;padding:var(--pad)}
+   Data panels stay square-ish (--r) and opaque. Only the floating chrome at the
+   top is glass, for the reason set out in §5 of that document: text over a live
+   blur is where "liquid glass" stops being readable, and every number here is
+   text. */
+
+body{font-size:15px;line-height:1.55;overflow-x:hidden}
+.wrap{width:100%;max-width:1120px;margin:0 auto;padding:0 var(--pad) 0;
+  min-width:0}
 h1{font-size:clamp(22px,3.4vw,30px);margin:0 0 4px;letter-spacing:-.02em;font-weight:650}
-h2{font-size:15px;margin:0 0 14px;letter-spacing:.06em;text-transform:uppercase;
-  color:var(--muted);font-weight:600}
+/* Two levels of heading, matching the landing page: a section announces
+   itself in sentence case; a panel inside it keeps the dense uppercase
+   micro-label, which is what a chart caption should be. */
+h2{font-size:12px;margin:0 0 14px;letter-spacing:.06em;text-transform:uppercase;
+  color:var(--muted);font-weight:640}
+section>h2{font-size:var(--t-h3);margin:0 0 10px;letter-spacing:var(--tr-head);
+  text-transform:none;color:var(--ink);font-weight:640}
 .sub{color:var(--muted);font-size:13.5px;margin:0}
 .note{margin:-6px 0 12px}
 .foot{margin:10px 0 0;font-size:12.5px}
-section{margin:30px 0 0}
-.panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);
+section{margin:30px 0 0;min-width:0}
+.panel{min-width:0;max-width:100%;background:var(--panel);border:1px solid var(--line);border-radius:var(--r-sm);
   padding:clamp(14px,2.4vw,20px)}
 .grid2{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(320px,1fr))}
+section>.panel+.panel,section>.grid2+.panel,section>.panel+.grid2{margin-top:16px}
+/* The info icon was wrapping onto a line of its own under a two-word KPI
+   label; a little more column width keeps label and icon together. */
+.kpis{grid-template-columns:repeat(auto-fit,minmax(172px,1fr))}
 
 .kpis{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));margin-top:18px}
-.kpi{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:13px 15px}
+.kpi{background:var(--panel);border:1px solid var(--line);border-radius:var(--r-sm);padding:14px 16px}
 .kpi.lead{box-shadow:inset 3px 0 0 var(--accent)}
 .kpi .v{font-size:clamp(19px,2.6vw,24px);font-weight:650;letter-spacing:-.02em;
   font-variant-numeric:tabular-nums}
@@ -68,32 +61,51 @@ h2 .info{margin-left:7px}
 .find p{margin:0 0 8px;font-size:14px;color:var(--ink)}
 .find .act{margin:0;font-size:14px;color:var(--muted);padding-left:14px;border-left:2px solid var(--line)}
 .find .meta{margin:8px 0 0;font-size:12px;color:var(--faint)}
-.controls{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center;margin-top:18px;
-  padding:12px 14px;background:var(--panel);border:1px solid var(--line);border-radius:var(--r)}
-.ctl{display:flex;align-items:center;gap:7px;min-width:0}
+/* One row wherever one row fits. The old bar carried an uppercase caption
+   above every control, which cost ~240px of width and pushed the last select
+   onto a second line at any realistic window — a wrap that reads as clutter,
+   not as layout. Each control now names itself in its own default option
+   ("All providers"), which is shorter and is what a screen reader wanted
+   anyway. */
+.controls{display:flex;flex-wrap:wrap;gap:var(--s2);align-items:center;
+  margin-top:var(--s4);padding:9px 10px;background:var(--panel);
+  border:1px solid var(--line);border-radius:var(--r-md)}
 .lbl{font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--faint);
   font-weight:600;white-space:nowrap}
-.seg{display:flex;border:1px solid var(--line);border-radius:7px;overflow:hidden}
+.seg{display:flex;border:1px solid var(--line);border-radius:var(--r-pill);
+  overflow:hidden;flex:none}
 .seg button{appearance:none;border:0;border-right:1px solid var(--line);background:transparent;
-  color:var(--muted);font:inherit;font-size:12.5px;padding:4px 10px;cursor:pointer;white-space:nowrap}
+  color:var(--muted);font:inherit;font-size:12.5px;padding:5px 12px;cursor:pointer;
+  white-space:nowrap;transition:background var(--d-fast) var(--ease)}
 .seg button:last-child{border-right:0}
 .seg button:hover{background:var(--track);color:var(--ink)}
-.seg button[aria-pressed="true"]{background:var(--accent);color:var(--panel);font-weight:600}
-.seg.small button{font-size:11.5px;padding:3px 9px}
-.controls select,.controls input[type="date"]{font:inherit;font-size:12.5px;color:var(--ink);
-  background:var(--bg);border:1px solid var(--line);border-radius:7px;padding:4px 7px;
-  max-width:190px}
-.controls button#reset{appearance:none;font:inherit;font-size:12.5px;color:var(--muted);
-  background:transparent;border:1px solid var(--line);border-radius:7px;padding:4px 11px;
-  cursor:pointer;margin-left:auto}
-.controls button#reset:hover{background:var(--track);color:var(--ink)}
+.seg button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);font-weight:600}
+.seg.small button{font-size:11.5px;padding:4px 10px}
+
+.dates{display:flex;align-items:center;gap:4px;padding:2px 8px;flex:none;
+  border:1px solid var(--line);border-radius:var(--r-pill);color:var(--faint);
+  font-size:12px}
+.controls select,.controls input[type="date"]{font:inherit;font-size:12.5px;
+  color:var(--ink);background:transparent;border:0;padding:3px 2px}
+.controls select{background:var(--bg);border:1px solid var(--line);
+  border-radius:var(--r-pill);padding:5px 9px;max-width:170px;cursor:pointer;
+  min-width:0;flex:0 1 auto;text-overflow:ellipsis}
+.controls select:hover{border-color:var(--line-strong)}
+.resetbtn{display:inline-flex;align-items:center;justify-content:center;
+  width:32px;height:32px;flex:none;margin-left:auto;padding:0;
+  border:1px solid var(--line);border-radius:50%;background:transparent;
+  color:var(--muted);cursor:pointer;
+  transition:color var(--d-fast) var(--ease),border-color var(--d-fast) var(--ease)}
+.resetbtn svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.7;
+  stroke-linecap:round;stroke-linejoin:round}
+.resetbtn:hover{color:var(--accent);border-color:var(--accent)}
 .scope{margin:9px 2px 0;font-size:12.5px;color:var(--faint);font-variant-numeric:tabular-nums}
-/* Five joined buttons do not fit a phone. Below that, the segmented control
-   becomes a wrapping chip row rather than being clipped at the panel edge. */
-@media (max-width:560px){
-  .seg{flex-wrap:wrap;border:0;gap:6px}
-  .seg button{border:1px solid var(--line);border-radius:7px}
-  .controls button#reset{margin-left:0}
+/* Below this the segmented control cannot stay one row of five, so it becomes
+   a wrapping chip row rather than being clipped at the panel edge. */
+@media (max-width:620px){
+  .seg{flex-wrap:wrap;border:0;gap:5px}
+  .seg button{border:1px solid var(--line);border-radius:var(--r-pill)}
+  .resetbtn{margin-left:0}
 }
 .chartbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:12px}
 .legend{font-size:12px;color:var(--faint)}
@@ -101,10 +113,22 @@ h2 .info{margin-left:7px}
   background:var(--accent);vertical-align:baseline}
 .legend i.avg{background:var(--med);height:2px;border-radius:0;width:14px;vertical-align:middle}
 svg{display:block;width:100%;height:auto;max-width:100%}
+/* The calendar is the exception: a day is a fixed square, so it keeps its
+   intrinsic size and scrolls when a year of data outgrows the panel. */
+#calendar{overflow-x:auto;-webkit-overflow-scrolling:touch}
+#calendar svg{width:auto;max-width:none}
+#calendar rect[data-day]{cursor:pointer}
+#calendar rect[data-day]:hover{stroke:var(--ink);stroke-width:1.5}
 .axis{font-size:10.5px;fill:var(--faint)}
+/* Seven weekday labels on a 16px pitch: one notch down so the rows stay
+   distinct, and tabular so Sun/Mon/Tue do not jitter against each other. */
+.axis.dow{font-size:9.5px;letter-spacing:.01em}
 /* A day-per-column chart cannot shrink to a phone without its labels going
    sub-legible. Below the viewBox width it scrolls instead, at full type size. */
-#daily,#hours{overflow-x:auto;-webkit-overflow-scrolling:touch}
+/* A scroll container still has to be told it may not exceed its parent.
+   Without max-width the 720px chart inside pushed <main> to 750px and every
+   section on the page inherited a horizontal scrollbar on a phone. */
+#daily,#hours,.scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:100%}
 #daily>svg,#hours>svg{min-width:720px}
 .empty{color:var(--faint);font-size:13.5px;margin:6px 0;font-style:italic}
 
@@ -120,7 +144,7 @@ svg{display:block;width:100%;height:auto;max-width:100%}
 
 /* Behavioral trends: three compact rolling-mean sparklines, one metric each. */
 .sparks{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(210px,1fr))}
-.spark{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);
+.spark{background:var(--panel);border:1px solid var(--line);border-radius:var(--r-sm);
   padding:12px 14px}
 .spark .sk{font-size:11px;color:var(--muted);letter-spacing:.04em;display:flex;
   align-items:center;gap:2px}
@@ -163,19 +187,138 @@ td.n{font-variant-numeric:tabular-nums}
 .tag{display:inline-block;font-size:10.5px;letter-spacing:.04em;color:var(--muted);
   background:var(--track);border-radius:4px;padding:1px 5px;margin-left:5px}
 
-/* Theme toggle: a fixed rail on the side rather than another header control —
-   it's a page-wide setting, not part of the filter bar's flow. */
-.theme-toggle{position:fixed;right:14px;top:50%;transform:translateY(-50%);z-index:70;
-  width:34px;height:34px;border-radius:50%;border:1px solid var(--line);
-  background:var(--panel);color:var(--muted);font-size:16px;line-height:1;cursor:pointer;
-  box-shadow:0 2px 8px rgba(0,0,0,.12)}
-.theme-toggle:hover{border-color:var(--accent);color:var(--accent)}
-.theme-toggle:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
-@media (max-width:560px){.theme-toggle{right:8px;width:30px;height:30px;font-size:14px}}
-@media print{.theme-toggle{display:none}}
+footer{margin:34px 0 8px;padding-top:16px;border-top:1px solid var(--line);
+  color:var(--faint);font-size:12.5px;line-height:1.6}
+code{font:12.5px ui-monospace,SFMono-Regular,Menlo,monospace;background:var(--track);
+  padding:1px 5px;border-radius:4px}
+@media print{.controls{display:none}}
+
+/* ── Shell and side rail ──────────────────────────────────────────────────
+   This page scrolls a long way. Without a persistent surface, getting from the
+   KPI strip to "what to change" is a scroll with no landmarks and no way back,
+   and the two page-level settings (theme, language) have nowhere to live that
+   isn't floating over the data. The rail solves all three at once, and stays
+   the same shape at every scroll depth so it becomes muscle memory. */
+.shell{display:grid;grid-template-columns:88px minmax(0,1fr);min-height:100vh}
+
+.rail{position:sticky;top:0;align-self:start;height:100vh;background:var(--rail);
+  display:flex;flex-direction:column;align-items:center;gap:var(--s4);
+  padding:var(--s4) 0 var(--s3);overflow-y:auto;scrollbar-width:thin}
+
+.railmark{display:flex;align-items:center;justify-content:center;flex:none;
+  width:40px;height:40px;border-radius:var(--r-sm);
+  transition:background var(--d-fast) var(--ease)}
+.railmark svg{width:22px;height:22px;fill:none;stroke:var(--accent);
+  stroke-width:1.5;stroke-linecap:round}
+.railmark:hover{background:var(--rail-hover)}
+
+.railnav{list-style:none;margin:0;padding:0 var(--s2);display:grid;gap:3px;width:100%}
+.railnav a{display:grid;justify-items:center;gap:5px;padding:9px 2px 7px;
+  border-radius:var(--r-sm);color:var(--rail-ink);text-decoration:none;
+  transition:background var(--d-fast) var(--ease),color var(--d-fast) var(--ease)}
+.railnav a svg{width:19px;height:19px;fill:none;stroke:currentColor;
+  stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.railnav a span{font-size:9px;font-weight:700;letter-spacing:.05em;
+  text-transform:uppercase;line-height:1.15;text-align:center}
+.railnav a:hover{background:var(--rail-hover);color:var(--rail-ink-on)}
+/* The lit tile is the scrollspy's only output. Anything more (a moving marker,
+   a progress bar) competes with the charts for the same attention. */
+.railnav a[aria-current="true"]{background:var(--rail-on);color:var(--rail-ink-on)}
+
+.railfoot{margin-top:auto;display:grid;gap:2px;justify-items:center;width:100%;
+  padding:0 var(--s2)}
+.railbtn{display:flex;align-items:center;justify-content:center;gap:4px;
+  width:100%;padding:8px 2px;border:0;border-radius:var(--r-sm);
+  background:transparent;color:var(--rail-ink);cursor:pointer;font:inherit;
+  transition:background var(--d-fast) var(--ease),color var(--d-fast) var(--ease)}
+.railbtn:hover{background:var(--rail-hover);color:var(--rail-ink-on)}
+.railbtn svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.6;
+  stroke-linecap:round;stroke-linejoin:round}
+.railbtn .code{font-size:10px;font-weight:700;letter-spacing:.04em}
+.railbtn:focus-visible,.railnav a:focus-visible,.railmark:focus-visible{
+  outline:2px solid var(--accent);outline-offset:-2px}
+
+.menu{position:relative;width:100%}
+.menu>summary{list-style:none;user-select:none}
+.menu>summary::-webkit-details-marker{display:none}
+.menu[open]>summary{background:var(--rail-on);color:var(--rail-ink-on)}
+.sheet{position:absolute;bottom:0;left:calc(100% + 8px);z-index:70;min-width:196px;
+  padding:var(--s2);border-radius:var(--r-md);background:var(--panel);
+  border:1px solid var(--line);box-shadow:var(--shadow-lg);display:grid;gap:1px;
+  max-height:min(70vh,440px);overflow:auto}
+.sheet a{padding:6px var(--s3);border-radius:var(--r-xs);color:var(--muted);
+  font-size:var(--t-sm);text-decoration:none}
+.sheet a:hover{background:var(--accent-soft);color:var(--ink)}
+.sheet a[aria-current="true"]{color:var(--accent);font-weight:600}
+
+.pagehead{padding:var(--s6) 0 0}
+/* Not the reader's language: says so once, where the English begins. */
+.lang-note{color:var(--faint);font-style:italic}
+
+/* On a phone the rail becomes a scrolling strip above the content: same
+   controls, same order, nothing hidden behind a menu. */
+@media (max-width:820px){
+  .shell{grid-template-columns:minmax(0,1fr)}
+  /* The rail itself must not scroll — it holds the pinned theme/language
+     controls. Only the tile list does, or the whole page gains 300px of
+     horizontal scroll and every section below it is cut off. */
+  .rail{position:sticky;top:0;z-index:60;height:auto;width:100%;max-width:100%;
+    flex-direction:row;align-items:center;gap:var(--s2);
+    padding:var(--s2) var(--s3);overflow:hidden}
+  .railnav{display:flex;width:auto;min-width:0;flex:1 1 auto;padding:0;gap:2px;
+    overflow-x:auto;overflow-y:hidden;scrollbar-width:none}
+  .railnav::-webkit-scrollbar{display:none}
+  .railnav a{padding:6px 10px;min-width:64px}
+  .railfoot{margin-top:0;margin-left:auto;display:flex;width:auto;padding:0}
+  .railbtn{width:auto;padding:8px 10px}
+  .sheet{bottom:auto;top:calc(100% + 8px);left:auto;right:0}
+}
+@media print{.rail{display:none}.shell{grid-template-columns:1fr}}
 
 footer{margin:34px 0 8px;padding-top:16px;border-top:1px solid var(--line);
   color:var(--faint);font-size:12.5px;line-height:1.6}
 code{font:12.5px ui-monospace,SFMono-Regular,Menlo,monospace;background:var(--track);
   padding:1px 5px;border-radius:4px}
 @media print{.controls{display:none}}
+
+/* ── Page chrome ──────────────────────────────────────────────────────────
+   The same top bar the landing page carries, so moving between the two feels
+   like one product. Breadcrumb on the left, icon-first controls on the right.
+   Every rule here has a twin in site/style.css; both draw from tokens.css. */
+.topbar{position:sticky;top:0;z-index:60;border-width:0 0 1px;
+  border-style:solid;border-color:var(--glass-line)}
+.topbar-in{max-width:1080px;margin:0 auto;padding:var(--s2) var(--pad);
+  display:flex;align-items:center;gap:var(--s3)}
+.brand{display:flex;align-items:center;gap:var(--s2);color:var(--ink);
+  text-decoration:none;font-weight:640;font-size:var(--t-sm);white-space:nowrap}
+.brand .mark{width:19px;height:19px;fill:none;stroke:var(--accent);stroke-width:1.5;
+  stroke-linecap:round}
+.crumbs{display:flex;align-items:center;gap:var(--s2);font-size:var(--t-xs);
+  color:var(--faint);margin-left:var(--s3);min-width:0}
+.crumbs a{color:var(--muted);text-decoration:none;white-space:nowrap}
+.crumbs a:hover{color:var(--accent)}
+.crumbs [aria-current]{color:var(--ink);font-weight:600;white-space:nowrap}
+.topbar .tools{display:flex;align-items:center;gap:var(--s1);margin-left:auto}
+.topbar .code{font-size:var(--t-micro);font-weight:650;letter-spacing:.04em}
+
+.menu{position:relative}
+.menu>summary{list-style:none;user-select:none}
+.menu>summary::-webkit-details-marker{display:none}
+.menu[open]>summary{color:var(--ink);background:var(--accent-soft)}
+.sheet{background:var(--panel);border:1px solid var(--line);
+  position:absolute;top:calc(100% + 8px);right:0;z-index:70;min-width:196px;
+  padding:var(--s2);border-radius:var(--r-md);box-shadow:var(--shadow-lg);
+  display:grid;gap:1px;max-height:min(70vh,440px);overflow:auto}
+.sheet a{padding:6px var(--s3);border-radius:var(--r-xs);color:var(--muted);
+  font-size:var(--t-sm);text-decoration:none}
+.sheet a:hover{background:var(--accent-soft);color:var(--ink)}
+.sheet a[aria-current="true"]{color:var(--accent);font-weight:600}
+
+.pagehead{padding:var(--s6) 0 0}
+/* Not the reader's language: says so once, where the English begins. */
+.lang-note{color:var(--faint);font-style:italic}
+
+@media (max-width:620px){
+  .crumbs{display:none}          /* the brand mark is still a link home */
+}
+@media print{.topbar{display:none}}

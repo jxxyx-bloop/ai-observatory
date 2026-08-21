@@ -1,0 +1,255 @@
+/* ─────────────────────────────────────────────────────────────────────────
+   AI Observatory — design tokens. The single source of truth.
+
+   Every surface in this project (landing page, hosted demo, locally rendered
+   dashboard) inlines this file first and then its own layout stylesheet. If a
+   colour, radius, or duration is not defined here, it does not exist. The
+   rationale behind each scale is in docs/design/DESIGN-SYSTEM.md; this file is
+   the machine-readable half of that document.
+
+   Three rules keep it honest:
+     1. No literal colour outside this file.
+     2. Both themes are defined explicitly — never a filter or an opacity hack.
+     3. No external requests. No webfont, no CDN, no icon package. The site
+        promises the same zero-network behaviour the product does, so the type
+        stack is the system's and every icon is inline SVG.
+   ───────────────────────────────────────────────────────────────────────── */
+
+:root{
+  /* ── Type ───────────────────────────────────────────────────────────────
+     One sans stack, one mono stack. Display sizes are fluid and tracked in
+     tightly; body text is never fluid, because a paragraph that resizes with
+     the viewport is harder to read, not easier. */
+  --sans:ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,
+         "Helvetica Neue","Noto Sans","Noto Sans SC","Noto Sans JP",
+         "Noto Sans KR","Noto Sans Thai","Noto Sans Devanagari",Arial,sans-serif;
+  --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,
+         "Liberation Mono",monospace;
+
+  --t-display:clamp(38px,6.4vw,72px);
+  --t-h1:clamp(28px,4.2vw,44px);
+  --t-h2:clamp(22px,2.8vw,30px);
+  --t-h3:19px;
+  --t-lede:clamp(17px,1.9vw,21px);
+  --t-body:16px;
+  --t-sm:14px;
+  --t-xs:12.5px;
+  --t-micro:11px;
+
+  --lh-display:1.04;
+  --lh-head:1.18;
+  --lh-body:1.6;
+  --tr-display:-.035em;   /* letter-spacing */
+  --tr-head:-.02em;
+  --tr-eyebrow:.14em;
+
+  /* ── Space — 4px base, doubling. Layout uses these, never raw px. ─────── */
+  --s1:4px; --s2:8px; --s3:12px; --s4:16px; --s5:24px;
+  --s6:32px; --s7:48px; --s8:64px; --s9:96px; --s10:128px;
+  --gutter:clamp(20px,5vw,40px);
+  --measure:64ch;          /* longest comfortable line */
+  --page:1120px;           /* landing content width  */
+  --page-narrow:920px;     /* prose width            */
+
+  /* ── Radius — soft, generous, consistent. --r is the dashboard's legacy
+     token and stays small: dense data panels read wrong when rounded. ───── */
+  --r:6px;
+  --r-xs:8px; --r-sm:12px; --r-md:16px; --r-lg:22px; --r-xl:30px;
+  --r-pill:999px;
+
+  /* ── Motion — one easing curve, three durations. Anything longer than
+     --d-slow reads as the page being slow rather than the page being calm. */
+  --ease:cubic-bezier(.2,.7,.2,1);
+  --d-fast:120ms; --d-mid:220ms; --d-slow:420ms;
+
+  /* ── Colour, light theme ────────────────────────────────────────────────
+     A near-white page, one indigo protagonist, everything else neutral. The
+     expressive gradient is reserved for exactly three things: the accent word
+     in the display headline, the primary button, and chart focus. Used on a
+     fourth, it stops meaning anything. */
+  --bg:#fbfbfd;
+  --bg-deep:#f2f2f6;          /* recessed bands, table headers */
+  --panel:#ffffff;
+  --ink:#15151b;
+  --muted:#5c5c69;
+  --faint:#8b8b99;
+  --line:rgba(18,18,32,.10);
+  --line-strong:rgba(18,18,32,.18);
+  --track:#f1f1f5;
+  --sel:#ecebfd;
+
+  --accent:#4f46e5;
+  --accent-ink:#ffffff;       /* text on top of --accent */
+  --accent-soft:rgba(79,70,229,.10);
+
+  /* The dashboard's side rail. Solid and dark in BOTH themes on purpose: it is
+     the one fixed thing on a page you scroll a long way, and an anchor that
+     changes weight with the theme stops being an anchor. */
+  --rail:#16161d;
+  --rail-ink:rgba(255,255,255,.62);
+  --rail-ink-on:#ffffff;
+  --rail-hover:rgba(255,255,255,.09);
+  --rail-on:rgba(255,255,255,.13);
+
+  /* Semantic — severity in the dashboard, status everywhere else. */
+  --high:#c2413a; --med:#9a7420; --low:#4f6f83; --info:#4f46e5;
+  --ok:#20724d;
+
+  /* Signature gradient. Cool→warm, the same arc Google's AI surfaces use,
+     tuned to sit next to indigo without fighting it. */
+  --grad:linear-gradient(100deg,#4a7dff 0%,#7b62f0 34%,#c664c0 64%,#f0913c 100%);
+  --grad-soft:linear-gradient(100deg,
+              rgba(74,125,255,.16),rgba(123,98,240,.14),
+              rgba(198,100,192,.12),rgba(240,145,60,.10));
+
+  /* ── Glass — a translucent, blurred surface. Used for floating chrome only
+     (top bar, popovers, the hero card). Content panels stay opaque, because
+     text over a blur is where "liquid glass" turns into unreadable. Every
+     glass rule needs the --glass-flat fallback for browsers without
+     backdrop-filter, which is why the background is a token, not a literal. */
+  --glass:rgba(255,255,255,.66);
+  --glass-flat:#ffffff;
+  --glass-line:rgba(18,18,32,.10);
+  --blur:14px;
+  --sat:1.6;
+
+  --shadow-sm:0 1px 2px rgba(16,16,32,.05),0 2px 8px rgba(16,16,32,.05);
+  --shadow-md:0 2px 6px rgba(16,16,32,.06),0 12px 32px rgba(16,16,32,.08);
+  --shadow-lg:0 4px 12px rgba(16,16,32,.07),0 28px 70px rgba(16,16,32,.12);
+  --ring:0 0 0 3px rgba(79,70,229,.32);
+}
+
+/* Dark theme. Not the light theme inverted — a warmer ink, a lifted accent so
+   it clears the background at the same perceived contrast, and panels built
+   from white at low alpha so they layer correctly over the hero gradient. */
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#0a0a0f;
+    --bg-deep:#07070b;
+    --panel:#131319;
+    --ink:#ededf3;
+    --muted:#a2a2b4;
+    --faint:#74748a;
+    --line:rgba(255,255,255,.10);
+    --line-strong:rgba(255,255,255,.20);
+    --track:#1d1d26;
+    --sel:#242240;
+
+    --accent:#9b93ff;
+    --accent-ink:#101018;
+    --accent-soft:rgba(155,147,255,.14);
+    --rail:#08080c;
+
+    --high:#e8836b; --med:#dcaa57; --low:#93b4c8; --info:#9b93ff;
+    --ok:#63c194;
+
+    --grad:linear-gradient(100deg,#7aa6ff 0%,#a48cff 34%,#e08ad6 64%,#ffb86b 100%);
+    --grad-soft:linear-gradient(100deg,
+                rgba(122,166,255,.20),rgba(164,140,255,.17),
+                rgba(224,138,214,.14),rgba(255,184,107,.11));
+
+    --glass:rgba(22,22,30,.62);
+    --glass-flat:#14141b;
+    --glass-line:rgba(255,255,255,.11);
+
+    --shadow-sm:0 1px 2px rgba(0,0,0,.4);
+    --shadow-md:0 2px 6px rgba(0,0,0,.4),0 12px 32px rgba(0,0,0,.45);
+    --shadow-lg:0 4px 12px rgba(0,0,0,.45),0 28px 70px rgba(0,0,0,.55);
+    --ring:0 0 0 3px rgba(155,147,255,.34);
+  }
+}
+
+/* An explicit choice from the theme toggle wins over the OS preference in both
+   directions, so the [data-theme="dark"] block has to restate every token the
+   media query sets rather than relying on it. */
+:root[data-theme="dark"]{
+  --bg:#0a0a0f; --bg-deep:#07070b; --panel:#131319; --ink:#ededf3;
+  --muted:#a2a2b4; --faint:#74748a; --line:rgba(255,255,255,.10);
+  --line-strong:rgba(255,255,255,.20); --track:#1d1d26; --sel:#242240;
+  --accent:#9b93ff; --accent-ink:#101018; --accent-soft:rgba(155,147,255,.14);
+  --rail:#08080c;
+  --high:#e8836b; --med:#dcaa57; --low:#93b4c8; --info:#9b93ff; --ok:#63c194;
+  --grad:linear-gradient(100deg,#7aa6ff 0%,#a48cff 34%,#e08ad6 64%,#ffb86b 100%);
+  --grad-soft:linear-gradient(100deg,rgba(122,166,255,.20),rgba(164,140,255,.17),
+              rgba(224,138,214,.14),rgba(255,184,107,.11));
+  --glass:rgba(22,22,30,.62); --glass-flat:#14141b;
+  --glass-line:rgba(255,255,255,.11);
+  --shadow-sm:0 1px 2px rgba(0,0,0,.4);
+  --shadow-md:0 2px 6px rgba(0,0,0,.4),0 12px 32px rgba(0,0,0,.45);
+  --shadow-lg:0 4px 12px rgba(0,0,0,.45),0 28px 70px rgba(0,0,0,.55);
+  --ring:0 0 0 3px rgba(155,147,255,.34);
+}
+
+/* ── Primitives shared by every surface ─────────────────────────────────── */
+
+*{box-sizing:border-box}
+
+html{-webkit-text-size-adjust:100%}
+
+body{
+  margin:0;background:var(--bg);color:var(--ink);
+  font:var(--t-body)/var(--lh-body) var(--sans);
+  -webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;
+  font-synthesis-weight:none;
+}
+
+code,pre,kbd{font-family:var(--mono)}
+
+/* Focus is never removed, only restyled. One ring, every interactive element. */
+:where(a,button,select,input,summary,[tabindex]):focus-visible{
+  outline:2px solid var(--accent);outline-offset:2px;border-radius:var(--r-xs);
+}
+
+::selection{background:var(--sel);color:var(--ink)}
+
+/* The glass recipe, once. Anything floating uses .glass rather than
+   re-deriving the blur, so a browser without backdrop-filter degrades to an
+   opaque surface in exactly one place. */
+.glass{
+  background:var(--glass-flat);
+  border:1px solid var(--glass-line);
+}
+@supports ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){
+  .glass{
+    background:var(--glass);
+    -webkit-backdrop-filter:blur(var(--blur)) saturate(var(--sat));
+    backdrop-filter:blur(var(--blur)) saturate(var(--sat));
+  }
+}
+
+/* Icon buttons — the default control for anything that has a good glyph.
+   36px is the smallest square that still clears the 24px touch guidance once
+   the visual gap around it is counted. */
+.iconbtn{
+  display:inline-flex;align-items:center;justify-content:center;gap:var(--s2);
+  width:36px;height:36px;padding:0;flex:none;
+  border:1px solid transparent;border-radius:var(--r-pill);
+  background:transparent;color:var(--muted);cursor:pointer;
+  transition:color var(--d-fast) var(--ease),background var(--d-fast) var(--ease),
+             border-color var(--d-fast) var(--ease);
+}
+.iconbtn:hover{color:var(--ink);background:var(--accent-soft)}
+.iconbtn svg{width:18px;height:18px;display:block;fill:none;stroke:currentColor;
+  stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.iconbtn.wide{width:auto;padding:0 var(--s3);font:600 var(--t-xs)/1 var(--sans)}
+
+/* One toggle, two glyphs: show the theme you are in, hide the other. Scoped to
+   .iconbtn so it outranks the `.iconbtn svg{display:block}` rule above — an
+   unscoped `.ico-moon{display:none}` loses that fight and shows both. */
+.iconbtn .ico-moon{display:none}
+:root[data-theme="dark"] .iconbtn .ico-sun{display:none}
+:root[data-theme="dark"] .iconbtn .ico-moon{display:block}
+
+/* Everything that animates does so through these, so one media query turns the
+   whole system still for anyone who asked for that. */
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{
+    animation-duration:.001ms !important;animation-iteration-count:1 !important;
+    transition-duration:.001ms !important;scroll-behavior:auto !important;
+  }
+}
+
+@media print{
+  :root{--bg:#fff;--panel:#fff;--ink:#000}
+  .noprint{display:none !important}
+}

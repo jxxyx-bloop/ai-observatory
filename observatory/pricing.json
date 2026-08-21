@@ -1,133 +1,475 @@
 {
   "_doc": "Community-maintained rate card. USD per million tokens, from each vendor's public price list. Multipliers apply to the model's own input rate; a model may set its own `cache_read_mult` when the vendor's cache-hit discount isn't the 0.1x default. `window` names a peak/off-peak schedule in `windows` — a pricing shape that Chinese vendors use and Western trackers ignore. See docs/specs/Cost-Estimation.md and docs/specs/Peak-Off-Peak-Pricing.md.",
   "_contributing": "Rates go stale. Correcting one is the easiest useful PR in this repo: edit the entry, move `_verified_on`, cite the vendor page in the PR body. See CONTRIBUTING.md.",
-  "_verified_on": "2026-08-19",
+  "_verified_on": "2026-08-20",
   "_schema": 2,
-
   "multipliers": {
     "cache_read": 0.1,
     "cache_write_5m": 1.25,
     "cache_write_1h": 2.0
   },
-
   "_windows_doc": "Peak/off-peak schedules. `peak_utc` is a list of [start_hour, end_hour) in UTC; `days` restricts to weekdays (1=Mon..7=Sun) when present. `off_peak_mult` scales the listed (peak) rate outside those hours. A model without a `window` is billed flat, all day. Local-time schedules are converted to UTC here on purpose so the engine never has to know a timezone.",
   "windows": {
     "deepseek-v4": {
       "vendor": "deepseek",
-      "peak_utc": [[1, 4], [6, 10]],
+      "peak_utc": [
+        [
+          1,
+          4
+        ],
+        [
+          6,
+          10
+        ]
+      ],
       "off_peak_mult": 0.5,
       "note": "Effective 2026-08-16. Listed rates are PEAK; every other hour bills at half. Applies to V4 Flash and V4 Pro."
     },
     "deepseek-legacy": {
       "vendor": "deepseek",
-      "peak_utc": [[0, 16], [24, 24]],
+      "peak_utc": [
+        [
+          0,
+          16
+        ],
+        [
+          24,
+          24
+        ]
+      ],
       "off_peak_mult": 0.5,
       "note": "The V3/R1-generation window: 16:30-00:30 UTC discounted. Approximated to whole hours; kept for historical events only."
     },
     "glm-coding": {
       "vendor": "zhipu",
-      "peak_utc": [[6, 10]],
-      "days": [1, 2, 3, 4, 5],
+      "peak_utc": [
+        [
+          6,
+          10
+        ]
+      ],
+      "days": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
       "off_peak_mult": 0.5,
       "note": "Z.ai peak is 14:00-18:00 UTC+8 on weekdays only = 06:00-10:00 UTC. Weekends are entirely off-peak."
     }
   },
-
+  "vendors": {
+    "_doc": "How each vendor lets you pay less for the SAME tokens. Two mechanisms, and they are not the same thing. `window` (see above) is the clock: the price changes by the hour and you do nothing but run later. `batch_mult` is the queue: you accept a slower turnaround (typically within 24h) and the vendor charges a fraction of the interactive rate. Both reward the same habit — stop paying interactive prices for work nobody is watching.",
+    "_contributing": "A vendor listed here has been checked; a vendor absent from here has NOT been, and the figures say so rather than implying it charges flat. Do not add an entry asserting `no cheaper lane` unless you have looked at the vendor's pricing page — 'we never checked' and 'there is nothing there' look identical to a reader and only one of them is true. Cite the page in the PR and move `_verified_on`, exactly as for a model rate.",
+    "deepseek": {
+      "flat": false,
+      "note": "Time-priced — see windows.deepseek-v4."
+    },
+    "zhipu": {
+      "flat": false,
+      "note": "Time-priced on weekdays — see windows.glm-coding."
+    },
+    "anthropic": {
+      "flat": true,
+      "batch_mult": 0.5,
+      "note": "Flat by the hour. Message Batches API bills 0.5x for work that can wait."
+    },
+    "openai": {
+      "flat": true,
+      "batch_mult": 0.5,
+      "note": "Flat by the hour. Batch API bills 0.5x, results within 24h."
+    },
+    "google": {
+      "flat": true,
+      "batch_mult": 0.5,
+      "note": "Flat by the hour. Gemini batch mode bills 0.5x."
+    },
+    "alibaba": {
+      "flat": true,
+      "note": "No vendor-wide batch_mult set — the discount is real but per-model, not universal. Batch calls (where a model supports them) bill input and output at 0.5x real-time, mutually exclusive with the context-cache discount. qwen3-max shows the batch tag on Model Studio's regional tables; qwen3-coder-plus, qwen3-coder-flash and qwen3-plus do not. Verified 2026-08-20: alibabacloud.com/help/en/model-studio/models"
+    },
+    "baidu": {
+      "flat": true,
+      "note": "No vendor-wide batch_mult set. Qianfan does offer batch inference, but at 0.4x (60% off), not the 0.5x other vendors use — and it does NOT cover ernie-5.0, the only Baidu model in this file. Batch is limited to the ERNIE-4.5-Turbo family, a DeepSeek-V3.2 resale, and InternVL3, none of which are priced here yet. Verified 2026-08-20: cloud.baidu.com/doc/QIANFAN/s/qm3ie59jf"
+    },
+    "bytedance": {
+      "flat": true,
+      "note": "No vendor-wide batch_mult set. Volcengine's Doubao-Seed-2.0 and Seed-2.1 both bill batch inference at exactly 0.5x (confirmed on the console); Seed-Evolving and Seed-Character show no batch option. Which Seed generation doubao-pro/doubao-seed-code in this file map to on Volcengine's current catalog is unconfirmed — do not apply 0.5x to either until that's checked. Verified 2026-08-20: volcengine.com/pricing?product=ark_subscription"
+    },
+    "minimax": {
+      "flat": true,
+      "note": "Checked, nothing found. No batch or off-peak lane anywhere on the pay-as-you-go or Token Plan pages — only prompt-caching discounts and a 1.5x 'Priority' premium (faster admission, not cheaper). Verified 2026-08-20: platform.minimax.io/docs/guides/pricing-paygo"
+    },
+    "moonshot": {
+      "flat": true,
+      "note": "No vendor-wide batch_mult set. Kimi's own Batch Inference page states 0.6x (60% of standard) explicitly for kimi-k2.7-code, kimi-k2.6 and kimi-k2.5 only — kimi-k3 (also priced in this file) is excluded, so a single vendor-level multiplier would misprice it. Verified 2026-08-20: platform.kimi.com/docs/pricing/batch"
+    },
+    "stepfun": {
+      "flat": true,
+      "note": "Checked, nothing found. No batch or off-peak lane on the pricing/rate-limits page — only cache-hit vs cache-miss input pricing and top-up-based rate-limit tiers. Verified 2026-08-20: platform.stepfun.ai/docs/en/guides/pricing/details"
+    },
+    "tencent": {
+      "flat": true,
+      "note": "Checked, nothing found. No batch or off-peak lane on Hunyuan's pricing page — only free resource packages and prepaid/postpaid billing. Page also flags Tencent is mid-migration to a new 'TokenHub' console. Verified 2026-08-20: cloud.tencent.com/document/product/1729"
+    },
+    "xai": {
+      "flat": true,
+      "note": "No vendor-wide batch_mult set. xAI's own pricing page states Batch API bills 0.8x (20% off) for grok-4.3, grok-4.20-0309-reasoning, grok-4.20-0309-non-reasoning and grok-4.20-multi-agent-0309 only — the flagship grok-4.6/grok-4.5 and grok-build-0.1 get none. Which of these grok-4/grok-code-fast in this file correspond to on xAI's current catalog is unconfirmed; do not apply 0.8x to either until that's checked. Verified 2026-08-20: docs.x.ai/developers/pricing"
+    }
+  },
   "models": {
-    "claude-fable-5":    { "input": 10.0, "output": 50.0, "tier": "frontier", "vendor": "anthropic" },
-    "claude-opus-5":     { "input": 5.0,  "output": 25.0, "tier": "opus",     "vendor": "anthropic" },
-    "claude-opus-4-8":   { "input": 5.0,  "output": 25.0, "tier": "opus",     "vendor": "anthropic" },
-    "claude-opus-4-6":   { "input": 5.0,  "output": 25.0, "tier": "opus",     "vendor": "anthropic" },
-    "claude-opus-4-5":   { "input": 5.0,  "output": 25.0, "tier": "opus",     "vendor": "anthropic" },
-    "claude-sonnet-5":   { "input": 2.0,  "output": 10.0, "tier": "sonnet",   "vendor": "anthropic" },
-    "claude-sonnet-4-6": { "input": 3.0,  "output": 15.0, "tier": "sonnet",   "vendor": "anthropic" },
-    "claude-sonnet-4-5": { "input": 3.0,  "output": 15.0, "tier": "sonnet",   "vendor": "anthropic" },
-    "claude-haiku-4-5":  { "input": 1.0,  "output": 5.0,  "tier": "haiku",    "vendor": "anthropic" },
-    "claude-3-7-sonnet": { "input": 3.0,  "output": 15.0, "tier": "sonnet",   "vendor": "anthropic" },
-    "claude-3-5-sonnet": { "input": 3.0,  "output": 15.0, "tier": "sonnet",   "vendor": "anthropic" },
-
-    "gpt-5.5":           { "input": 1.25, "output": 10.0, "tier": "frontier", "vendor": "openai" },
-    "gpt-5.1":           { "input": 1.25, "output": 10.0, "tier": "frontier", "vendor": "openai" },
-    "gpt-5":             { "input": 1.25, "output": 10.0, "tier": "frontier", "vendor": "openai" },
-    "gpt-5-codex":       { "input": 1.25, "output": 10.0, "tier": "frontier", "vendor": "openai" },
-    "codex-auto-review": { "input": 1.25, "output": 10.0, "tier": "frontier", "vendor": "openai",
-                           "note": "guardian subagent — billed as the base model" },
-    "codex-mini-latest": { "input": 1.5,  "output": 6.0,  "tier": "mini",     "vendor": "openai" },
-    "o3-mini":           { "input": 1.10, "output": 4.40, "tier": "mini",     "vendor": "openai" },
-    "gpt-4o":            { "input": 2.50, "output": 10.0, "tier": "frontier", "vendor": "openai" },
-
-    "gemini-3.6-flash":      { "input": 0.15, "output": 0.60, "tier": "flash", "vendor": "google" },
-    "gemini-3.6-flash-high": { "input": 0.15, "output": 0.60, "tier": "flash", "vendor": "google" },
-    "gemini-3.5-pro":        { "input": 1.25, "output": 5.00, "tier": "pro",   "vendor": "google" },
-    "gemini-3.0-pro":        { "input": 1.25, "output": 5.00, "tier": "pro",   "vendor": "google" },
-    "gemini-2.5-pro":        { "input": 1.25, "output": 5.00, "tier": "pro",   "vendor": "google" },
-    "gemini-2.5-flash":      { "input": 0.10, "output": 0.40, "tier": "flash", "vendor": "google" },
-
-    "kimi-k3":               { "input": 3.00, "output": 15.0, "tier": "frontier", "vendor": "moonshot",
-                               "note": "cache-hit input $0.30/M -> 0.1x, matches the global default" },
-    "kimi-k2.7-code":        { "input": 0.95, "output": 4.00, "tier": "mini", "vendor": "moonshot",
-                               "cache_read_mult": 0.2,
-                               "note": "cache-hit input $0.19/M -> 0.2x, not the 0.1x default" },
-    "kimi-k2.7-code-highspeed": { "input": 1.90, "output": 8.00, "tier": "mini", "vendor": "moonshot",
-                               "cache_read_mult": 0.2 },
-    "kimi-k2.6":             { "input": 0.95, "output": 4.00, "tier": "mini", "vendor": "moonshot",
-                               "cache_read_mult": 0.0737,
-                               "note": "cache-hit floor $0.07/M -> ~0.074x, not the 0.1x default" },
-
-    "deepseek-v4-flash":     { "input": 0.44, "output": 1.32, "tier": "mini", "vendor": "deepseek",
-                               "window": "deepseek-v4", "cache_read_mult": 0.1,
-                               "note": "listed rate is PEAK; off-peak is half" },
-    "deepseek-v4-pro":       { "input": 1.32, "output": 3.96, "tier": "frontier", "vendor": "deepseek",
-                               "window": "deepseek-v4", "cache_read_mult": 0.1,
-                               "note": "listed rate is PEAK; off-peak is half" },
-    "deepseek-chat":         { "input": 0.27, "output": 1.10, "tier": "mini", "vendor": "deepseek",
-                               "window": "deepseek-legacy", "cache_read_mult": 0.26 },
-    "deepseek-reasoner":     { "input": 0.55, "output": 2.19, "tier": "reasoning", "vendor": "deepseek",
-                               "window": "deepseek-legacy", "cache_read_mult": 0.26 },
-
-    "glm-5.1":               { "input": 1.40, "output": 4.40, "tier": "frontier", "vendor": "zhipu",
-                               "window": "glm-coding", "cache_read_mult": 0.2 },
-    "glm-5":                 { "input": 0.60, "output": 2.20, "tier": "frontier", "vendor": "zhipu",
-                               "window": "glm-coding", "cache_read_mult": 0.2 },
-    "glm-4.6":               { "input": 0.60, "output": 2.20, "tier": "mini", "vendor": "zhipu",
-                               "window": "glm-coding", "cache_read_mult": 0.2 },
-    "glm-4.5-air":           { "input": 0.20, "output": 1.10, "tier": "mini", "vendor": "zhipu",
-                               "window": "glm-coding", "cache_read_mult": 0.2 },
-
-    "qwen3-max":             { "input": 1.20, "output": 6.00, "tier": "frontier", "vendor": "alibaba" },
-    "qwen3-coder-plus":      { "input": 1.00, "output": 5.00, "tier": "frontier", "vendor": "alibaba" },
-    "qwen3-coder-flash":     { "input": 0.30, "output": 1.50, "tier": "mini", "vendor": "alibaba" },
-    "qwen3-plus":            { "input": 0.40, "output": 1.20, "tier": "mini", "vendor": "alibaba" },
-
-    "minimax-m2":            { "input": 0.30, "output": 1.20, "tier": "mini", "vendor": "minimax" },
-    "minimax-m2.1":          { "input": 0.30, "output": 1.20, "tier": "mini", "vendor": "minimax" },
-
-    "doubao-pro":            { "input": 0.11, "output": 0.28, "tier": "mini", "vendor": "bytedance" },
-    "doubao-seed-code":      { "input": 0.14, "output": 0.55, "tier": "mini", "vendor": "bytedance" },
-    "ernie-5.0":             { "input": 0.55, "output": 2.20, "tier": "frontier", "vendor": "baidu" },
-    "hunyuan-turbos":        { "input": 0.11, "output": 0.28, "tier": "mini", "vendor": "tencent" },
-    "step-3":                { "input": 0.55, "output": 1.40, "tier": "mini", "vendor": "stepfun" },
-
-    "grok-4":                { "input": 3.00, "output": 15.0, "tier": "frontier", "vendor": "xai" },
-    "grok-code-fast":        { "input": 0.20, "output": 1.50, "tier": "mini", "vendor": "xai" }
+    "claude-fable-5": {
+      "input": 10.0,
+      "output": 50.0,
+      "tier": "frontier",
+      "vendor": "anthropic"
+    },
+    "claude-opus-5": {
+      "input": 5.0,
+      "output": 25.0,
+      "tier": "opus",
+      "vendor": "anthropic"
+    },
+    "claude-opus-4-8": {
+      "input": 5.0,
+      "output": 25.0,
+      "tier": "opus",
+      "vendor": "anthropic"
+    },
+    "claude-opus-4-6": {
+      "input": 5.0,
+      "output": 25.0,
+      "tier": "opus",
+      "vendor": "anthropic"
+    },
+    "claude-opus-4-5": {
+      "input": 5.0,
+      "output": 25.0,
+      "tier": "opus",
+      "vendor": "anthropic"
+    },
+    "claude-sonnet-5": {
+      "input": 2.0,
+      "output": 10.0,
+      "tier": "sonnet",
+      "vendor": "anthropic"
+    },
+    "claude-sonnet-4-6": {
+      "input": 3.0,
+      "output": 15.0,
+      "tier": "sonnet",
+      "vendor": "anthropic"
+    },
+    "claude-sonnet-4-5": {
+      "input": 3.0,
+      "output": 15.0,
+      "tier": "sonnet",
+      "vendor": "anthropic"
+    },
+    "claude-haiku-4-5": {
+      "input": 1.0,
+      "output": 5.0,
+      "tier": "haiku",
+      "vendor": "anthropic"
+    },
+    "claude-3-7-sonnet": {
+      "input": 3.0,
+      "output": 15.0,
+      "tier": "sonnet",
+      "vendor": "anthropic"
+    },
+    "claude-3-5-sonnet": {
+      "input": 3.0,
+      "output": 15.0,
+      "tier": "sonnet",
+      "vendor": "anthropic"
+    },
+    "gpt-5.5": {
+      "input": 1.25,
+      "output": 10.0,
+      "tier": "frontier",
+      "vendor": "openai"
+    },
+    "gpt-5.1": {
+      "input": 1.25,
+      "output": 10.0,
+      "tier": "frontier",
+      "vendor": "openai"
+    },
+    "gpt-5": {
+      "input": 1.25,
+      "output": 10.0,
+      "tier": "frontier",
+      "vendor": "openai"
+    },
+    "gpt-5-codex": {
+      "input": 1.25,
+      "output": 10.0,
+      "tier": "frontier",
+      "vendor": "openai"
+    },
+    "codex-auto-review": {
+      "input": 1.25,
+      "output": 10.0,
+      "tier": "frontier",
+      "vendor": "openai",
+      "note": "guardian subagent — billed as the base model"
+    },
+    "codex-mini-latest": {
+      "input": 1.5,
+      "output": 6.0,
+      "tier": "mini",
+      "vendor": "openai"
+    },
+    "o3-mini": {
+      "input": 1.1,
+      "output": 4.4,
+      "tier": "mini",
+      "vendor": "openai"
+    },
+    "gpt-4o": {
+      "input": 2.5,
+      "output": 10.0,
+      "tier": "frontier",
+      "vendor": "openai"
+    },
+    "gemini-3.6-flash": {
+      "input": 0.15,
+      "output": 0.6,
+      "tier": "flash",
+      "vendor": "google"
+    },
+    "gemini-3.6-flash-high": {
+      "input": 0.15,
+      "output": 0.6,
+      "tier": "flash",
+      "vendor": "google"
+    },
+    "gemini-3.5-pro": {
+      "input": 1.25,
+      "output": 5.0,
+      "tier": "pro",
+      "vendor": "google"
+    },
+    "gemini-3.0-pro": {
+      "input": 1.25,
+      "output": 5.0,
+      "tier": "pro",
+      "vendor": "google"
+    },
+    "gemini-2.5-pro": {
+      "input": 1.25,
+      "output": 5.0,
+      "tier": "pro",
+      "vendor": "google"
+    },
+    "gemini-2.5-flash": {
+      "input": 0.1,
+      "output": 0.4,
+      "tier": "flash",
+      "vendor": "google"
+    },
+    "kimi-k3": {
+      "input": 3.0,
+      "output": 15.0,
+      "tier": "frontier",
+      "vendor": "moonshot",
+      "note": "cache-hit input $0.30/M -> 0.1x, matches the global default"
+    },
+    "kimi-k2.7-code": {
+      "input": 0.95,
+      "output": 4.0,
+      "tier": "mini",
+      "vendor": "moonshot",
+      "cache_read_mult": 0.2,
+      "note": "cache-hit input $0.19/M -> 0.2x, not the 0.1x default"
+    },
+    "kimi-k2.7-code-highspeed": {
+      "input": 1.9,
+      "output": 8.0,
+      "tier": "mini",
+      "vendor": "moonshot",
+      "cache_read_mult": 0.2
+    },
+    "kimi-k2.6": {
+      "input": 0.95,
+      "output": 4.0,
+      "tier": "mini",
+      "vendor": "moonshot",
+      "cache_read_mult": 0.0737,
+      "note": "cache-hit floor $0.07/M -> ~0.074x, not the 0.1x default"
+    },
+    "deepseek-v4-flash": {
+      "input": 0.44,
+      "output": 1.32,
+      "tier": "mini",
+      "vendor": "deepseek",
+      "window": "deepseek-v4",
+      "cache_read_mult": 0.1,
+      "note": "listed rate is PEAK; off-peak is half"
+    },
+    "deepseek-v4-pro": {
+      "input": 1.32,
+      "output": 3.96,
+      "tier": "frontier",
+      "vendor": "deepseek",
+      "window": "deepseek-v4",
+      "cache_read_mult": 0.1,
+      "note": "listed rate is PEAK; off-peak is half"
+    },
+    "deepseek-chat": {
+      "input": 0.27,
+      "output": 1.1,
+      "tier": "mini",
+      "vendor": "deepseek",
+      "window": "deepseek-legacy",
+      "cache_read_mult": 0.26
+    },
+    "deepseek-reasoner": {
+      "input": 0.55,
+      "output": 2.19,
+      "tier": "reasoning",
+      "vendor": "deepseek",
+      "window": "deepseek-legacy",
+      "cache_read_mult": 0.26
+    },
+    "glm-5.1": {
+      "input": 1.4,
+      "output": 4.4,
+      "tier": "frontier",
+      "vendor": "zhipu",
+      "window": "glm-coding",
+      "cache_read_mult": 0.2
+    },
+    "glm-5": {
+      "input": 0.6,
+      "output": 2.2,
+      "tier": "frontier",
+      "vendor": "zhipu",
+      "window": "glm-coding",
+      "cache_read_mult": 0.2
+    },
+    "glm-4.6": {
+      "input": 0.6,
+      "output": 2.2,
+      "tier": "mini",
+      "vendor": "zhipu",
+      "window": "glm-coding",
+      "cache_read_mult": 0.2
+    },
+    "glm-4.5-air": {
+      "input": 0.2,
+      "output": 1.1,
+      "tier": "mini",
+      "vendor": "zhipu",
+      "window": "glm-coding",
+      "cache_read_mult": 0.2
+    },
+    "qwen3-max": {
+      "input": 1.2,
+      "output": 6.0,
+      "tier": "frontier",
+      "vendor": "alibaba"
+    },
+    "qwen3-coder-plus": {
+      "input": 1.0,
+      "output": 5.0,
+      "tier": "frontier",
+      "vendor": "alibaba"
+    },
+    "qwen3-coder-flash": {
+      "input": 0.3,
+      "output": 1.5,
+      "tier": "mini",
+      "vendor": "alibaba"
+    },
+    "qwen3-plus": {
+      "input": 0.4,
+      "output": 1.2,
+      "tier": "mini",
+      "vendor": "alibaba"
+    },
+    "minimax-m2": {
+      "input": 0.3,
+      "output": 1.2,
+      "tier": "mini",
+      "vendor": "minimax"
+    },
+    "minimax-m2.1": {
+      "input": 0.3,
+      "output": 1.2,
+      "tier": "mini",
+      "vendor": "minimax"
+    },
+    "doubao-pro": {
+      "input": 0.11,
+      "output": 0.28,
+      "tier": "mini",
+      "vendor": "bytedance"
+    },
+    "doubao-seed-code": {
+      "input": 0.14,
+      "output": 0.55,
+      "tier": "mini",
+      "vendor": "bytedance"
+    },
+    "ernie-5.0": {
+      "input": 0.55,
+      "output": 2.2,
+      "tier": "frontier",
+      "vendor": "baidu"
+    },
+    "hunyuan-turbos": {
+      "input": 0.11,
+      "output": 0.28,
+      "tier": "mini",
+      "vendor": "tencent"
+    },
+    "step-3": {
+      "input": 0.55,
+      "output": 1.4,
+      "tier": "mini",
+      "vendor": "stepfun"
+    },
+    "grok-4": {
+      "input": 3.0,
+      "output": 15.0,
+      "tier": "frontier",
+      "vendor": "xai"
+    },
+    "grok-code-fast": {
+      "input": 0.2,
+      "output": 1.5,
+      "tier": "mini",
+      "vendor": "xai"
+    }
   },
-
   "speed_overrides": {
-    "claude-opus-5:fast":   { "input": 10.0, "output": 50.0 },
-    "claude-opus-4-8:fast": { "input": 10.0, "output": 50.0 }
+    "claude-opus-5:fast": {
+      "input": 10.0,
+      "output": 50.0
+    },
+    "claude-opus-4-8:fast": {
+      "input": 10.0,
+      "output": 50.0
+    }
   },
-
   "_aliases_doc": "Vendor model ids seen in transcripts that map onto a canonical entry above. Keeps the rate card small when a vendor ships five ids for one price point.",
   "aliases": {
-    "deepseek-v4":        "deepseek-v4-pro",
-    "deepseek-v3":        "deepseek-chat",
-    "deepseek-r1":        "deepseek-reasoner",
-    "glm-4.6v":           "glm-4.6",
-    "qwen3-coder":        "qwen3-coder-plus",
-    "qwen-max":           "qwen3-max",
-    "moonshot-v1-128k":   "kimi-k2.6",
-    "kimi-k2-turbo":      "kimi-k2.7-code-highspeed"
+    "deepseek-v4": "deepseek-v4-pro",
+    "deepseek-v3": "deepseek-chat",
+    "deepseek-r1": "deepseek-reasoner",
+    "glm-4.6v": "glm-4.6",
+    "qwen3-coder": "qwen3-coder-plus",
+    "qwen-max": "qwen3-max",
+    "moonshot-v1-128k": "kimi-k2.6",
+    "kimi-k2-turbo": "kimi-k2.7-code-highspeed"
   },
-
-  "fallback": { "input": 5.0, "output": 25.0, "tier": "unknown", "confidence": "low" }
+  "fallback": {
+    "input": 5.0,
+    "output": 25.0,
+    "tier": "unknown",
+    "confidence": "low"
+  }
 }

@@ -1,0 +1,105 @@
+name: visuals
+
+# Keeps the README's pictures equal to the product.
+#
+# Every image the README shows is generated: the SVG figures from pricing.json,
+# plans.json and the collectors directory; the PNGs from a real headless
+# browser pointed at the real built site, in light and dark. This workflow
+# regenerates them on any push that could change them and commits the
+# difference, so a redesign updates its own documentation and nobody has to
+# remember to re-screenshot anything.
+#
+# On a pull request it does not commit — it only reports what would change, and
+# uploads the images so a reviewer can look at them before they land.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "site/**"
+      - "observatory/assets/**"
+      - "observatory/pricing.json"
+      - "observatory/plans.json"
+      - "observatory/insights.py"
+      - "observatory/collectors/**"
+      - "observatory/render.py"
+      - ".github/workflows/visuals.yml"
+  pull_request:
+    paths:
+      - "site/**"
+      - "observatory/assets/**"
+      - "observatory/pricing.json"
+      - "observatory/plans.json"
+      - "observatory/insights.py"
+      - "observatory/collectors/**"
+      - "observatory/render.py"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: visuals-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  refresh:
+    name: refresh README visuals
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # The commit below pushes back to this branch, so check it out by
+          # name rather than landing on a detached HEAD.
+          ref: ${{ github.head_ref || github.ref_name }}
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Build the site
+        run: python3 site/build.py
+
+      - name: Draw the figures from the repo's own data
+        run: python3 site/tools/diagrams.py
+
+      - name: Render the translated READMEs from the site's own copy
+        run: python3 site/tools/readmes.py
+
+      - name: Capture the live pages
+        run: |
+          npm install --no-save playwright@1.56
+          npx playwright install --with-deps chromium
+          node site/tools/shots.js
+
+      - name: Commit whatever changed
+        if: github.event_name != 'pull_request'
+        run: |
+          if git diff --quiet -- docs/assets docs/readme; then
+            echo "visuals: already current"
+            exit 0
+          fi
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/assets docs/readme
+          git commit -m "Refresh the generated README visuals and translations"
+          git push
+
+      - name: Report the difference on a pull request
+        if: github.event_name == 'pull_request'
+        run: |
+          if git diff --quiet -- docs/assets docs/readme; then
+            echo "visuals: README images already match this branch"
+          else
+            echo "::notice::This branch changes the README visuals. They refresh automatically on merge."
+            git diff --stat -- docs/assets docs/readme
+          fi
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: visuals
+          path: docs/assets
+          retention-days: 7
