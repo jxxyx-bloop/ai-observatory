@@ -1220,6 +1220,27 @@ function initLang() {
       var v = t[el.getAttribute("data-i18n-aria")];
       if (v) el.setAttribute("aria-label", v);
     });
+    // The footer's method notes carry inline <strong>/<code> markup, so they
+    // need innerHTML rather than the textContent the plain lookup above uses.
+    each("[data-i18n-html]", function (el) {
+      var v = t[el.getAttribute("data-i18n-html")];
+      if (v) el.innerHTML = v;
+    });
+    // These two footer items also carry a value out of the digest itself —
+    // the price-list verification date, the render timestamp — seated into
+    // the translated sentence the same way a KPI note is. Re-run even for
+    // English, so a locally generated dashboard shows its own figures rather
+    // than whatever render.py happened to bake into the initial HTML.
+    var methCost = $("methCost");
+    if (methCost) {
+      methCost.innerHTML = (t.meth_2 || "").split("%V%").join(
+        esc(D.pricing_verified_on || "—"));
+    }
+    var methGen = $("methGen");
+    if (methGen) {
+      methGen.innerHTML = (t.meth_4 || "").split("%G%").join(
+        esc((D.generated_at || "").slice(0, 16).replace("T", " ")));
+    }
 
     // Only shown when the interface is not in the language the engine writes.
     each(".lang-note", function (el) { el.hidden = (lang === "en"); });

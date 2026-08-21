@@ -5,12 +5,15 @@ static page per locale — English at the root, everything else under its own
 directory — which keeps each language crawlable and lets the switcher be a
 plain link rather than a script.
 
-Two rules, from docs/design/DESIGN-SYSTEM.md §8:
+Three rules, from docs/design/DESIGN-SYSTEM.md §8:
 
   * Translate for meaning, not word-for-word. A locale may be shorter than the
     English. Nothing is padded to fill a layout.
   * `en` is the reference. Any key missing from a locale falls back to it, so
     a half-finished translation degrades to English instead of to a blank.
+  * No trailing full stop on a heading (`hero_h1_*`, any `*_h2`, any `*_t`
+    card title) in any locale — a stop inside for rhythm is fine, the last
+    one is not. Body copy keeps normal punctuation; this is for headings.
 
 The language set is deliberate: every Southeast Asian market with a distinct
 language, plus the largest AI-developer markets outside the US. Singapore and
@@ -75,7 +78,7 @@ STRINGS["en"] = {
     "hero_eyebrow": "Open source · Runs on your machine",
     "hero_h1_a": "Know what to",
     "hero_h1_b": "change",
-    "hero_h1_c": ".",
+    "hero_h1_c": "",
     "hero_lede": "Your coding agent already logs every turn. This reads those logs "
                  "and tells you the few changes worth making — each with a number "
                  "attached.",
@@ -88,7 +91,7 @@ STRINGS["en"] = {
     "run_note": "Python 3 standard library. No install, no dependencies, no build step.",
 
     "find_eyebrow": "The output",
-    "find_h2": "Not a number. A next move.",
+    "find_h2": "Not a number. A next move",
     "find_note": "Fifteen checks. Anything worth under $15 a month is demoted, so "
                  "the top of the list always means something — and healthy usage is "
                  "reported as healthy.",
@@ -118,7 +121,7 @@ STRINGS["en"] = {
     "f3_act": "Stay on the plan. Revisit if your monthly turns drop below 400.",
 
     "how_eyebrow": "How it works",
-    "how_h2": "Three steps, about a second.",
+    "how_h2": "Three steps, about a second",
     "how_1_t": "Read",
     "how_1_d": "Your agent already wrote the logs. We read those files where they are — nothing to install, nothing to switch on.",
     "how_2_t": "Measure",
@@ -130,7 +133,7 @@ STRINGS["en"] = {
     "how_note": "No API key, no proxy, no account, no network. Collection costs zero tokens.",
 
     "why_eyebrow": "Why it's different",
-    "why_h2": "Priced the way you actually pay.",
+    "why_h2": "Priced the way you actually pay",
     "why_1_t": "The clock changes the price",
     "why_1_d": "DeepSeek and GLM charge by the hour. From UTC+7 to +9, their peak "
                "window is your working afternoon.",
@@ -144,7 +147,7 @@ STRINGS["en"] = {
                "because $412 does not mean one thing everywhere.",
 
     "priv_eyebrow": "Privacy",
-    "priv_h2": "A mechanism, not a promise.",
+    "priv_h2": "A mechanism, not a promise",
     "priv_lede": "Nothing leaves your machine unless you edit a file to say so.",
     "priv_1": "Never stored: prompts, replies, code, commands, file paths.",
     "priv_2": "Blocked where the file is parsed — so a leak would be a bug, not a "
@@ -152,7 +155,7 @@ STRINGS["en"] = {
     "priv_3": "The dashboard and this page make zero external requests. No CDN, no "
               "fonts, no analytics.",
 
-    "start_h2": "See it before you install it.",
+    "start_h2": "See it before you install it",
     "start_d": "The demo is the real dashboard, built from 60 days of sample data by "
                "the same code you would run locally.",
     "start_cta1": "Open the live demo",
@@ -187,7 +190,7 @@ STRINGS["zh-Hans"] = {
     "hero_eyebrow": "开源 · 在你自己的机器上运行",
     "hero_h1_a": "知道该",
     "hero_h1_b": "改什么",
-    "hero_h1_c": "。",
+    "hero_h1_c": "",
     "hero_lede": "编程 Agent 已经把每一轮对话写进了日志。本工具读取这些日志，告诉你少数几件值得改的事——每一件都带一个数字。",
     "chip1": "一分钟内就能跑起来",
     "chip2": "无需账号",
@@ -198,7 +201,7 @@ STRINGS["zh-Hans"] = {
     "run_note": "仅用 Python 3 标准库。无需安装、无依赖、无构建步骤。",
 
     "find_eyebrow": "输出结果",
-    "find_h2": "不是一个数字，是下一步该做什么。",
+    "find_h2": "不是一个数字，是下一步该做什么",
     "find_note": "十五项检测。每月价值低于 15 美元的会被降级，所以排在最前面的一定值得看——用得健康时，它也会照实说健康。",
     "prev_label": "上一条",
     "next_label": "下一条",
@@ -222,7 +225,7 @@ STRINGS["zh-Hans"] = {
     "f3_act": "继续用这个套餐。等每月轮次跌破 400 再重新评估。",
 
     "how_eyebrow": "工作方式",
-    "how_h2": "三步，约一秒钟。",
+    "how_h2": "三步，约一秒钟",
     "how_1_t": "读取",
     "how_1_d": "Agent 已经把日志写好了。我们就地读取这些文件——无需安装，也不用开启任何东西。",
     "how_2_t": "计量",
@@ -232,7 +235,7 @@ STRINGS["zh-Hans"] = {
     "how_note": "无需 API key、无代理、无账号、不联网。采集本身消耗零 token。",
 
     "why_eyebrow": "有何不同",
-    "why_h2": "按你真实付费的方式计价。",
+    "why_h2": "按你真实付费的方式计价",
     "why_1_t": "时钟会改变价格",
     "why_1_d": "DeepSeek 与 GLM 按时段计价。在 UTC+7 到 +9，它们的高峰时段正好是你的工作下午。",
     "why_2_t": "套餐不等于账单",
@@ -243,13 +246,13 @@ STRINGS["zh-Hans"] = {
     "why_4_d": "IDR、VND、THB、PHP、MYR 等——并对照当地日薪，因为 412 美元在各地的分量并不一样。",
 
     "priv_eyebrow": "隐私",
-    "priv_h2": "这是机制，不是承诺。",
+    "priv_h2": "这是机制，不是承诺",
     "priv_lede": "除非你亲手改配置文件，否则没有任何数据离开本机。",
     "priv_1": "从不存储：提示词、回复、代码、命令、文件路径。",
     "priv_2": "在解析文件的那一层就挡掉——所以泄漏是 bug，而不是政策问题。",
     "priv_3": "看板和本页都不发起任何外部请求。无 CDN、无字体、无统计。",
 
-    "start_h2": "先看，再决定要不要装。",
+    "start_h2": "先看，再决定要不要装",
     "start_d": "演示就是真实看板，由你在本地会运行的同一套代码，用 60 天示例数据生成。",
     "start_cta1": "打开在线演示",
     "start_cta2": "快速开始",
@@ -283,7 +286,7 @@ STRINGS["zh-Hant"] = {
     "hero_eyebrow": "開源 · 在你自己的電腦上執行",
     "hero_h1_a": "知道該",
     "hero_h1_b": "改什麼",
-    "hero_h1_c": "。",
+    "hero_h1_c": "",
     "hero_lede": "編碼 Agent 已經把每一輪對話寫進日誌。本工具讀取這些日誌，告訴你少數幾件值得改的事——每一件都附上一個數字。",
     "chip1": "一分鐘內就能跑起來",
     "chip2": "免帳號",
@@ -294,7 +297,7 @@ STRINGS["zh-Hant"] = {
     "run_note": "只用 Python 3 標準函式庫。免安裝、無相依套件、無建置步驟。",
 
     "find_eyebrow": "輸出結果",
-    "find_h2": "不是一個數字，是下一步該做什麼。",
+    "find_h2": "不是一個數字，是下一步該做什麼",
     "find_note": "十五項檢測。每月價值低於 15 美元的會被降級，所以排在最前面的一定值得看——用得健康時，它也會照實說健康。",
     "prev_label": "上一則",
     "next_label": "下一則",
@@ -318,7 +321,7 @@ STRINGS["zh-Hant"] = {
     "f3_act": "繼續用這個方案。等每月輪次低於 400 再重新評估。",
 
     "how_eyebrow": "運作方式",
-    "how_h2": "三個步驟，約一秒。",
+    "how_h2": "三個步驟，約一秒",
     "how_1_t": "讀取",
     "how_1_d": "Agent 已經把日誌寫好了。我們就地讀取這些檔案——免安裝，也不必啟用任何東西。",
     "how_2_t": "計量",
@@ -328,7 +331,7 @@ STRINGS["zh-Hant"] = {
     "how_note": "免 API key、免 proxy、免帳號、不連網。蒐集本身消耗零 token。",
 
     "why_eyebrow": "有何不同",
-    "why_h2": "依你真實付費的方式計價。",
+    "why_h2": "依你真實付費的方式計價",
     "why_1_t": "時鐘會改變價格",
     "why_1_d": "DeepSeek 與 GLM 按時段計價。在 UTC+7 到 +9，它們的尖峰時段正好是你的工作下午。",
     "why_2_t": "方案不等於帳單",
@@ -339,13 +342,13 @@ STRINGS["zh-Hant"] = {
     "why_4_d": "IDR、VND、THB、PHP、MYR 等——並對照當地日薪，因為 412 美元在各地的份量並不相同。",
 
     "priv_eyebrow": "隱私",
-    "priv_h2": "這是機制，不是承諾。",
+    "priv_h2": "這是機制，不是承諾",
     "priv_lede": "除非你親手改設定檔，否則沒有任何資料離開本機。",
     "priv_1": "從不儲存：提示詞、回覆、程式碼、指令、檔案路徑。",
     "priv_2": "在解析檔案那一層就擋掉——所以外洩是 bug，不是政策問題。",
     "priv_3": "儀表板與本頁都不發出任何外部請求。無 CDN、無字型、無分析。",
 
-    "start_h2": "先看看，再決定要不要裝。",
+    "start_h2": "先看看，再決定要不要裝",
     "start_d": "示範就是真實儀表板，由你在本機會執行的同一套程式，用 60 天範例資料產生。",
     "start_cta1": "開啟線上示範",
     "start_cta2": "快速開始",
@@ -379,7 +382,7 @@ STRINGS["ja"] = {
     "hero_eyebrow": "オープンソース · 自分の端末で動く",
     "hero_h1_a": "何を",
     "hero_h1_b": "変えるべきか",
-    "hero_h1_c": "。",
+    "hero_h1_c": "",
     "hero_lede": "エージェントは毎ターンをすでに記録しています。そのログを読み、手を打つ価値のある数点だけを、数字つきで示します。",
     "chip1": "設定は1分もかからない",
     "chip2": "アカウント不要",
@@ -390,7 +393,7 @@ STRINGS["ja"] = {
     "run_note": "Python 3 標準ライブラリのみ。インストール・依存・ビルド、いずれも不要。",
 
     "find_eyebrow": "出力",
-    "find_h2": "数字ではなく、次の一手を。",
+    "find_h2": "数字ではなく、次の一手を",
     "find_note": "15種類の検査。月15ドル未満の項目は格下げされるので、上位は常に意味があります。健全な使い方は、健全と報告します。",
     "prev_label": "前へ",
     "next_label": "次へ",
@@ -414,7 +417,7 @@ STRINGS["ja"] = {
     "f3_act": "このまま継続を。月間ターンが400を下回ったら再検討してください。",
 
     "how_eyebrow": "仕組み",
-    "how_h2": "3ステップ、約1秒。",
+    "how_h2": "3ステップ、約1秒",
     "how_1_t": "読む",
     "how_1_d": "エージェントがすでにログを書いています。その場のファイルをそのまま読むだけ——インストールも、有効化も不要です。",
     "how_2_t": "測る",
@@ -424,7 +427,7 @@ STRINGS["ja"] = {
     "how_note": "APIキー・プロキシ・アカウント・通信、いずれも不要。収集自体のトークン消費はゼロです。",
 
     "why_eyebrow": "違い",
-    "why_h2": "実際の支払い方に合わせて計算する。",
+    "why_h2": "実際の支払い方に合わせて計算する",
     "why_1_t": "時刻で価格が変わる",
     "why_1_d": "DeepSeekとGLMは時間帯課金です。UTC+7〜+9では、そのピーク帯がちょうど仕事の午後にあたります。",
     "why_2_t": "プランは請求書ではない",
@@ -435,13 +438,13 @@ STRINGS["ja"] = {
     "why_4_d": "IDR・VND・THB・PHP・MYRほか。現地の日当と並べて示します。412ドルの重みは、どこでも同じではありません。",
 
     "priv_eyebrow": "プライバシー",
-    "priv_h2": "約束ではなく、仕組みで。",
+    "priv_h2": "約束ではなく、仕組みで",
     "priv_lede": "設定ファイルを自分で書き換えない限り、データは端末の外に出ません。",
     "priv_1": "決して保存しないもの：プロンプト、応答、コード、コマンド、ファイルパス。",
     "priv_2": "解析の入口で遮断しています。だから漏えいは方針の問題ではなく、バグです。",
     "priv_3": "ダッシュボードもこのページも外部リクエストはゼロ。CDNもフォントも解析タグもありません。",
 
-    "start_h2": "入れる前に、見てください。",
+    "start_h2": "入れる前に、見てください",
     "start_d": "デモは本物のダッシュボードです。ローカルで動かすのと同じコードが、60日分のサンプルから生成しています。",
     "start_cta1": "デモを開く",
     "start_cta2": "クイックスタート",
@@ -475,7 +478,7 @@ STRINGS["ko"] = {
     "hero_eyebrow": "오픈소스 · 내 기기에서 실행",
     "hero_h1_a": "무엇을",
     "hero_h1_b": "바꿔야 할지",
-    "hero_h1_c": ".",
+    "hero_h1_c": "",
     "hero_lede": "에이전트는 이미 모든 턴을 기록하고 있습니다. 그 로그를 읽어, 손볼 가치가 있는 몇 가지만 숫자와 함께 알려줍니다.",
     "chip1": "설정에 1분도 안 걸립니다",
     "chip2": "계정 불필요",
@@ -486,7 +489,7 @@ STRINGS["ko"] = {
     "run_note": "Python 3 표준 라이브러리만 사용. 설치도, 의존성도, 빌드도 없습니다.",
 
     "find_eyebrow": "결과물",
-    "find_h2": "숫자가 아니라, 다음 행동.",
+    "find_h2": "숫자가 아니라, 다음 행동",
     "find_note": "열다섯 가지 검사. 월 15달러 미만은 순위에서 내려가므로 맨 위는 언제나 의미가 있습니다. 건강한 사용은 건강하다고 그대로 보고합니다.",
     "prev_label": "이전",
     "next_label": "다음",
@@ -510,7 +513,7 @@ STRINGS["ko"] = {
     "f3_act": "플랜을 유지하세요. 월 턴 수가 400 아래로 떨어지면 다시 보면 됩니다.",
 
     "how_eyebrow": "작동 방식",
-    "how_h2": "세 단계, 약 1초.",
+    "how_h2": "세 단계, 약 1초",
     "how_1_t": "읽기",
     "how_1_d": "에이전트가 이미 로그를 남겼습니다. 그 파일을 있는 자리에서 읽습니다 — 설치할 것도, 켤 것도 없습니다.",
     "how_2_t": "측정",
@@ -520,7 +523,7 @@ STRINGS["ko"] = {
     "how_note": "API 키도, 프록시도, 계정도, 네트워크도 없습니다. 수집 자체는 토큰을 쓰지 않습니다.",
 
     "why_eyebrow": "무엇이 다른가",
-    "why_h2": "실제로 결제하는 방식 그대로 계산합니다.",
+    "why_h2": "실제로 결제하는 방식 그대로 계산합니다",
     "why_1_t": "시각이 가격을 바꾼다",
     "why_1_d": "DeepSeek과 GLM은 시간대별로 과금합니다. UTC+7~+9에서는 그 피크 구간이 바로 업무 오후입니다.",
     "why_2_t": "플랜은 청구서가 아니다",
@@ -531,13 +534,13 @@ STRINGS["ko"] = {
     "why_4_d": "IDR, VND, THB, PHP, MYR 등 — 현지 일당과 나란히 보여줍니다. 412달러의 무게는 어디서나 같지 않으니까요.",
 
     "priv_eyebrow": "프라이버시",
-    "priv_h2": "약속이 아니라 구조로.",
+    "priv_h2": "약속이 아니라 구조로",
     "priv_lede": "설정 파일을 직접 바꾸지 않는 한, 어떤 데이터도 기기를 벗어나지 않습니다.",
     "priv_1": "절대 저장하지 않는 것: 프롬프트, 응답, 코드, 명령어, 파일 경로.",
     "priv_2": "파일을 파싱하는 지점에서 차단합니다. 그래서 유출은 정책 문제가 아니라 버그입니다.",
     "priv_3": "대시보드도 이 페이지도 외부 요청이 0건입니다. CDN도, 폰트도, 애널리틱스도 없습니다.",
 
-    "start_h2": "설치하기 전에 먼저 보세요.",
+    "start_h2": "설치하기 전에 먼저 보세요",
     "start_d": "데모는 진짜 대시보드입니다. 로컬에서 돌릴 코드와 똑같은 코드가 60일치 샘플로 만들어냅니다.",
     "start_cta1": "라이브 데모 열기",
     "start_cta2": "빠른 시작",
@@ -571,7 +574,7 @@ STRINGS["hi"] = {
     "hero_eyebrow": "ओपन सोर्स · आपकी अपनी मशीन पर चलता है",
     "hero_h1_a": "जानिए क्या",
     "hero_h1_b": "बदलना है",
-    "hero_h1_c": "।",
+    "hero_h1_c": "",
     "hero_lede": "आपका एजेंट हर टर्न पहले से लॉग कर रहा है। यह उन्हीं लॉग को पढ़कर बताता है कि कौन से कुछ बदलाव करने लायक हैं — हर एक के साथ एक आँकड़ा।",
     "chip1": "एक मिनट से कम में तैयार",
     "chip2": "अकाउंट नहीं चाहिए",
@@ -582,7 +585,7 @@ STRINGS["hi"] = {
     "run_note": "सिर्फ़ Python 3 स्टैंडर्ड लाइब्रेरी। न इंस्टॉल, न डिपेंडेंसी, न बिल्ड।",
 
     "find_eyebrow": "आउटपुट",
-    "find_h2": "आँकड़ा नहीं। अगला क़दम।",
+    "find_h2": "आँकड़ा नहीं। अगला क़दम",
     "find_note": "पंद्रह जाँचें। महीने में $15 से कम मूल्य वाली बात नीचे चली जाती है, इसलिए सूची का शीर्ष हमेशा मायने रखता है — और सेहतमंद इस्तेमाल को सेहतमंद ही बताया जाता है।",
     "prev_label": "पिछला",
     "next_label": "अगला",
@@ -606,7 +609,7 @@ STRINGS["hi"] = {
     "f3_act": "प्लान बनाए रखें। महीने के टर्न 400 से नीचे आएँ तो दोबारा देखें।",
 
     "how_eyebrow": "यह कैसे काम करता है",
-    "how_h2": "तीन क़दम, लगभग एक सेकंड।",
+    "how_h2": "तीन क़दम, लगभग एक सेकंड",
     "how_1_t": "पढ़ना",
     "how_1_d": "आपका एजेंट लॉग पहले ही लिख चुका है। हम वही फ़ाइलें वहीं पढ़ते हैं — न कुछ इंस्टॉल करना है, न कुछ चालू करना।",
     "how_2_t": "मापना",
@@ -616,7 +619,7 @@ STRINGS["hi"] = {
     "how_note": "न API की, न प्रॉक्सी, न अकाउंट, न नेटवर्क। डेटा जुटाने में शून्य टोकन लगते हैं।",
 
     "why_eyebrow": "यह अलग क्यों है",
-    "why_h2": "जैसे आप सचमुच भुगतान करते हैं, वैसे ही गिनती।",
+    "why_h2": "जैसे आप सचमुच भुगतान करते हैं, वैसे ही गिनती",
     "why_1_t": "घड़ी क़ीमत बदल देती है",
     "why_1_d": "DeepSeek और GLM घंटे के हिसाब से चार्ज करते हैं। UTC+5:30 से +9 तक उनकी पीक विंडो आपके काम की दोपहर है।",
     "why_2_t": "प्लान बिल नहीं होता",
@@ -627,13 +630,13 @@ STRINGS["hi"] = {
     "why_4_d": "INR, IDR, VND, THB, PHP, MYR और भी — स्थानीय दिहाड़ी के सामने रखकर, क्योंकि $412 हर जगह एक जैसा नहीं होता।",
 
     "priv_eyebrow": "निजता",
-    "priv_h2": "वादा नहीं, बनावट।",
+    "priv_h2": "वादा नहीं, बनावट",
     "priv_lede": "जब तक आप ख़ुद कोई फ़ाइल बदलकर अनुमति न दें, कुछ भी आपकी मशीन से बाहर नहीं जाता।",
     "priv_1": "कभी संग्रहित नहीं: प्रॉम्प्ट, जवाब, कोड, कमांड, फ़ाइल पाथ।",
     "priv_2": "फ़ाइल पढ़ने की जगह पर ही रोका जाता है — इसलिए रिसाव नीति का सवाल नहीं, बग है।",
     "priv_3": "डैशबोर्ड और यह पेज कोई बाहरी अनुरोध नहीं करते। न CDN, न फ़ॉन्ट, न एनालिटिक्स।",
 
-    "start_h2": "इंस्टॉल करने से पहले देख लीजिए।",
+    "start_h2": "इंस्टॉल करने से पहले देख लीजिए",
     "start_d": "डेमो असली डैशबोर्ड है — वही कोड जो आप लोकल चलाते, 60 दिन के नमूना डेटा से बनाकर।",
     "start_cta1": "लाइव डेमो खोलें",
     "start_cta2": "क्विक स्टार्ट",
@@ -667,7 +670,7 @@ STRINGS["id"] = {
     "hero_eyebrow": "Sumber terbuka · Berjalan di perangkat Anda",
     "hero_h1_a": "Tahu apa yang perlu",
     "hero_h1_b": "diubah",
-    "hero_h1_c": ".",
+    "hero_h1_c": "",
     "hero_lede": "Coding agent Anda sudah mencatat setiap giliran. Alat ini membaca catatan itu dan menyebut beberapa perubahan yang layak dilakukan — masing-masing dengan angkanya.",
     "chip1": "Siap dalam kurang dari satu menit",
     "chip2": "Tanpa akun",
@@ -678,7 +681,7 @@ STRINGS["id"] = {
     "run_note": "Hanya pustaka standar Python 3. Tanpa instalasi, tanpa dependensi, tanpa build.",
 
     "find_eyebrow": "Hasilnya",
-    "find_h2": "Bukan angka. Langkah berikutnya.",
+    "find_h2": "Bukan angka. Langkah berikutnya",
     "find_note": "Lima belas pemeriksaan. Apa pun yang bernilai di bawah $15 per bulan diturunkan, jadi bagian atas daftar selalu berarti — dan pemakaian yang sehat memang dilaporkan sehat.",
     "prev_label": "Sebelumnya",
     "next_label": "Berikutnya",
@@ -702,7 +705,7 @@ STRINGS["id"] = {
     "f3_act": "Pertahankan paketnya. Tinjau lagi jika giliran bulanan turun di bawah 400.",
 
     "how_eyebrow": "Cara kerjanya",
-    "how_h2": "Tiga langkah, sekitar satu detik.",
+    "how_h2": "Tiga langkah, sekitar satu detik",
     "how_1_t": "Baca",
     "how_1_d": "Agent Anda sudah menulis lognya. Kami membaca berkas itu di tempatnya — tidak ada yang perlu dipasang atau dinyalakan.",
     "how_2_t": "Ukur",
@@ -712,7 +715,7 @@ STRINGS["id"] = {
     "how_note": "Tanpa kunci API, tanpa proxy, tanpa akun, tanpa jaringan. Pengumpulan data memakai nol token.",
 
     "why_eyebrow": "Apa bedanya",
-    "why_h2": "Dihitung sebagaimana Anda benar-benar membayar.",
+    "why_h2": "Dihitung sebagaimana Anda benar-benar membayar",
     "why_1_t": "Jam mengubah harga",
     "why_1_d": "DeepSeek dan GLM menagih per jam. Di UTC+7 sampai +9, jendela puncak mereka adalah sore kerja Anda.",
     "why_2_t": "Paket bukan tagihan",
@@ -723,13 +726,13 @@ STRINGS["id"] = {
     "why_4_d": "IDR, VND, THB, PHP, MYR dan lainnya — disandingkan dengan upah harian setempat, karena $412 tidak berarti sama di mana-mana.",
 
     "priv_eyebrow": "Privasi",
-    "priv_h2": "Mekanisme, bukan janji.",
+    "priv_h2": "Mekanisme, bukan janji",
     "priv_lede": "Tidak ada yang keluar dari perangkat Anda kecuali Anda sendiri yang mengubah berkasnya.",
     "priv_1": "Tidak pernah disimpan: prompt, jawaban, kode, perintah, jalur berkas.",
     "priv_2": "Dihentikan di titik berkas dibaca — jadi kebocoran itu bug, bukan urusan kebijakan.",
     "priv_3": "Dasbor dan halaman ini nol permintaan eksternal. Tanpa CDN, tanpa font, tanpa analitik.",
 
-    "start_h2": "Lihat dulu sebelum memasang.",
+    "start_h2": "Lihat dulu sebelum memasang",
     "start_d": "Demo ini dasbor sungguhan, dibuat dari 60 hari data contoh oleh kode yang sama persis dengan yang Anda jalankan sendiri.",
     "start_cta1": "Buka demo langsung",
     "start_cta2": "Mulai cepat",
@@ -763,7 +766,7 @@ STRINGS["vi"] = {
     "hero_eyebrow": "Mã nguồn mở · Chạy trên máy của bạn",
     "hero_h1_a": "Biết cần",
     "hero_h1_b": "thay đổi",
-    "hero_h1_c": " điều gì.",
+    "hero_h1_c": " điều gì",
     "hero_lede": "Agent của bạn vốn đã ghi lại từng lượt. Công cụ này đọc các log đó và chỉ ra vài thay đổi đáng làm — mỗi thay đổi kèm một con số.",
     "chip1": "Cài đặt trong chưa đầy một phút",
     "chip2": "Không cần tài khoản",
@@ -774,7 +777,7 @@ STRINGS["vi"] = {
     "run_note": "Chỉ dùng thư viện chuẩn Python 3. Không cài đặt, không phụ thuộc, không bước build.",
 
     "find_eyebrow": "Kết quả",
-    "find_h2": "Không phải một con số. Là bước tiếp theo.",
+    "find_h2": "Không phải một con số. Là bước tiếp theo",
     "find_note": "Mười lăm phép kiểm tra. Mục nào đáng dưới 15 đô một tháng sẽ bị hạ bậc, nên đầu danh sách luôn có ý nghĩa — và nếu bạn đang dùng hợp lý, nó nói đúng là hợp lý.",
     "prev_label": "Trước",
     "next_label": "Sau",
@@ -798,7 +801,7 @@ STRINGS["vi"] = {
     "f3_act": "Giữ nguyên gói. Xem lại khi số lượt mỗi tháng xuống dưới 400.",
 
     "how_eyebrow": "Cách hoạt động",
-    "how_h2": "Ba bước, khoảng một giây.",
+    "how_h2": "Ba bước, khoảng một giây",
     "how_1_t": "Đọc",
     "how_1_d": "Agent của bạn đã ghi log sẵn. Chúng tôi đọc chính các tệp đó tại chỗ — không phải cài gì, không phải bật gì.",
     "how_2_t": "Đo",
@@ -808,7 +811,7 @@ STRINGS["vi"] = {
     "how_note": "Không API key, không proxy, không tài khoản, không mạng. Việc thu thập tốn 0 token.",
 
     "why_eyebrow": "Khác ở chỗ nào",
-    "why_h2": "Tính đúng cách bạn thật sự trả tiền.",
+    "why_h2": "Tính đúng cách bạn thật sự trả tiền",
     "why_1_t": "Đồng hồ làm đổi giá",
     "why_1_d": "DeepSeek và GLM tính tiền theo giờ. Ở UTC+7 đến +9, khung cao điểm của họ đúng là buổi chiều làm việc của bạn.",
     "why_2_t": "Gói thuê bao không phải hoá đơn",
@@ -819,13 +822,13 @@ STRINGS["vi"] = {
     "why_4_d": "VND, IDR, THB, PHP, MYR và hơn nữa — đặt cạnh mức công nhật địa phương, vì 412 đô không mang cùng một ý nghĩa ở mọi nơi.",
 
     "priv_eyebrow": "Riêng tư",
-    "priv_h2": "Là cơ chế, không phải lời hứa.",
+    "priv_h2": "Là cơ chế, không phải lời hứa",
     "priv_lede": "Không gì rời khỏi máy bạn, trừ khi chính bạn sửa tệp cấu hình để cho phép.",
     "priv_1": "Không bao giờ lưu: prompt, câu trả lời, mã nguồn, lệnh, đường dẫn tệp.",
     "priv_2": "Chặn ngay tại chỗ đọc tệp — nên rò rỉ là một lỗi, không phải câu chuyện chính sách.",
     "priv_3": "Bảng điều khiển và trang này không gửi bất kỳ yêu cầu ra ngoài nào. Không CDN, không font, không analytics.",
 
-    "start_h2": "Xem trước khi cài.",
+    "start_h2": "Xem trước khi cài",
     "start_d": "Bản demo chính là bảng điều khiển thật, dựng từ 60 ngày dữ liệu mẫu bằng đúng đoạn mã bạn sẽ chạy ở máy mình.",
     "start_cta1": "Mở bản demo",
     "start_cta2": "Bắt đầu nhanh",
@@ -955,7 +958,7 @@ STRINGS["ms"] = {
     "hero_eyebrow": "Sumber terbuka · Berjalan pada mesin anda",
     "hero_h1_a": "Tahu apa yang perlu",
     "hero_h1_b": "diubah",
-    "hero_h1_c": ".",
+    "hero_h1_c": "",
     "hero_lede": "Coding agent anda sudah pun merekod setiap giliran. Alat ini membaca rekod itu dan menyebut beberapa perubahan yang berbaloi — setiap satu dengan angkanya.",
     "chip1": "Sedia dalam kurang seminit",
     "chip2": "Tanpa akaun",
@@ -966,7 +969,7 @@ STRINGS["ms"] = {
     "run_note": "Pustaka standard Python 3 sahaja. Tanpa pemasangan, tanpa kebergantungan, tanpa langkah build.",
 
     "find_eyebrow": "Hasilnya",
-    "find_h2": "Bukan angka. Langkah seterusnya.",
+    "find_h2": "Bukan angka. Langkah seterusnya",
     "find_note": "Lima belas pemeriksaan. Apa-apa yang bernilai bawah $15 sebulan diturunkan, jadi bahagian atas senarai sentiasa bermakna — dan penggunaan yang sihat memang dilaporkan sihat.",
     "prev_label": "Sebelum",
     "next_label": "Seterusnya",
@@ -990,7 +993,7 @@ STRINGS["ms"] = {
     "f3_act": "Kekalkan pelan itu. Tinjau semula jika giliran bulanan jatuh bawah 400.",
 
     "how_eyebrow": "Cara ia berfungsi",
-    "how_h2": "Tiga langkah, kira-kira sesaat.",
+    "how_h2": "Tiga langkah, kira-kira sesaat",
     "how_1_t": "Baca",
     "how_1_d": "Agent anda sudah menulis lognya. Kami membaca fail itu di tempatnya — tiada apa perlu dipasang atau dihidupkan.",
     "how_2_t": "Ukur",
@@ -1000,7 +1003,7 @@ STRINGS["ms"] = {
     "how_note": "Tanpa kunci API, tanpa proksi, tanpa akaun, tanpa rangkaian. Pengumpulan data menggunakan sifar token.",
 
     "why_eyebrow": "Apa bezanya",
-    "why_h2": "Dikira mengikut cara anda benar-benar membayar.",
+    "why_h2": "Dikira mengikut cara anda benar-benar membayar",
     "why_1_t": "Jam mengubah harga",
     "why_1_d": "DeepSeek dan GLM mengenakan bayaran mengikut jam. Di UTC+7 hingga +9, tetingkap puncak mereka ialah petang kerja anda.",
     "why_2_t": "Pelan bukan bil",
@@ -1011,13 +1014,13 @@ STRINGS["ms"] = {
     "why_4_d": "MYR, IDR, VND, THB, PHP dan lagi — disandingkan dengan kadar harian tempatan, kerana $412 tidak bermakna sama di mana-mana.",
 
     "priv_eyebrow": "Privasi",
-    "priv_h2": "Satu mekanisme, bukan janji.",
+    "priv_h2": "Satu mekanisme, bukan janji",
     "priv_lede": "Tiada apa-apa keluar dari mesin anda melainkan anda sendiri mengubah fail untuk membenarkannya.",
     "priv_1": "Tidak pernah disimpan: prompt, jawapan, kod, arahan, laluan fail.",
     "priv_2": "Dihalang pada titik fail dibaca — jadi kebocoran ialah pepijat, bukan soal dasar.",
     "priv_3": "Papan pemuka dan halaman ini sifar permintaan luar. Tanpa CDN, tanpa fon, tanpa analitik.",
 
-    "start_h2": "Lihat dulu sebelum pasang.",
+    "start_h2": "Lihat dulu sebelum pasang",
     "start_d": "Demo ini papan pemuka sebenar, dibina daripada 60 hari data contoh oleh kod yang sama seperti yang anda jalankan sendiri.",
     "start_cta1": "Buka demo langsung",
     "start_cta2": "Mula pantas",
@@ -1051,7 +1054,7 @@ STRINGS["fil"] = {
     "hero_eyebrow": "Open source · Tumatakbo sa sarili mong makina",
     "hero_h1_a": "Alamin kung ano ang dapat",
     "hero_h1_b": "baguhin",
-    "hero_h1_c": ".",
+    "hero_h1_c": "",
     "hero_lede": "Nakatala na ng iyong agent ang bawat turn. Binabasa ito ng tool at sinasabi ang iilang pagbabagong sulit gawin — bawat isa ay may kasamang numero.",
     "chip1": "Handa sa wala pang isang minuto",
     "chip2": "Walang account",
@@ -1062,7 +1065,7 @@ STRINGS["fil"] = {
     "run_note": "Python 3 standard library lang. Walang install, walang dependency, walang build.",
 
     "find_eyebrow": "Ang resulta",
-    "find_h2": "Hindi numero. Susunod na hakbang.",
+    "find_h2": "Hindi numero. Susunod na hakbang",
     "find_note": "Labinlimang pagsusuri. Anumang wala pang $15 kada buwan ang halaga ay ibinababa, kaya laging may saysay ang nasa itaas — at kung maayos ang paggamit mo, sasabihin nitong maayos.",
     "prev_label": "Nakaraan",
     "next_label": "Susunod",
@@ -1086,7 +1089,7 @@ STRINGS["fil"] = {
     "f3_act": "Manatili sa plano. Balikan kapag bumaba sa 400 ang buwanang turn.",
 
     "how_eyebrow": "Paano ito gumagana",
-    "how_h2": "Tatlong hakbang, mga isang segundo.",
+    "how_h2": "Tatlong hakbang, mga isang segundo",
     "how_1_t": "Basahin",
     "how_1_d": "Naisulat na ng agent mo ang mga log. Binabasa namin ang mga file na iyon kung nasaan sila — walang i-install, walang buksan.",
     "how_2_t": "Sukatin",
@@ -1096,7 +1099,7 @@ STRINGS["fil"] = {
     "how_note": "Walang API key, walang proxy, walang account, walang network. Zero token ang gastos ng pangongolekta.",
 
     "why_eyebrow": "Bakit ito kakaiba",
-    "why_h2": "Nakapresyo ayon sa totoong paraan ng pagbabayad mo.",
+    "why_h2": "Nakapresyo ayon sa totoong paraan ng pagbabayad mo",
     "why_1_t": "Binabago ng orasan ang presyo",
     "why_1_d": "Oras-oras maningil ang DeepSeek at GLM. Sa UTC+7 hanggang +9, ang peak window nila ang hapon mong trabaho.",
     "why_2_t": "Hindi bill ang plano",
@@ -1107,13 +1110,13 @@ STRINGS["fil"] = {
     "why_4_d": "PHP, IDR, VND, THB, MYR at iba pa — katabi ng lokal na arawang kita, dahil hindi pare-pareho ang bigat ng $412 saanman.",
 
     "priv_eyebrow": "Privacy",
-    "priv_h2": "Mekanismo, hindi pangako.",
+    "priv_h2": "Mekanismo, hindi pangako",
     "priv_lede": "Walang lumalabas ng makina mo maliban kung ikaw mismo ang mag-edit ng file para payagan ito.",
     "priv_1": "Hindi kailanman iniimbak: prompt, sagot, code, command, file path.",
     "priv_2": "Hinaharang sa mismong pagbasa ng file — kaya bug ang leak, hindi usapin ng patakaran.",
     "priv_3": "Zero external request ang dashboard at ang pahinang ito. Walang CDN, walang font, walang analytics.",
 
-    "start_h2": "Tingnan mo muna bago i-install.",
+    "start_h2": "Tingnan mo muna bago i-install",
     "start_d": "Totoong dashboard ang demo, gawa mula sa 60 araw na sample data ng parehong code na patatakbuhin mo sa sarili mong makina.",
     "start_cta1": "Buksan ang live demo",
     "start_cta2": "Mabilisang simula",
@@ -1147,7 +1150,7 @@ STRINGS["pt-BR"] = {
     "hero_eyebrow": "Código aberto · Roda na sua máquina",
     "hero_h1_a": "Saiba o que",
     "hero_h1_b": "mudar",
-    "hero_h1_c": ".",
+    "hero_h1_c": "",
     "hero_lede": "Seu agente de código já registra cada turno. Isto lê esses registros e aponta as poucas mudanças que valem a pena — cada uma com um número junto.",
     "chip1": "Pronto em menos de um minuto",
     "chip2": "Sem conta",
@@ -1158,7 +1161,7 @@ STRINGS["pt-BR"] = {
     "run_note": "Apenas a biblioteca padrão do Python 3. Sem instalação, sem dependências, sem build.",
 
     "find_eyebrow": "O resultado",
-    "find_h2": "Não é um número. É o próximo passo.",
+    "find_h2": "Não é um número. É o próximo passo",
     "find_note": "Quinze verificações. O que vale menos de US$ 15 por mês é rebaixado, então o topo da lista sempre significa algo — e um uso saudável é relatado como saudável.",
     "prev_label": "Anterior",
     "next_label": "Próximo",
@@ -1182,7 +1185,7 @@ STRINGS["pt-BR"] = {
     "f3_act": "Mantenha o plano. Reavalie se os turnos mensais caírem abaixo de 400.",
 
     "how_eyebrow": "Como funciona",
-    "how_h2": "Três passos, cerca de um segundo.",
+    "how_h2": "Três passos, cerca de um segundo",
     "how_1_t": "Ler",
     "how_1_d": "Seu agente já gravou os logs. A gente lê esses arquivos onde eles estão — nada para instalar, nada para ativar.",
     "how_2_t": "Medir",
@@ -1192,7 +1195,7 @@ STRINGS["pt-BR"] = {
     "how_note": "Sem chave de API, sem proxy, sem conta, sem rede. A coleta custa zero tokens.",
 
     "why_eyebrow": "Por que é diferente",
-    "why_h2": "Calculado do jeito que você paga de verdade.",
+    "why_h2": "Calculado do jeito que você paga de verdade",
     "why_1_t": "O relógio muda o preço",
     "why_1_d": "DeepSeek e GLM cobram por horário. De UTC+7 a +9, a janela de pico deles é a sua tarde de trabalho.",
     "why_2_t": "Plano não é fatura",
@@ -1203,13 +1206,13 @@ STRINGS["pt-BR"] = {
     "why_4_d": "BRL, IDR, VND, THB, PHP, MYR e outras — comparadas a uma diária local, porque US$ 412 não significa a mesma coisa em todo lugar.",
 
     "priv_eyebrow": "Privacidade",
-    "priv_h2": "Um mecanismo, não uma promessa.",
+    "priv_h2": "Um mecanismo, não uma promessa",
     "priv_lede": "Nada sai da sua máquina a menos que você edite um arquivo autorizando.",
     "priv_1": "Nunca armazenado: prompts, respostas, código, comandos, caminhos de arquivo.",
     "priv_2": "Bloqueado no ponto em que o arquivo é lido — então um vazamento seria um bug, não uma questão de política.",
     "priv_3": "O painel e esta página fazem zero requisições externas. Sem CDN, sem fontes, sem analytics.",
 
-    "start_h2": "Veja antes de instalar.",
+    "start_h2": "Veja antes de instalar",
     "start_d": "A demo é o painel de verdade, gerado a partir de 60 dias de dados de exemplo pelo mesmo código que você rodaria localmente.",
     "start_cta1": "Abrir a demo",
     "start_cta2": "Início rápido",
@@ -1243,7 +1246,7 @@ STRINGS["es"] = {
     "hero_eyebrow": "Código abierto · Funciona en tu máquina",
     "hero_h1_a": "Saber qué",
     "hero_h1_b": "cambiar",
-    "hero_h1_c": ".",
+    "hero_h1_c": "",
     "hero_lede": "Tu agente de código ya registra cada turno. Esto lee esos registros y te dice los pocos cambios que merecen la pena, cada uno con una cifra al lado.",
     "chip1": "Listo en menos de un minuto",
     "chip2": "Sin cuenta",
@@ -1254,7 +1257,7 @@ STRINGS["es"] = {
     "run_note": "Solo la biblioteca estándar de Python 3. Sin instalación, sin dependencias, sin build.",
 
     "find_eyebrow": "El resultado",
-    "find_h2": "No es una cifra. Es el siguiente paso.",
+    "find_h2": "No es una cifra. Es el siguiente paso",
     "find_note": "Quince comprobaciones. Lo que vale menos de 15 $ al mes baja de puesto, así que lo primero de la lista siempre importa — y si tu uso es sano, lo dice tal cual.",
     "prev_label": "Anterior",
     "next_label": "Siguiente",
@@ -1278,7 +1281,7 @@ STRINGS["es"] = {
     "f3_act": "Sigue con el plan. Revísalo si los turnos mensuales bajan de 400.",
 
     "how_eyebrow": "Cómo funciona",
-    "how_h2": "Tres pasos, un segundo aproximadamente.",
+    "how_h2": "Tres pasos, un segundo aproximadamente",
     "how_1_t": "Leer",
     "how_1_d": "Tu agente ya escribió los registros. Leemos esos archivos donde están: nada que instalar, nada que activar.",
     "how_2_t": "Medir",
@@ -1288,7 +1291,7 @@ STRINGS["es"] = {
     "how_note": "Sin clave de API, sin proxy, sin cuenta, sin red. Recoger los datos cuesta cero tokens.",
 
     "why_eyebrow": "Por qué es distinto",
-    "why_h2": "Calculado como pagas de verdad.",
+    "why_h2": "Calculado como pagas de verdad",
     "why_1_t": "El reloj cambia el precio",
     "why_1_d": "DeepSeek y GLM cobran por franja horaria. De UTC+7 a +9, su hora punta es tu tarde de trabajo.",
     "why_2_t": "Un plan no es una factura",
@@ -1299,13 +1302,13 @@ STRINGS["es"] = {
     "why_4_d": "IDR, VND, THB, PHP, MYR y más, comparadas con un jornal local, porque 412 $ no significan lo mismo en todas partes.",
 
     "priv_eyebrow": "Privacidad",
-    "priv_h2": "Un mecanismo, no una promesa.",
+    "priv_h2": "Un mecanismo, no una promesa",
     "priv_lede": "Nada sale de tu máquina salvo que edites un archivo para permitirlo.",
     "priv_1": "Nunca se guarda: prompts, respuestas, código, comandos, rutas de archivo.",
     "priv_2": "Se bloquea en el punto donde se lee el archivo, así que una fuga sería un fallo, no una cuestión de política.",
     "priv_3": "El panel y esta página no hacen ninguna petición externa. Sin CDN, sin fuentes, sin analítica.",
 
-    "start_h2": "Míralo antes de instalarlo.",
+    "start_h2": "Míralo antes de instalarlo",
     "start_d": "La demo es el panel de verdad, generado a partir de 60 días de datos de ejemplo por el mismo código que ejecutarías tú.",
     "start_cta1": "Abrir la demo",
     "start_cta2": "Inicio rápido",
