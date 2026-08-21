@@ -7,7 +7,7 @@
 
 # AI&nbsp;Observatory
 
-**Saiba o que mudar.**
+**Saiba o que mudar**
 
 Seu agente de código já registra cada turno. Isto lê esses registros e aponta as poucas mudanças que valem a pena — cada uma com um número junto.
 
@@ -42,7 +42,7 @@ Seu agente de código já registra cada turno. Isto lê esses registros e aponta
 
 ---
 
-## Não é um número. É o próximo passo.
+## Não é um número. É o próximo passo
 
 > **Alta** — Você paga tarifa de pico sem precisar · **≈ US$ 34/mês**<br>
 > 61% do seu gasto em modelos com preço por horário caiu dentro da janela de pico, onde os mesmos tokens custam até o dobro.<br>
@@ -75,7 +75,7 @@ python3 observe.py all
 
 Apenas a biblioteca padrão do Python 3. Sem instalação, sem dependências, sem build.
 
-## Três passos, cerca de um segundo.
+## Três passos, cerca de um segundo
 
 | | | |
 |---|---|---|
@@ -89,7 +89,7 @@ Sem chave de API, sem proxy, sem conta, sem rede. A coleta custa zero tokens.
   <img src="../assets/peak-clock-light.svg" alt="">
 </picture>
 
-## Calculado do jeito que você paga de verdade.
+## Calculado do jeito que você paga de verdade
 
 | | |
 |---|---|
@@ -98,7 +98,7 @@ Sem chave de API, sem proxy, sem conta, sem rede. A coleta custa zero tokens.
 | **A taxa de cache muda por fornecedor** | O desconto de 0,1× é um costume da Anthropic, não uma lei. Errar isso é errar o maior número da página. |
 | **Treze moedas** | BRL, IDR, VND, THB, PHP, MYR e outras — comparadas a uma diária local, porque US$ 412 não significa a mesma coisa em todo lugar. |
 
-## Um mecanismo, não uma promessa.
+## Um mecanismo, não uma promessa
 
 **Nada sai da sua máquina a menos que você edite um arquivo autorizando.**
 

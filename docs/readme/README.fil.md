@@ -7,7 +7,7 @@
 
 # AI&nbsp;Observatory
 
-**Alamin kung ano ang dapat baguhin.**
+**Alamin kung ano ang dapat baguhin**
 
 Nakatala na ng iyong agent ang bawat turn. Binabasa ito ng tool at sinasabi ang iilang pagbabagong sulit gawin — bawat isa ay may kasamang numero.
 
@@ -42,7 +42,7 @@ Nakatala na ng iyong agent ang bawat turn. Binabasa ito ng tool at sinasabi ang 
 
 ---
 
-## Hindi numero. Susunod na hakbang.
+## Hindi numero. Susunod na hakbang
 
 > **Mataas** — Nagbabayad ka ng peak rate na hindi naman kailangan · **≈ $34/buwan**<br>
 > 61% ng gastos mo sa mga modelong naka-presyo ayon sa oras ay bumagsak sa peak window, kung saan hanggang doble ang halaga ng parehong token.<br>
@@ -75,7 +75,7 @@ python3 observe.py all
 
 Python 3 standard library lang. Walang install, walang dependency, walang build.
 
-## Tatlong hakbang, mga isang segundo.
+## Tatlong hakbang, mga isang segundo
 
 | | | |
 |---|---|---|
@@ -89,7 +89,7 @@ Walang API key, walang proxy, walang account, walang network. Zero token ang gas
   <img src="../assets/peak-clock-light.svg" alt="">
 </picture>
 
-## Nakapresyo ayon sa totoong paraan ng pagbabayad mo.
+## Nakapresyo ayon sa totoong paraan ng pagbabayad mo
 
 | | |
 |---|---|
@@ -98,7 +98,7 @@ Walang API key, walang proxy, walang account, walang network. Zero token ang gas
 | **Iba-iba ang cache rate kada vendor** | Ugali ng Anthropic ang 0.1×, hindi batas. Mali dito, mali ang pinakamahalagang numero sa pahina. |
 | **Labintatlong pera** | PHP, IDR, VND, THB, MYR at iba pa — katabi ng lokal na arawang kita, dahil hindi pare-pareho ang bigat ng $412 saanman. |
 
-## Mekanismo, hindi pangako.
+## Mekanismo, hindi pangako
 
 **Walang lumalabas ng makina mo maliban kung ikaw mismo ang mag-edit ng file para payagan ito.**
 

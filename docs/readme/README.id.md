@@ -7,7 +7,7 @@
 
 # AI&nbsp;Observatory
 
-**Tahu apa yang perlu diubah.**
+**Tahu apa yang perlu diubah**
 
 Coding agent Anda sudah mencatat setiap giliran. Alat ini membaca catatan itu dan menyebut beberapa perubahan yang layak dilakukan — masing-masing dengan angkanya.
 
@@ -42,7 +42,7 @@ Coding agent Anda sudah mencatat setiap giliran. Alat ini membaca catatan itu da
 
 ---
 
-## Bukan angka. Langkah berikutnya.
+## Bukan angka. Langkah berikutnya
 
 > **Tinggi** — Anda membayar tarif puncak yang sebenarnya bisa dihindari · **≈ $34/bln**<br>
 > 61% pengeluaran Anda pada model bertarif waktu jatuh di jendela puncak, saat token yang sama bisa dua kali lebih mahal.<br>
@@ -75,7 +75,7 @@ python3 observe.py all
 
 Hanya pustaka standar Python 3. Tanpa instalasi, tanpa dependensi, tanpa build.
 
-## Tiga langkah, sekitar satu detik.
+## Tiga langkah, sekitar satu detik
 
 | | | |
 |---|---|---|
@@ -89,7 +89,7 @@ Tanpa kunci API, tanpa proxy, tanpa akun, tanpa jaringan. Pengumpulan data memak
   <img src="../assets/peak-clock-light.svg" alt="">
 </picture>
 
-## Dihitung sebagaimana Anda benar-benar membayar.
+## Dihitung sebagaimana Anda benar-benar membayar
 
 | | |
 |---|---|
@@ -98,7 +98,7 @@ Tanpa kunci API, tanpa proxy, tanpa akun, tanpa jaringan. Pengumpulan data memak
 | **Tarif cache beda tiap vendor** | Diskon 0,1× itu kebiasaan Anthropic, bukan hukum alam. Salah di sini, angka terpenting di halaman ikut salah. |
 | **Tiga belas mata uang** | IDR, VND, THB, PHP, MYR dan lainnya — disandingkan dengan upah harian setempat, karena $412 tidak berarti sama di mana-mana. |
 
-## Mekanisme, bukan janji.
+## Mekanisme, bukan janji
 
 **Tidak ada yang keluar dari perangkat Anda kecuali Anda sendiri yang mengubah berkasnya.**
 
