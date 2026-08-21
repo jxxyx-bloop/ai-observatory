@@ -6,8 +6,14 @@
 var D = JSON.parse(document.getElementById("digest").textContent);
 var $ = function (id) { return document.getElementById(id); };
 
-var MON = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-var DOW = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+var MON_EN = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+/* Read per call, like the weekday names: an axis label drawn before the reader
+   picks a language would otherwise stay in English until the next redraw. */
+function mon(m) { return t18("mon", MON_EN.join(",")).split(",")[m] || MON_EN[m]; }
+var DOW_EN = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+/* Read per call rather than cached: the language switches without a reload,
+   and every caller is already inside a redraw. */
+function dow(w) { return t18("dow", DOW_EN.join(",")).split(",")[w] || DOW_EN[w]; }
 
 function esc(s) {
   return String(s == null ? "—" : s).replace(/[&<>"']/g, function (c) {
@@ -43,6 +49,16 @@ function t18(key, fallback) {
   if (typeof I18N === "undefined") return fallback;
   var v = I18N.dict(document.documentElement.getAttribute("data-lang") || "en")[key];
   return v || fallback;
+}
+
+/* Same lookup with %TOKEN% substitution, for the interface lines that carry a
+   number. Values arrive already formatted (and escaped where the result meets
+   innerHTML); this only seats them inside the translated frame, so a language
+   can put the number where its own grammar wants it. */
+function tf(key, fallback, vals) {
+  var out = t18(key, fallback);
+  for (var k in vals) out = out.split("%" + k + "%").join(vals[k]);
+  return out;
 }
 
 /* ---- metric explainers ---------------------------------------------------
@@ -99,8 +115,8 @@ function span(from, to) {
 }
 function dayInfo(isoStr) {
   var d = parse(isoStr), w = d.getUTCDay();
-  return {dow: DOW[w], initial: DOW[w][0], weekend: w === 0 || w === 6,
-          dom: String(d.getUTCDate()).padStart(2, "0"), mon: MON[d.getUTCMonth()],
+  return {dow: dow(w), initial: dow(w).charAt(0), weekend: w === 0 || w === 6,
+          dom: String(d.getUTCDate()).padStart(2, "0"), mon: mon(d.getUTCMonth()),
           first: d.getUTCDate() === 1};
 }
 function longDate(isoStr) {
@@ -189,7 +205,7 @@ function pickSessions(F) {
 // keeps its full value in the title.
 function bars(rows, label, value, fmt, pickable) {
   rows = rows.filter(function (r) { return (value(r) || 0) > 0; });
-  if (!rows.length) return '<p class="empty">Nothing in this range.</p>';
+  if (!rows.length) return '<p class="empty">' + esc(t18("e_none", "Nothing in this range.")) + "</p>";
   var peak = Math.max.apply(null, rows.map(value)) || 1;
   return '<div class="hbars">' + rows.map(function (r) {
     var v = value(r) || 0, full = String(label(r));
@@ -203,7 +219,7 @@ function bars(rows, label, value, fmt, pickable) {
 }
 
 function daily(days, byDate, metric, fmt, picked) {
-  if (!days.length) return '<p class="empty">Nothing in this range.</p>';
+  if (!days.length) return '<p class="empty">' + esc(t18("e_none", "Nothing in this range.")) + "</p>";
   var W = 720, L = 50, R = 8, TOP = 18, PH = 112, H = 218;
   var base = TOP + PH, plotW = W - L - R, step = plotW / days.length;
   var bw = Math.max(1.5, Math.min(step * 0.68, 26));
@@ -377,7 +393,7 @@ function meter(F) {
     total += r.turns;
   });
   if (!total) {
-    return {svg: '<p class="empty">Nothing in this range.</p>', note: "",
+    return {svg: '<p class="empty">' + esc(t18("e_none", "Nothing in this range.")) + "</p>", note: "",
             hasPeak: false};
   }
 
@@ -416,11 +432,11 @@ function meter(F) {
   for (var w2 = 0; w2 < 7; w2++) {
     var y = TOP + w2 * (CH + GAP);
     s += '<text x="' + (L - 8) + '" y="' + (y + CH / 2 + 3.5).toFixed(1)
-      + '" text-anchor="end" class="axis">' + DOW[w2] + "</text>";
+      + '" text-anchor="end" class="axis">' + dow(w2) + "</text>";
     for (var h2 = 0; h2 < 24; h2++) {
       var v = grid[w2][h2], x = L + h2 * cw, hot = pk.mask[w2][h2];
       var op = v ? Math.max(0.16, v / peak).toFixed(2) : "1";
-      var tip = DOW[w2] + " " + String(h2).padStart(2, "0") + ":00 " + CUR.tz_label
+      var tip = dow(w2) + " " + String(h2).padStart(2, "0") + ":00 " + CUR.tz_label
         + " — " + num(v) + " turns";
       // No phase suffix at all when nothing you use is time-priced: labelling
       // every cell "off-peak" implies a peak somewhere that does not exist.
@@ -557,7 +573,7 @@ function calendar() {
         + '" stroke="var(--line)" stroke-width="1"/>';
     }
     s += '<text x="' + (L + w1 * PITCH + 2) + '" y="' + (TOP - 9)
-      + '" class="axis">' + MON[colMonth[w1]] + "</text>";
+      + '" class="axis">' + mon(colMonth[w1]) + "</text>";
     prev = colMonth[w1];
   }
 
@@ -567,7 +583,7 @@ function calendar() {
       cd.setUTCDate(cd.getUTCDate() + w2 * 7 + d2);
       if (cd < first || cd > last) continue;
       var key = cd.toISOString().slice(0, 10), v = days[key] || 0;
-      s += '<rect class="calcell" data-tt="' + esc(DOW[d2] + " " + key + " — "
+      s += '<rect class="calcell" data-tt="' + esc(dow(d2) + " " + key + " — "
         + num(v) + " turns") + '" data-day="' + key + '" x="' + (L + w2 * PITCH)
         + '" y="' + (TOP + d2 * PITCH) + '" width="' + CELL + '" height="' + CELL
         + '" rx="2.5" fill="' + (v ? "var(--accent)" : "var(--track)")
@@ -578,7 +594,7 @@ function calendar() {
   // All seven, aligned to the middle of their own row.
   for (var d3 = 0; d3 < 7; d3++) {
     s += '<text x="' + (L - 7) + '" y="' + (TOP + d3 * PITCH + CELL - 2)
-      + '" text-anchor="end" class="axis dow">' + DOW[d3] + "</text>";
+      + '" text-anchor="end" class="axis dow">' + dow(d3) + "</text>";
   }
 
   // Ramp legend. Without it a pale square is ambiguous between "a quiet day"
@@ -665,21 +681,25 @@ function sparkCard(title, infoKey, vals, fmt) {
 }
 function behavioralTrends(F) {
   var days = span(F.from, F.to), series = sessionSeries(pickSessions(F), days);
-  var html = sparkCard("Turns / session", "turnsPerSession",
+  var html = sparkCard(t18("k_tps", "Turns / session"), "turnsPerSession",
       series.map(function (r) { return r.turns_per_session; }),
       function (v) { return v.toFixed(1); })
-    + sparkCard("Tool calls / turn", "toolCallsPerTurn",
+    + sparkCard(t18("k_tcpt", "Tool calls / turn"), "toolCallsPerTurn",
       series.map(function (r) { return r.tool_calls_per_turn; }),
       function (v) { return v.toFixed(2); })
-    + sparkCard("Model-switch share", "modelSwitchShare",
+    + sparkCard(t18("k_msw", "Model-switch share"), "modelSwitchShare",
       series.map(function (r) { return r.model_switch; }),
       function (v) { return v.toFixed(0) + "%"; });
   return '<div class="sparks">' + html + "</div>";
 }
 
 /* ---- panels ------------------------------------------------------------ */
-var DAILY = [{k: "turns", n: "Turns", f: num}, {k: "cost", n: "Est. cost", f: usd},
-             {k: "output", n: "Output", f: num}, {k: "tool_calls", n: "Tool calls", f: num}];
+var DAILY = [{k: "turns", i: "d_turns", n: "Turns", f: num},
+             {k: "cost", i: "d_cost", n: "Est. cost", f: usd},
+             {k: "output", i: "d_output", n: "Output", f: num},
+             {k: "tool_calls", i: "d_tools", n: "Tool calls", f: num}];
+/* The English `n` stays as the fallback and as the tooltip's metric word. */
+function dailyLabel(m) { return t18(m.i, m.n); }
 var dailyMetric = "turns";
 var selectedDay = null;  // click a bar in "Daily rhythm" to drill every panel into that day
 
@@ -693,18 +713,22 @@ function kpiCards(t, sessions) {
   // Behavioral signals lead; raw volume (turns, output tokens) no longer gets
   // a top-of-page tile of its own — it's still visible in the panels below.
   var cards = [
-    [usd(t.cost), "Estimated spend" + info("spend"),
-     "~" + usd(t.cost / days) + "/active day · notional on a seat plan", true],
-    [tps.toFixed(1), "Turns / session" + info("turnsPerSession"),
-     sessions.length ? "median " + med.toFixed(0) + "m per session" : "no sessions yet"],
-    [pctOf(t.cache_read, read).toFixed(1) + "%", "Served from cache" + info("cache"),
-     "the share of read tokens that cost 0.1× instead of 1×"],
-    [tcpt.toFixed(2), "Tool calls / turn" + info("toolCallsPerTurn"),
-     tcpt >= 0.5 ? "agentic use" : "mostly conversational"],
-    [msw.toFixed(0) + "%", "Model-switch share" + info("modelSwitchShare"),
-     "of " + num(sessions.length) + " sessions used more than one model"],
-    [ratio, "Write / read" + info("writeRead"),
-     num(t.writes) + " edits per " + num(t.reads) + " lookups"]
+    [usd(t.cost), esc(t18("k_spend", "Estimated spend")) + info("spend"),
+     tf("n_spend", "~%V%/active day · notional on a seat plan",
+        {V: usd(t.cost / days)}), true],
+    [tps.toFixed(1), esc(t18("k_tps", "Turns / session")) + info("turnsPerSession"),
+     sessions.length ? tf("n_tps", "median %M%m per session", {M: med.toFixed(0)})
+                     : t18("n_nosessions", "no sessions yet")],
+    [pctOf(t.cache_read, read).toFixed(1) + "%",
+     esc(t18("k_cache", "Served from cache")) + info("cache"),
+     t18("n_cache", "the share of read tokens that cost 0.1× instead of 1×")],
+    [tcpt.toFixed(2), esc(t18("k_tcpt", "Tool calls / turn")) + info("toolCallsPerTurn"),
+     tcpt >= 0.5 ? t18("n_agentic", "agentic use")
+                 : t18("n_conversational", "mostly conversational")],
+    [msw.toFixed(0) + "%", esc(t18("k_msw", "Model-switch share")) + info("modelSwitchShare"),
+     tf("n_msw", "of %N% sessions used more than one model", {N: num(sessions.length)})],
+    [ratio, esc(t18("k_wr", "Write / read")) + info("writeRead"),
+     tf("n_wr", "%W% edits per %R% lookups", {W: num(t.writes), R: num(t.reads)})]
   ];
   return cards.map(function (c) {
     return '<div class="kpi' + (c[3] ? " lead" : "") + '"><div class="v">' + c[0]
@@ -714,7 +738,9 @@ function kpiCards(t, sessions) {
 
 function sessionsTable(rows) {
   rows = rows.slice().sort(function (a, b) { return b.output - a.output; }).slice(0, 15);
-  if (!rows.length) return '<p class="empty">No sessions in this range.</p>';
+  if (!rows.length) {
+    return '<p class="empty">' + esc(t18("w_none", "No sessions in this range.")) + "</p>";
+  }
   var peak = Math.max.apply(null, rows.map(function (r) { return r.peak_context || 0; })) || 1;
   var body = rows.map(function (r) {
     var ratio = (r.writes || r.reads) ? r.writes + "/" + r.reads : "—";
@@ -729,8 +755,11 @@ function sessionsTable(rows) {
       + '<td><div class="bar"><i style="width:' + pctOf(r.peak_context, peak).toFixed(0)
       + '%"></i></div><span class="axis">' + esc(num(r.peak_context)) + "</span></td></tr>";
   }).join("");
-  return '<div class="scroll"><table><thead><tr><th>Session</th><th>Turns</th>'
-    + "<th>Output</th><th>Est. cost</th><th>Writes/reads</th><th>Peak context</th>"
+  var head = [t18("w_session", "Session"), t18("d_turns", "Turns"),
+              t18("d_output", "Output"), t18("d_cost", "Est. cost"),
+              t18("w_wr", "Writes/reads"), t18("w_peakctx", "Peak context")];
+  return '<div class="scroll"><table><thead><tr>'
+    + head.map(function (h) { return "<th>" + esc(h) + "</th>"; }).join("")
     + "</tr></thead><tbody>" + body + "</tbody></table></div>";
 }
 
@@ -753,19 +782,26 @@ function drawPhase(F) {
   var floor = timed.reduce(function (a, r) { return a + (r.cost_floor_micro || 0) / 1e6; }, 0);
   var premium = Math.max(0, total - floor);
 
-  var label = {peak: "Peak hours", "off-peak": "Off-peak hours"};
+  var label = {peak: t18("ph_peak", "Peak hours"),
+               "off-peak": t18("ph_off", "Off-peak hours")};
   $("phase").innerHTML = bars(
     timed.sort(byCost),
     function (r) { return label[r.phase] || r.phase; },
     function (r) { return r.cost; }, usd);
 
   var pct = pctOf(peakCost, total);
-  $("phaseNote").innerHTML = "<strong>" + pct.toFixed(1) + "%</strong> of time-priced spend "
-    + "landed in a peak window. Running the identical turns off-peak would have cost "
-    + esc(usd(floor)) + " instead of " + esc(usd(total)) + " — a premium of <strong>"
-    + esc(usd(premium)) + "</strong> for the timing."
-    + (premium > 0 ? " Batch work — test generation, migrations, doc sweeps — is the part "
-        + "that does not need you watching, and so the part worth moving." : "");
+  // The emphasis sits inside the translated string: which clause carries the
+  // weight is a property of the sentence, not of the layout. Only the numbers
+  // are interpolated, and they are escaped on the way in.
+  $("phaseNote").innerHTML = tf("ph_note",
+      "<strong>%P%</strong> of time-priced spend landed in a peak window. Running "
+      + "the identical turns off-peak would have cost %F% instead of %T% — a premium "
+      + "of <strong>%X%</strong> for the timing.",
+      {P: pct.toFixed(1) + "%", F: esc(usd(floor)), T: esc(usd(total)),
+       X: esc(usd(premium))})
+    + (premium > 0 ? " " + esc(t18("ph_batch",
+        "Batch work — test generation, migrations, doc sweeps — is the part that "
+        + "does not need you watching, and so the part worth moving.")) : "");
 }
 
 function byCost(a, b) { return b.cost - a.cost; }
@@ -795,17 +831,25 @@ function draw() {
   })[0];
 
   $("kpis").innerHTML = kpiCards(t, ses);
-  var slice = [F.provider === "All" ? "all providers" : F.provider,
-               F.lane === "All" ? "all lanes" : F.lane + " lane",
-               F.repo === "All" ? "all repositories" : F.repo].join(" · ");
-  $("scope").textContent = F.from + " → " + F.to + "  ·  " + slice
-    + "  ·  " + num(t.turns) + " turns, " + usd(t.cost) + " estimated"
-    + (F.day ? "  ·  drilled into " + longDate(F.day) + " (click it again to clear)" : "");
+  // "All" is the filter's sentinel value, never shown; the words beside it are
+  // copy and translate. A provider or repo name is data and stays as written.
+  var slice = [F.provider === "All" ? t18("f_scope_providers", "all providers") : F.provider,
+               F.lane === "All" ? t18("f_scope_lanes", "all lanes")
+                                : tf("f_scope_lane", "%L% lane", {L: F.lane}),
+               F.repo === "All" ? t18("f_scope_repos", "all repositories") : F.repo]
+              .join(" · ");
+  $("scope").textContent = F.from + " → " + F.to + "  ·  " + slice + "  ·  "
+    + tf("s_turns_est", "%N% turns, %C% estimated", {N: num(t.turns), C: usd(t.cost)})
+    + (F.day ? "  ·  " + tf("s_drilled", "drilled into %D% (click it again to clear)",
+                            {D: longDate(F.day)}) : "");
 
   var byDate = {};
   agg(D.cube, CUBE, F, ["date"]).forEach(function (r) { byDate[r.date] = r[dailyMetric]; });
-  $("daily").innerHTML = daily(span(F.from, F.to), byDate, spec.n.toLowerCase(), spec.f, F.day);
-  $("dailyLegend").innerHTML = '<i></i>' + esc(spec.n) + " per day<i class='avg'></i>7-day mean";
+  $("daily").innerHTML = daily(span(F.from, F.to), byDate,
+                              dailyLabel(spec).toLowerCase(), spec.f, F.day);
+  $("dailyLegend").innerHTML = '<i></i>'
+    + esc(tf("d_per_day", "%M% per day", {M: dailyLabel(spec)}))
+    + "<i class='avg'></i>" + esc(t18("d_mean7", "7-day mean"));
 
   var repos = agg(D.cube, CUBE, DF, ["repo"], "repo").sort(byCost);
   $("repos").innerHTML = bars(repos.slice(0, 12), function (r) { return r.repo; },
@@ -814,11 +858,13 @@ function draw() {
   var focus = F.repo !== "All" ? F.repo : (repos[0] || {}).repo;
   var inside = agg(D.cube, CUBE, DF, ["repo", "surface"], "repo")
     .filter(function (r) { return r.repo === focus; }).sort(byCost);
-  $("surfaceTitle").textContent = focus ? "Inside " + focus : "Inside";
+  $("surfaceTitle").textContent = focus
+    ? tf("s_inside", "Inside %R%", {R: focus})
+    : tf("s_inside", "Inside %R%", {R: ""}).trim();
   $("surfaces").innerHTML = bars(inside.slice(0, 12), function (r) { return r.surface; },
                                  function (r) { return r.cost; }, usd);
   $("surfaceNote").textContent = F.repo === "All" && focus
-    ? "Showing the busiest repository. Pick one on the left to hold it."
+    ? t18("n_surface", "Showing the busiest repository. Pick one on the left to hold it.")
     : "";
 
   $("models-chart").innerHTML = bars(agg(D.cube, CUBE, DF, ["model"]).sort(byOutput),
@@ -847,9 +893,9 @@ function draw() {
   }).sort(byOutput).slice(0, 8), function (r) { return r.agent; },
     function (r) { return r.output; }, num);
   $("agentsNote").textContent = t.sub_turns
-    ? pctOf(t.sub_output, t.output).toFixed(1) + "% of output came from "
-      + num(t.sub_turns) + " delegated turns."
-    : "No delegated turns in this scope.";
+    ? tf("n_agents", "%P% of output came from %N% delegated turns.",
+         {P: pctOf(t.sub_output, t.output).toFixed(1) + "%", N: num(t.sub_turns)})
+    : t18("n_agents_none", "No delegated turns in this scope.");
   $("sessions").innerHTML = sessionsTable(ses);
 
   // Trends always span the full selected range, ignoring the day drill-down
@@ -862,12 +908,38 @@ var FIRST = (D.window.first || "").slice(0, 10), LAST = (D.window.last || "").sl
 function later(a, b) { return a > b ? a : b; }
 
 var PRESETS = [
-  {id: "7d",  label: "7 days",     from: function () { return later(shift(LAST, -6), FIRST); }},
-  {id: "30d", label: "30 days",    from: function () { return later(shift(LAST, -29), FIRST); }},
-  {id: "mtd", label: "This month", from: function () { return later(LAST.slice(0, 8) + "01", FIRST); }},
-  {id: "90d", label: "90 days",    from: function () { return later(shift(LAST, -89), FIRST); }},
-  {id: "all", label: "All",        from: function () { return FIRST; }}
+  {id: "7d",  i: "p_7d",  label: "7 days",     from: function () { return later(shift(LAST, -6), FIRST); }},
+  {id: "30d", i: "p_30d", label: "30 days",    from: function () { return later(shift(LAST, -29), FIRST); }},
+  {id: "mtd", i: "p_mtd", label: "This month", from: function () { return later(LAST.slice(0, 8) + "01", FIRST); }},
+  {id: "90d", i: "p_90d", label: "90 days",    from: function () { return later(shift(LAST, -89), FIRST); }},
+  {id: "all", i: "p_all", label: "All",        from: function () { return FIRST; }}
 ];
+
+/* The preset row and the range line under the title are written once at start,
+   outside draw(), so a language switch would leave them in the old language.
+   Both are re-stamped from here instead — labels only, never the values. */
+function relabelChrome() {
+  PRESETS.forEach(function (p) {
+    var b = $("p-" + p.id);
+    if (b) b.textContent = t18(p.i, p.label);
+  });
+  var metrics = $("dailyMetric");
+  if (metrics) {
+    Array.prototype.forEach.call(metrics.querySelectorAll("button[data-metric]"),
+      function (b) {
+        var m = DAILY.filter(function (x) {
+          return x.k === b.getAttribute("data-metric");
+        })[0];
+        if (m) b.textContent = dailyLabel(m);
+      });
+  }
+  var el = $("span");
+  if (el && typeof D !== "undefined" && D.window) {
+    el.textContent = FIRST + " → " + LAST + " · " + D.window.days + " "
+      + t18("h_active_days", "active days") + " · "
+      + D.by_provider.map(function (p) { return p.provider; }).join(" + ");
+  }
+}
 
 function markPreset(id) {
   PRESETS.forEach(function (p) {
@@ -973,12 +1045,10 @@ function initRail() {
 }
 
 function init() {
-  $("span").textContent = FIRST + " → " + LAST + " · " + D.window.days
-    + " active days · " + D.by_provider.map(function (p) { return p.provider; }).join(" + ");
-
   $("presets").innerHTML = PRESETS.map(function (p) {
-    return '<button type="button" id="p-' + p.id + '">' + esc(p.label) + "</button>";
+    return '<button type="button" id="p-' + p.id + '"></button>';
   }).join("");
+  relabelChrome();
   PRESETS.forEach(function (p) {
     $("p-" + p.id).addEventListener("click", function () { applyPreset(p); });
   });
@@ -998,7 +1068,7 @@ function init() {
 
   $("dailyMetric").innerHTML = DAILY.map(function (m) {
     return '<button type="button" data-metric="' + m.k + '" aria-pressed="'
-      + (m.k === dailyMetric) + '">' + esc(m.n) + "</button>";
+      + (m.k === dailyMetric) + '">' + esc(dailyLabel(m)) + "</button>";
   }).join("");
   $("dailyMetric").addEventListener("click", function (e) {
     var b = ancestor(e.target, "button[data-metric]");
@@ -1154,6 +1224,9 @@ function initLang() {
     // Only shown when the interface is not in the language the engine writes.
     each(".lang-note", function (el) { el.hidden = (lang === "en"); });
     if (typeof fillSelects === "function" && $("provider")) fillSelects();
+    // The preset row and the range line live outside draw(); re-stamp them too,
+    // or the page switches language everywhere except its own top-left corner.
+    if (typeof relabelChrome === "function" && $("presets")) relabelChrome();
     // Charts write their own text — the meter's summary sentence, the
     // calendar's ramp legend — so translating the DOM is not enough; they have
     // to be drawn again. Guarded because initLang runs before the first draw
