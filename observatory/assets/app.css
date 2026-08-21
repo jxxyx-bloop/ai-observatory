@@ -201,9 +201,13 @@ code{font:12.5px ui-monospace,SFMono-Regular,Menlo,monospace;background:var(--tr
    the same shape at every scroll depth so it becomes muscle memory. */
 .shell{display:grid;grid-template-columns:88px minmax(0,1fr);min-height:100vh}
 
+/* The rail must not be a scroll container: the language sheet flies out past
+   its right edge, and any `overflow` here clips it away silently — the button
+   lights up and nothing appears. Only the tile list scrolls, which is what the
+   phone breakpoint below has always done. */
 .rail{position:sticky;top:0;align-self:start;height:100vh;background:var(--rail);
   display:flex;flex-direction:column;align-items:center;gap:var(--s4);
-  padding:var(--s4) 0 var(--s3);overflow-y:auto;scrollbar-width:thin}
+  padding:var(--s4) 0 var(--s3);overflow:visible}
 
 .railmark{display:flex;align-items:center;justify-content:center;flex:none;
   width:40px;height:40px;border-radius:var(--r-sm);
@@ -212,7 +216,8 @@ code{font:12.5px ui-monospace,SFMono-Regular,Menlo,monospace;background:var(--tr
   stroke-width:1.5;stroke-linecap:round}
 .railmark:hover{background:var(--rail-hover)}
 
-.railnav{list-style:none;margin:0;padding:0 var(--s2);display:grid;gap:3px;width:100%}
+.railnav{list-style:none;margin:0;padding:0 var(--s2);display:grid;gap:3px;width:100%;
+  min-height:0;overflow-y:auto;scrollbar-width:thin}
 .railnav a{display:grid;justify-items:center;gap:5px;padding:9px 2px 7px;
   border-radius:var(--r-sm);color:var(--rail-ink);text-decoration:none;
   transition:background var(--d-fast) var(--ease),color var(--d-fast) var(--ease)}
@@ -260,11 +265,12 @@ code{font:12.5px ui-monospace,SFMono-Regular,Menlo,monospace;background:var(--tr
 @media (max-width:820px){
   .shell{grid-template-columns:minmax(0,1fr)}
   /* The rail itself must not scroll — it holds the pinned theme/language
-     controls. Only the tile list does, or the whole page gains 300px of
-     horizontal scroll and every section below it is cut off. */
+     controls, and the language sheet drops out below it. Only the tile list
+     does; its `min-width:0` is what keeps the wide strip from giving the whole
+     page 300px of horizontal scroll and cutting off every section below. */
   .rail{position:sticky;top:0;z-index:60;height:auto;width:100%;max-width:100%;
     flex-direction:row;align-items:center;gap:var(--s2);
-    padding:var(--s2) var(--s3);overflow:hidden}
+    padding:var(--s2) var(--s3);overflow:visible}
   .railnav{display:flex;width:auto;min-width:0;flex:1 1 auto;padding:0;gap:2px;
     overflow-x:auto;overflow-y:hidden;scrollbar-width:none}
   .railnav::-webkit-scrollbar{display:none}
@@ -280,45 +286,3 @@ footer{margin:34px 0 8px;padding-top:16px;border-top:1px solid var(--line);
 code{font:12.5px ui-monospace,SFMono-Regular,Menlo,monospace;background:var(--track);
   padding:1px 5px;border-radius:4px}
 @media print{.controls{display:none}}
-
-/* ── Page chrome ──────────────────────────────────────────────────────────
-   The same top bar the landing page carries, so moving between the two feels
-   like one product. Breadcrumb on the left, icon-first controls on the right.
-   Every rule here has a twin in site/style.css; both draw from tokens.css. */
-.topbar{position:sticky;top:0;z-index:60;border-width:0 0 1px;
-  border-style:solid;border-color:var(--glass-line)}
-.topbar-in{max-width:1080px;margin:0 auto;padding:var(--s2) var(--pad);
-  display:flex;align-items:center;gap:var(--s3)}
-.brand{display:flex;align-items:center;gap:var(--s2);color:var(--ink);
-  text-decoration:none;font-weight:640;font-size:var(--t-sm);white-space:nowrap}
-.brand .mark{width:19px;height:19px;fill:none;stroke:var(--accent);stroke-width:1.5;
-  stroke-linecap:round}
-.crumbs{display:flex;align-items:center;gap:var(--s2);font-size:var(--t-xs);
-  color:var(--faint);margin-left:var(--s3);min-width:0}
-.crumbs a{color:var(--muted);text-decoration:none;white-space:nowrap}
-.crumbs a:hover{color:var(--accent)}
-.crumbs [aria-current]{color:var(--ink);font-weight:600;white-space:nowrap}
-.topbar .tools{display:flex;align-items:center;gap:var(--s1);margin-left:auto}
-.topbar .code{font-size:var(--t-micro);font-weight:650;letter-spacing:.04em}
-
-.menu{position:relative}
-.menu>summary{list-style:none;user-select:none}
-.menu>summary::-webkit-details-marker{display:none}
-.menu[open]>summary{color:var(--ink);background:var(--accent-soft)}
-.sheet{background:var(--panel);border:1px solid var(--line);
-  position:absolute;top:calc(100% + 8px);right:0;z-index:70;min-width:196px;
-  padding:var(--s2);border-radius:var(--r-md);box-shadow:var(--shadow-lg);
-  display:grid;gap:1px;max-height:min(70vh,440px);overflow:auto}
-.sheet a{padding:6px var(--s3);border-radius:var(--r-xs);color:var(--muted);
-  font-size:var(--t-sm);text-decoration:none}
-.sheet a:hover{background:var(--accent-soft);color:var(--ink)}
-.sheet a[aria-current="true"]{color:var(--accent);font-weight:600}
-
-.pagehead{padding:var(--s6) 0 0}
-/* Not the reader's language: says so once, where the English begins. */
-.lang-note{color:var(--faint);font-style:italic}
-
-@media (max-width:620px){
-  .crumbs{display:none}          /* the brand mark is still a link home */
-}
-@media print{.topbar{display:none}}
