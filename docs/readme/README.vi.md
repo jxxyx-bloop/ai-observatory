@@ -7,7 +7,7 @@
 
 # AI&nbsp;Observatory
 
-**Biết cần thay đổi điều gì.**
+**Biết cần thay đổi điều gì**
 
 Agent của bạn vốn đã ghi lại từng lượt. Công cụ này đọc các log đó và chỉ ra vài thay đổi đáng làm — mỗi thay đổi kèm một con số.
 
@@ -42,7 +42,7 @@ Agent của bạn vốn đã ghi lại từng lượt. Công cụ này đọc c�
 
 ---
 
-## Không phải một con số. Là bước tiếp theo.
+## Không phải một con số. Là bước tiếp theo
 
 > **Cao** — Bạn đang trả giá giờ cao điểm mà lẽ ra không cần · **≈ 34 $/tháng**<br>
 > 61% chi tiêu trên các mô hình tính giá theo giờ rơi vào khung cao điểm, nơi cùng số token có thể đắt gấp đôi.<br>
@@ -75,7 +75,7 @@ python3 observe.py all
 
 Chỉ dùng thư viện chuẩn Python 3. Không cài đặt, không phụ thuộc, không bước build.
 
-## Ba bước, khoảng một giây.
+## Ba bước, khoảng một giây
 
 | | | |
 |---|---|---|
@@ -89,7 +89,7 @@ Không API key, không proxy, không tài khoản, không mạng. Việc thu th�
   <img src="../assets/peak-clock-light.svg" alt="">
 </picture>
 
-## Tính đúng cách bạn thật sự trả tiền.
+## Tính đúng cách bạn thật sự trả tiền
 
 | | |
 |---|---|
@@ -98,7 +98,7 @@ Không API key, không proxy, không tài khoản, không mạng. Việc thu th�
 | **Giá cache khác nhau theo nhà cung cấp** | Mức 0,1× là thói quen của Anthropic, không phải quy luật. Sai chỗ này là sai con số lớn nhất trên trang. |
 | **Mười ba loại tiền tệ** | VND, IDR, THB, PHP, MYR và hơn nữa — đặt cạnh mức công nhật địa phương, vì 412 đô không mang cùng một ý nghĩa ở mọi nơi. |
 
-## Là cơ chế, không phải lời hứa.
+## Là cơ chế, không phải lời hứa
 
 **Không gì rời khỏi máy bạn, trừ khi chính bạn sửa tệp cấu hình để cho phép.**
 

@@ -194,31 +194,35 @@ var l=localStorage.getItem("observatory-lang");if(l)r.setAttribute("data-lang",l
   <section id="change"><h2 data-i18n="s_change">What to change</h2>
     <p class="sub note" data-i18n="n_change">Ordered by severity, then by what it is
       worth. Computed over the whole window — the filters above do not change it.</p>
-    <p class="sub note lang-note" data-i18n="note_en" hidden>Findings and the method
-      notes below are generated in English.</p>
+    <p class="sub note lang-note" data-i18n="note_en" hidden>Findings below are
+      generated in English.</p>
     <!--FINDINGS-->
   </section>
 
   <footer>
-    <p><strong>How this was measured.</strong> Every number comes from the token
-    accounting the API already returned, recorded in local Claude Code and Codex
-    transcripts. Collection reads those files and costs no tokens. No prompt text,
-    completion text, file contents, shell commands, or absolute paths are stored or
-    shown — counts, model names, tool names, and derived repository and folder
-    labels only.</p>
-    <p><strong>Cost is an estimate.</strong> Token counts are exact; dollar figures
-    apply a local price list (verified <!--VERIFIED-->) and are notional on a seat
-    plan. Treat spend as a <em>relative</em> measure of where effort goes, not a bill.</p>
-    <p><strong>How work is attributed.</strong> A turn is credited to the repository
-    it ran in, or to the first real repository whose files it touched. Turns that name
-    no file inherit the nearest attributed turn in the same session; a session that
-    touched nothing stays <code>unattributed</code>. Scratch and config folders lose
-    ties to real repositories. Lanes are inferred from
-    <code>engine/topology.json</code> — transcripts carry no account identity, so a
-    lane is a rule you write, not a fact the provider reports.</p>
-    <p>Self-contained page — no external requests, fonts, scripts, or analytics.
-    Generated <!--GENERATED--> UTC. Regenerate with
-    <code>python3 engine/observe.py all</code>.</p>
+    <h2 data-i18n="meth_h2">How this was measured</h2>
+    <ol class="method">
+      <li data-i18n-html="meth_1"><strong>No prompt, completion, file, command, or
+        path content is ever stored or shown.</strong> Only counts, model names,
+        tool names, and derived repository or folder labels are kept — read from
+        the token accounting the API already returns, in local Claude Code and
+        Codex transcripts. Collection costs no tokens.</li>
+      <li id="methCost"><strong>Cost is an estimate, not a bill.</strong> Token
+        counts are exact; dollar figures apply a local price list (verified
+        <!--VERIFIED-->) and are notional on a seat plan. Treat spend as a
+        <em>relative</em> signal of where effort goes.</li>
+      <li data-i18n-html="meth_3"><strong>Work is attributed by repository, not by
+        account.</strong> A turn credits to the repo it touched, or inherits the
+        nearest attributed turn in the same session; an untouched session stays
+        <code>unattributed</code>, and scratch or config folders don't tie to real
+        repos. Lanes come from a rule you write in
+        <code>engine/topology.json</code> — transcripts carry no account
+        identity.</li>
+      <li id="methGen"><strong>The page is self-contained and
+        reproducible.</strong> No external requests, fonts, scripts, or
+        analytics. Generated <!--GENERATED--> UTC — regenerate anytime with
+        <code>python3 engine/observe.py all</code>.</li>
+    </ol>
   </footer>
 </main>
 </div>

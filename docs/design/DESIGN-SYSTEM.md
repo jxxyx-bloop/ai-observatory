@@ -183,6 +183,17 @@ Rules: one idea per sentence; a claim gets a figure or gets cut; no
 capitalised Product Nouns; no exclamation marks; no "simply", "just",
 "seamless", "powerful", "revolutionary", "leverage", "unlock".
 
+**No terminal punctuation on a heading or sub-heading** — `<h1>`, `<h2>`,
+`<h3>`, a KPI label, a panel title, a nav tile. A full stop at the end of a
+line that is already set off by size and whitespace reads as a sentence
+someone forgot to stop typing, which is the fastest tell that copy was
+generated rather than designed. `title` in both i18n tables is "Your AI
+coding, measured" — not "…measured." A stop *inside* a heading for rhythm is
+fine and stays (`find_h2`: "Not a number. A next move") — it is only the
+trailing one that goes, because the layout already marks the boundary.
+Sentences of body copy under a heading keep normal punctuation; this rule is
+for the heading itself, in every locale.
+
 Localised copy is translated for **meaning**, not word-for-word, and is allowed
 to be shorter than the English. Nothing may be padded to match a layout.
 
