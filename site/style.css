@@ -54,22 +54,6 @@ section+section{padding-top:var(--s8)}
    ten pixels above the pill and everything in `.tools`, which are centred by
    the bar itself. Nothing else in the bar had the problem because nothing else
    mixes heights. */
-/* The star ask. An outlined pill rather than a filled one — the Demo button
-   beside it is the primary action and a second filled pill would make the
-   reader choose between two equals. The star itself is filled and accented so
-   the eye lands on the verb, not the wordmark.
-
-   Longer than the old "GitHub" label in every language, so it is allowed to
-   shrink out of the bar before the nav links do: below the width where both
-   fit, the label goes and the star stays, which still reads as an invitation. */
-.starbtn{border-color:var(--line);color:var(--ink);gap:6px}
-.starbtn:hover{border-color:color-mix(in srgb,var(--accent) 55%,var(--line));
-  background:var(--accent-soft)}
-.starbtn .star{fill:var(--accent);stroke:var(--accent);stroke-width:1.2;
-  stroke-linejoin:round}
-@media (max-width:1040px){.starbtn .label{display:none}
-  .starbtn{width:36px;padding:0}}
-
 .mainnav{display:flex;align-items:center;gap:var(--s5);margin-left:var(--s6);
   font-size:var(--t-sm)}
 .mainnav a{color:var(--muted)}
