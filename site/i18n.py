@@ -156,10 +156,10 @@ STRINGS["en"] = {
     "priv_3": "The dashboard and this page make zero external requests. No CDN, no "
               "fonts, no analytics.",
 
-    "start_h2": "Set it up in about a minute",
-    "start_d": "Three commands, in the order you actually run them. The first shows "
-               "the whole product with sample data, before you hand it anything of "
-               "your own.",
+    "start_h2": "One command, about a minute",
+    "start_d": "One line. It checks your setup, reads what your coding agents "
+               "already wrote on this disk, builds your dashboard, puts an icon "
+               "in your Dock and opens it.",
     "start_cta1": "Open the live demo",
 
     # ── Setup walkthrough ───────────────────────────────────────────────────
@@ -168,19 +168,8 @@ STRINGS["en"] = {
     # product has to be visible before anyone earns the right to ask for a
     # real sync.
     "setup_copy": "Copy",
+    "setup_more": "What that command does, step by step \u2192",
     "setup_copied": "Copied",
-    "setup_1_t": "See it working, with sample data",
-    "setup_1_d": "Fills the store with 60 days of realistic usage and opens the "
-                 "dashboard. Nothing of yours is read yet, and no tokens are spent.",
-    "setup_2_t": "Swap in your own numbers",
-    "setup_2_d": "Reads the transcripts your AI coding tools already wrote on "
-                 "this machine. Read-only, no network, no account, no API key.",
-    "setup_3_t": "Keep it one click away",
-    "setup_3_d": "Puts an icon in your Dock and schedules a 09:00 refresh, then "
-                 "opens it once so you can see what clicking it does. Undo all of "
-                 "it with the same command plus --remove.",
-    "setup_req": "Needs Python 3 and git. macOS and Linux already have both; on "
-                 "Windows, install Python from python.org first.",
 
     # ── Troubleshooting ─────────────────────────────────────────────────────
     # The five things that actually go wrong. `observe.py doctor` prints the

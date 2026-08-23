@@ -471,6 +471,37 @@ def uninstall() -> list[str]:
     return done or ["nothing to remove"]
 
 
+def update(root: Path) -> str:
+    """Bring the checkout up to date, best effort.
+
+    This project has no third-party dependencies to upgrade — it is standard
+    library only, which is the whole reason install is one command. So the only
+    thing that can be out of date is the code itself, and that is a fast-forward
+    or nothing: never a merge, never a rebase, never anything that could leave
+    somebody staring at a conflict they did not ask for. A dirty tree, a
+    detached head, no remote or no network all mean "skip", not "fail".
+    """
+    git = shutil.which("git")
+    if not git or not (root / ".git").exists():
+        return "not a git checkout — skipped"
+    try:
+        dirty = subprocess.run([git, "-C", str(root), "status", "--porcelain"],
+                               capture_output=True, text=True, timeout=30)
+        if dirty.stdout.strip():
+            return "local changes present — left alone"
+        before = subprocess.run([git, "-C", str(root), "rev-parse", "HEAD"],
+                                capture_output=True, text=True, timeout=30).stdout.strip()
+        pull = subprocess.run([git, "-C", str(root), "pull", "--ff-only", "--quiet"],
+                              capture_output=True, text=True, timeout=120)
+        if pull.returncode != 0:
+            return "could not reach GitHub — using the version you have"
+        after = subprocess.run([git, "-C", str(root), "rev-parse", "HEAD"],
+                               capture_output=True, text=True, timeout=30).stdout.strip()
+        return "already up to date" if before == after else "updated to the latest version"
+    except (OSError, subprocess.SubprocessError):
+        return "could not check — using the version you have"
+
+
 def launch() -> bool:
     """Start the generated app, exactly as a double-click would.
 

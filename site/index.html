@@ -189,33 +189,12 @@ document.documentElement.className+=" js";})();
     <h2>{{start_h2}}</h2>
     <p class="lede narrow">{{start_d}}</p>
 
-    <ol class="setup" role="list">
-      <li>
-        <div class="setuphead"><span class="setupn">1</span>
-          <div><h3>{{setup_1_t}}</h3><p>{{setup_1_d}}</p></div></div>
-        <div class="cmd"><code>git clone {{repo}}.git
-cd ai-observatory/observatory
-python3 observe.py demo digest report</code>
-          <button class="copybtn" type="button" data-copy
-                  data-done="{{setup_copied}}">{{setup_copy}}</button></div>
-      </li>
-      <li>
-        <div class="setuphead"><span class="setupn">2</span>
-          <div><h3>{{setup_2_t}}</h3><p>{{setup_2_d}}</p></div></div>
-        <div class="cmd"><code>python3 observe.py sync digest report</code>
-          <button class="copybtn" type="button" data-copy
-                  data-done="{{setup_copied}}">{{setup_copy}}</button></div>
-      </li>
-      <li>
-        <div class="setuphead"><span class="setupn">3</span>
-          <div><h3>{{setup_3_t}}</h3><p>{{setup_3_d}}</p></div></div>
-        <div class="cmd"><code>python3 observe.py install --dock</code>
-          <button class="copybtn" type="button" data-copy
-                  data-done="{{setup_copied}}">{{setup_copy}}</button></div>
-      </li>
-    </ol>
-
-    <p class="fine center">{{setup_req}}</p>
+    <div class="cmd hero-cmd">
+      <code>git clone https://github.com/jxxyx-bloop/ai-observatory.git &amp;&amp; cd ai-observatory/observatory &amp;&amp; python3 observe.py setup</code>
+      <button class="copybtn" type="button" data-copy
+              data-done="{{setup_copied}}">{{setup_copy}}</button>
+    </div>
+    <p class="fine center"><a href="{{base}}setup/">{{setup_more}}</a></p>
 
     <details class="trouble">
       <summary>{{tr_h}}</summary>

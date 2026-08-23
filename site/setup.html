@@ -56,172 +56,155 @@ r.setAttribute("data-theme",t);}catch(e){}r.className+=" js";})();
      not that it is hard, it is that they cannot see how long it goes on for. -->
 <section class="setuphero">
   <p class="eyebrow">Setup</p>
-  <h1>Three commands, about a minute</h1>
-  <p class="lede narrow">Every step below tells you what to paste, what you
-    should see back, and roughly how long it takes. Nothing needs an account,
-    an API key, or a network connection after the download.</p>
+  <h1>One command, about a minute</h1>
+  <p class="lede narrow">You have seen the demo. This puts the same dashboard on
+    your machine, with your own numbers in it. Paste one line — it checks your
+    setup, collects what is already on your disk, builds the dashboard, puts an
+    icon in your Dock, and opens it.</p>
+  <div class="cmd hero-cmd">
+    <code id="cmd1">git clone https://github.com/jxxyx-bloop/ai-observatory.git &amp;&amp; cd ai-observatory/observatory &amp;&amp; python3 observe.py setup</code>
+    <button class="copybtn" type="button" data-copy data-done="Copied">Copy</button>
+  </div>
   <ul class="facts" role="list">
     <li>Works on macOS, Linux and Windows</li>
     <li>Python 3 — already on macOS and Linux</li>
+    <li>No account, no API key, no packages to install</li>
     <li>Reads only files already on your disk</li>
   </ul>
 </section>
 
-<!-- ── Progress ────────────────────────────────────────────────────────────
-     Sticky, because the answer to "how much is left?" has to be available from
-     anywhere on the page, and because a step marked done is the cheapest
-     possible reassurance that the thing is working. Restored from
-     localStorage, so closing the tab mid-setup does not start you over. -->
-<div class="stepbar noprint" id="stepbar">
-  <div class="steptrack" aria-hidden="true"><span class="stepfill" id="stepfill"></span></div>
-  <p class="stepnow" id="stepnow" role="status">Step 1 of 3 · Get it running</p>
-  <button type="button" class="stepreset" id="stepreset" hidden>Start over</button>
-</div>
-
-<ol class="steps2" role="list" id="steps">
-
-  <!-- Step 1 ------------------------------------------------------------- -->
-  <li class="step" id="step1" data-step="1">
-    <div class="stephead">
-      <span class="stepnum" aria-hidden="true">1</span>
-      <div class="steptitle">
-        <h2>See it working, with sample data</h2>
-        <p>Downloads the project and fills it with 60 days of realistic sample
-          usage, so you can see the whole product before giving it anything of
-          your own. Your dashboard opens by itself when it finishes.</p>
+<!-- ── What it does ───────────────────────────────────────────────────────
+     The numbered list survives, but as explanation rather than instruction.
+     People still want to know what a command is about to do on their machine —
+     especially one that reads their transcripts — and a single opaque line
+     invites more hesitation than five plain sentences do. Nothing here is a
+     separate thing to paste: it narrates the one line above, in the order it
+     happens, and the terminal prints these same five headings as it runs, so
+     the page and the screen agree. -->
+<section class="phases">
+  <h2>What that one line does</h2>
+  <ol class="phaselist" role="list">
+    <li>
+      <span class="phasenum" aria-hidden="true">1</span>
+      <div>
+        <h3>Checks your machine</h3>
+        <p>Confirms Python 3.9 or newer and finds which AI coding tools have run
+          here. There are no packages to install — the whole engine is standard
+          library, which is why this is one command and not a dependency file.</p>
       </div>
-      <span class="steptime" title="Roughly how long this takes">~20s</span>
-    </div>
-
-    <div class="stepbody">
-      <p class="cmdlabel">Paste this into Terminal</p>
-      <div class="cmd">
-        <code id="cmd1">git clone https://github.com/jxxyx-bloop/ai-observatory.git
-cd ai-observatory/observatory
-python3 observe.py demo digest report</code>
-        <button class="copybtn" type="button" data-copy data-done="Copied">Copy</button>
+    </li>
+    <li>
+      <span class="phasenum" aria-hidden="true">2</span>
+      <div>
+        <h3>Updates itself</h3>
+        <p>Fast-forwards to the latest version if it can reach GitHub. Never a
+          merge and never a rebase — no network, or local edits of your own,
+          simply means it keeps the version you have.</p>
       </div>
-
-      <div class="expect">
-        <p class="expectlabel">You should see</p>
-        <pre><span class="dim">demo:</span> wrote 4,214 synthetic events across 60 days
-<span class="dim">digest:</span> 4,214 turns, 61 sessions, 9 findings -&gt; data/digest.json
-<span class="dim">report:</span> …/dist/observatory.html — opened in your browser</pre>
-        <p class="expectnote">Most of the wait is the download. If the browser
-          does not open on its own, the file is at
-          <code>dist/observatory.html</code> inside the folder you just cloned.</p>
+    </li>
+    <li>
+      <span class="phasenum" aria-hidden="true">3</span>
+      <div>
+        <h3>Reads your transcripts <span class="slow">the slow part</span></h3>
+        <p>Your coding agents already write a log of every turn. This reads those
+          files, counts them, and throws the text away. Read-only, no network,
+          and it costs no tokens.</p>
       </div>
-
-      <button class="stepdone" type="button" data-done-step="1">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12.5l5 5L20 6.5"></path></svg>
-        My dashboard opened
-      </button>
-    </div>
-  </li>
-
-  <!-- Step 2 ------------------------------------------------------------- -->
-  <li class="step" id="step2" data-step="2">
-    <div class="stephead">
-      <span class="stepnum" aria-hidden="true">2</span>
-      <div class="steptitle">
-        <h2>Switch to your own numbers</h2>
-        <p>Clears the sample data and reads the transcripts your AI coding tools
-          already wrote on this machine. Read-only, no network, no account, no
-          API key — and it costs no tokens.</p>
+    </li>
+    <li>
+      <span class="phasenum" aria-hidden="true">4</span>
+      <div>
+        <h3>Builds your dashboard</h3>
+        <p>Prices every turn against a local rate card and runs fifteen checks
+          over the result, so the page opens on findings rather than on numbers
+          you still have to interpret.</p>
       </div>
-      <span class="steptime">~5s</span>
-    </div>
-
-    <div class="stepbody">
-      <p class="cmdlabel">Paste this in the same Terminal window</p>
-      <div class="cmd">
-        <code id="cmd2">rm -rf ../data ../dist
-python3 observe.py all</code>
-        <button class="copybtn" type="button" data-copy data-done="Copied">Copy</button>
+    </li>
+    <li>
+      <span class="phasenum" aria-hidden="true">5</span>
+      <div>
+        <h3>Puts it in your Dock, and opens it</h3>
+        <p>Creates the app, pins it, and schedules a quiet refresh each morning
+          at 09:00. Then your dashboard opens — which is how you know it
+          worked.</p>
       </div>
+    </li>
+  </ol>
 
-      <div class="expect">
-        <p class="expectlabel">You should see</p>
-        <pre><span class="dim">sync:</span> 18,095 new events from 274 sources (full)
-<span class="dim">digest:</span> 18,095 turns, 311 sessions, 9 findings
-<span class="dim">report:</span> …/dist/observatory.html — opened in your browser</pre>
-        <p class="expectnote"><strong>Seeing <code>0 new events from 0 sources</code>?</strong>
-          That is not a failure — it means no supported tool has run on this
-          machine yet. Keep the sample data and come back after a week of real
-          use.</p>
-      </div>
+  <div class="expect">
+    <p class="expectlabel">Your terminal will look like this</p>
+    <pre>AI Observatory — setting up
 
-      <button class="stepdone" type="button" data-done-step="2">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12.5l5 5L20 6.5"></path></svg>
-        I can see my own numbers
-      </button>
-    </div>
-  </li>
+<span class="dim">1/5</span>  Checking your machine
+      ✓ Python 3.12
+      ✓ Nothing to install — standard library only
+      ✓ 3 provider directory(ies) found.
 
-  <!-- Step 3 ------------------------------------------------------------- -->
-  <li class="step" id="step3" data-step="3">
-    <div class="stephead">
-      <span class="stepnum" aria-hidden="true">3</span>
-      <div class="steptitle">
-        <h2>Put it in your Dock</h2>
-        <p>This is the step that decides whether you ever open it again. It
-          creates an app, pins it to your Dock, and schedules a quiet refresh
-          each morning at 09:00.</p>
-      </div>
-      <span class="steptime">instant</span>
-    </div>
+<span class="dim">2/5</span>  Updating to the latest version
+      ✓ already up to date
 
-    <div class="stepbody">
-      <p class="cmdlabel">Paste this in the same Terminal window</p>
-      <div class="cmd">
-        <code id="cmd3">python3 observe.py install --dock</code>
-        <button class="copybtn" type="button" data-copy data-done="Copied">Copy</button>
-      </div>
+<span class="dim">3/5</span>  Reading the transcripts already on this disk
+      nothing is uploaded, and no tokens are spent
+      ✓ 18,095 new events from 274 sources
 
-      <!-- The Dock, drawn rather than screenshotted: a screenshot of somebody
-           else's Dock dates instantly and never matches the reader's own. -->
-      <div class="dockshot" role="img"
-           aria-label="A macOS Dock with the AI Observatory icon pinned at the right-hand end">
-        <svg viewBox="0 0 360 96" aria-hidden="true">
-          <rect x="4" y="30" width="352" height="62" rx="16" class="docktray"></rect>
-          <g class="dockapps">
-            <rect x="22" y="42" width="38" height="38" rx="9"></rect>
-            <rect x="68" y="42" width="38" height="38" rx="9"></rect>
-            <rect x="114" y="42" width="38" height="38" rx="9"></rect>
-            <rect x="160" y="42" width="38" height="38" rx="9"></rect>
-            <rect x="206" y="42" width="38" height="38" rx="9"></rect>
-          </g>
-          <line x1="256" y1="46" x2="256" y2="76" class="dockrule"></line>
-          <g class="dockours">
-            <rect x="272" y="38" width="46" height="46" rx="11"></rect>
-            <circle cx="295" cy="61" r="13"></circle>
-            <circle cx="295" cy="61" r="4.6"></circle>
-            <path d="M295 45v4.5M295 72.5V77M279 61h4.5M306.5 61H311"></path>
-          </g>
-          <circle cx="295" cy="88" r="2.4" class="dockdot"></circle>
-        </svg>
-        <p class="dockcap">Your Dock, after this step. The icon is yours — click
-          it any time.</p>
-      </div>
+<span class="dim">4/5</span>  Building your dashboard
+      ✓ 18,095 turns, 311 sessions, 9 findings
 
-      <p class="expectnote">Not on a Mac? The same command writes
-        <code>Open AI Observatory.cmd</code> (Windows) or a
-        <code>.sh</code> script (Linux) beside the project. Double-click it, or
-        pin it to your taskbar.</p>
+<span class="dim">5/5</span>  Putting it in your Dock
+      ✓ launcher ~/Applications/AI Observatory.app
+      ✓ pinned
 
-      <button class="stepdone" type="button" data-done-step="3">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12.5l5 5L20 6.5"></path></svg>
-        I can see the icon
-      </button>
-    </div>
-  </li>
-</ol>
+Done. Opening your dashboard now.</pre>
+    <p class="expectnote"><strong>Seeing <code>0 new events from 0 sources</code>?</strong>
+      That is not a failure — no supported tool has run on this machine yet. It
+      fills in sample data so you still finish with a dashboard, and the page
+      says so at the top until your own usage arrives.</p>
+  </div>
+
+  <!-- The Dock, drawn rather than screenshotted: a screenshot of somebody
+       else's Dock dates instantly and never matches the reader's own. -->
+  <div class="dockshot" role="img"
+       aria-label="A macOS Dock with the AI Observatory icon pinned at the right-hand end">
+    <svg viewBox="0 0 360 96" aria-hidden="true">
+      <rect x="4" y="30" width="352" height="62" rx="16" class="docktray"></rect>
+      <g class="dockapps">
+        <rect x="22" y="42" width="38" height="38" rx="9"></rect>
+        <rect x="68" y="42" width="38" height="38" rx="9"></rect>
+        <rect x="114" y="42" width="38" height="38" rx="9"></rect>
+        <rect x="160" y="42" width="38" height="38" rx="9"></rect>
+        <rect x="206" y="42" width="38" height="38" rx="9"></rect>
+      </g>
+      <line x1="256" y1="46" x2="256" y2="76" class="dockrule"></line>
+      <g class="dockours">
+        <rect x="272" y="38" width="46" height="46" rx="11"></rect>
+        <circle cx="295" cy="61" r="13"></circle>
+        <circle cx="295" cy="61" r="4.6"></circle>
+        <path d="M295 45v4.5M295 72.5V77M279 61h4.5M306.5 61H311"></path>
+      </g>
+      <circle cx="295" cy="88" r="2.4" class="dockdot"></circle>
+    </svg>
+    <p class="dockcap">Your Dock, once it finishes. The icon is yours — click it
+      any time.</p>
+  </div>
+
+  <p class="expectnote">Not on a Mac? The same command writes
+    <code>Open AI Observatory.cmd</code> (Windows) or a <code>.sh</code> script
+    (Linux) beside the project. Double-click it, or pin it to your taskbar.</p>
+
+  <button class="stepdone" type="button" id="setupdone">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12.5l5 5L20 6.5"></path></svg>
+    My dashboard opened
+  </button>
+</section>
 
 <!-- ── Done ────────────────────────────────────────────────────────────────
      Revealed by the third tick. Answers the only question that matters after
      setup — "what do I do tomorrow?" — while the reader is still here to read
      it, rather than leaving them to work it out a week later. -->
-<section class="donecard" id="donecard" hidden>
+<!-- `hidden` is set by the script, not the markup: with JavaScript off
+     this card must still be readable, because it holds the only answer to
+     "how do I open this tomorrow". -->
+<section class="donecard" id="donecard">
   <div class="donemark" aria-hidden="true">
     <svg viewBox="0 0 24 24"><path d="M4 12.5l5 5L20 6.5"></path></svg>
   </div>

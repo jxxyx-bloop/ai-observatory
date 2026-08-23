@@ -420,3 +420,23 @@ section>h2{font-size:var(--t-h2);max-width:28ch;margin:0 auto}
   .stephead{padding:16px}
   .steptime{order:3}
 }
+
+/* One command, so it leads rather than sits in a step. */
+.hero-cmd{max-width:720px;margin:var(--s5) auto 0;text-align:left}
+.hero-cmd code{white-space:pre-wrap;word-break:break-word;line-height:1.7}
+
+/* The five phases: explanation, not instruction — no copy buttons, no ticks. */
+.phases{margin:var(--s6) 0 0}
+.phases>h2{margin:0 0 var(--s4);font-size:20px;letter-spacing:-.02em}
+.phaselist{list-style:none;margin:0 0 var(--s5);padding:0}
+.phaselist>li{display:flex;gap:14px;align-items:flex-start;padding:14px 0;
+  border-top:1px solid var(--line)}
+.phaselist>li:first-child{border-top:0}
+.phasenum{flex:none;width:26px;height:26px;border-radius:50%;display:grid;
+  place-items:center;font-size:12.5px;font-weight:700;
+  color:var(--accent);background:var(--accent-soft)}
+.phaselist h3{margin:2px 0 4px;font-size:15px;letter-spacing:-.01em;
+  display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+.phaselist p{margin:0;font-size:13.5px;line-height:1.6;color:var(--muted)}
+.slow{font-size:10.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;
+  color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:2px 8px}

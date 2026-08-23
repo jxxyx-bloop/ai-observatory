@@ -12,89 +12,47 @@
  *
  * Degrades completely. Without this file every step is expanded, every command
  * is selectable, and the page reads top to bottom as ordinary instructions. */
+/* Setup page: one confirmation, and copy buttons that behave.
+ *
+ * There used to be a three-step checklist here. There is one command now, so
+ * tracking "which step are you on" would be tracking nothing — the only state
+ * worth keeping is whether the reader got their dashboard open, because that is
+ * what unlocks the "what happens tomorrow" card. Everything a first-timer needs
+ * to *read* is visible without JavaScript; this only reveals what is relevant
+ * once they are through.
+ *
+ * Remembered in localStorage: someone who set this up last week and came back
+ * for the Dock instructions should land on them, not on the install again.
+ *
+ * Degrades completely. Without this file the command is selectable, the phases
+ * read top to bottom, and the after-care card is simply always shown. */
 (function () {
 "use strict";
 
 var doc = document;
-var steps = doc.getElementById("steps");
-if (!steps) return;
+var btn = doc.getElementById("setupdone");
+var card = doc.getElementById("donecard");
+if (!card) return;
+
+/* Hide it up front, now that we know the script is running to reveal it. */
+if (btn) card.hidden = true;
 
 var KEY = "observatory-setup-done";
-var TOTAL = 3;
-var TITLES = ["Get it running", "See your own numbers", "Keep it one click away"];
+function read() { try { return localStorage.getItem(KEY) === "1"; } catch (e) { return false; } }
+function write() { try { localStorage.setItem(KEY, "1"); } catch (e) {} }
 
-var fill = doc.getElementById("stepfill");
-var now = doc.getElementById("stepnow");
-var reset = doc.getElementById("stepreset");
-var donecard = doc.getElementById("donecard");
-
-function read() {
-  try {
-    var n = parseInt(localStorage.getItem(KEY), 10);
-    return isFinite(n) && n >= 0 && n <= TOTAL ? n : 0;
-  } catch (e) { return 0; }
-}
-function write(n) {
-  try { localStorage.setItem(KEY, String(n)); } catch (e) { /* private mode */ }
-}
-
-var done = read();
-
-function paint(opts) {
-  var cards = steps.querySelectorAll(".step");
-  for (var k = 0; k < cards.length; k++) {
-    var n = parseInt(cards[k].getAttribute("data-step"), 10);
-    /* Exactly one step is open: the first unfinished one. Collapsing the rest
-       is not decoration — an open accordion of three terminal blocks is how
-       somebody pastes step 3 into step 1's window. */
-    cards[k].classList.toggle("is-done", n <= done);
-    cards[k].classList.toggle("is-open", n === done + 1);
-  }
-
-  var pct = Math.round((done / TOTAL) * 100);
-  if (fill) fill.style.width = pct + "%";
-  if (now) {
-    now.textContent = done >= TOTAL
-      ? "All three done — you're set up"
-      : "Step " + (done + 1) + " of " + TOTAL + " · " + TITLES[done];
-  }
-  if (reset) reset.hidden = done === 0;
-  if (donecard) donecard.hidden = done < TOTAL;
-
-  /* Only scroll when the reader just finished something. Doing it on load
-     would yank a returning visitor past the context they came back to re-read. */
-  if (opts && opts.advance) {
-    var next = done >= TOTAL ? donecard : doc.getElementById("step" + (done + 1));
-    if (next && next.scrollIntoView) {
-      next.scrollIntoView({ behavior: "smooth", block: "center" });
-    }
+function reveal(scroll) {
+  card.hidden = false;
+  if (btn) btn.hidden = true;
+  if (scroll && card.scrollIntoView) {
+    card.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 }
 
-steps.addEventListener("click", function (e) {
-  var btn = e.target.closest ? e.target.closest("[data-done-step]") : null;
-  if (btn) {
-    var n = parseInt(btn.getAttribute("data-done-step"), 10);
-    /* Highest completed step wins, so re-confirming step 1 cannot silently
-       undo steps 2 and 3 for somebody scrolling back over their own work. */
-    done = Math.max(done, n);
-    write(done);
-    paint({ advance: true });
-    return;
-  }
-  /* A finished step's header reopens it — the commands are still there, and
-     somebody who wants to re-run one should not have to start over to see it. */
-  var head = e.target.closest ? e.target.closest(".stephead") : null;
-  if (head && head.parentNode.classList.contains("is-done")) {
-    head.parentNode.classList.toggle("is-open");
-  }
-});
-
-if (reset) {
-  reset.addEventListener("click", function () {
-    done = 0; write(0); paint({ advance: false });
-    steps.scrollIntoView({ behavior: "smooth", block: "start" });
-  });
+if (read()) {
+  reveal(false);
+} else if (btn) {
+  btn.addEventListener("click", function () { write(); reveal(true); });
 }
 
 /* Copy buttons: a brief "working" beat before "Copied".
