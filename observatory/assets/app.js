@@ -72,7 +72,7 @@ var INFO = {
   turnsPerSession: "How many exchanges a typical task takes. Total turns ÷ sessions. Falling over time = you're resolving things in fewer round-trips.",
   cache: "Share of read tokens served from cache instead of resent at full price. cache_read ÷ (input + cache_read + cache_create).",
   toolCallsPerTurn: "How often each turn actually does something vs. just talks. Total tool calls ÷ total turns. Near zero = chatbot-style use; higher = agentic use.",
-  modelSwitchShare: "Share of sessions that used more than one model. Sessions with >1 distinct model ÷ all sessions. High and rising can mean you're matching model to task; high and flat can mean indecision.",
+  modelSwitchShare: "Share of sessions that used more than one model. Sessions with >1 distinct model ÷ all sessions. Subagent turns count, so a session where only a subagent ran a smaller model reads as a switch; zero-token `<synthetic>` placeholder turns do not. High and rising can mean you're matching model to task; high and flat can mean indecision.",
   writeRead: "Edits made per file looked at. Write-tool calls ÷ read-tool calls. Low = mostly exploring; high = mostly producing."
 };
 function info(key) {
@@ -628,7 +628,8 @@ function sessionSeries(sessions, days) {
   return days.map(function (d) {
     var list = byDay[d];
     if (!list || !list.length) {
-      return {turns_per_session: null, tool_calls_per_turn: null, model_switch: null};
+      return {sessions: 0, turns_per_session: null,
+              tool_calls_per_turn: null, model_switch: null};
     }
     var turns = 0, calls = 0, switched = 0;
     list.forEach(function (s) {
@@ -636,7 +637,8 @@ function sessionSeries(sessions, days) {
       calls += s.tool_calls || 0;
       if ((s.models || []).length > 1) switched++;
     });
-    return {turns_per_session: turns / list.length,
+    return {sessions: list.length,
+            turns_per_session: turns / list.length,
             tool_calls_per_turn: turns ? calls / turns : 0,
             model_switch: 100 * switched / list.length};
   });
@@ -673,23 +675,48 @@ function sparkline(vals) {
     + 'stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/>'
     + '<circle cx="' + last[0] + '" cy="' + last[1] + '" r="2.6" fill="var(--accent)"/></svg>';
 }
-function sparkCard(title, infoKey, vals, fmt) {
+function lastWindowBasis(vals, counts, window) {
+  /* Days and sessions behind the final rolling value — the same trailing slots
+     rollingAvg averaged, counting only the ones that held sessions. */
+  var days = 0, sessions = 0, last = -1;
+  for (var i = vals.length - 1; i >= 0; i--) if (vals[i] != null) { last = i; break; }
+  if (last < 0) return null;
+  for (var j = Math.max(0, last - window + 1); j <= last; j++) {
+    if (vals[j] == null) continue;
+    days++;
+    sessions += (counts && counts[j]) || 0;
+  }
+  return {days: days, sessions: sessions};
+}
+function sparkCard(title, infoKey, vals, fmt, counts) {
   var rolled = rollingAvg(vals, 7), lastVal = lastNonNull(rolled);
+  var basis = lastWindowBasis(vals, counts, 7);
+  // Only worth saying when the window is thin. A full week of activity behind
+  // the number needs no caveat, and a caveat on every card is noise.
+  var note = "";
+  if (basis && basis.days > 0 && basis.days < 4) {
+    note = '<div class="sb">'
+      + esc(t18("k_basis", "%D% active day(s), %S% session(s)")
+              .replace("%D%", String(basis.days))
+              .replace("%S%", String(basis.sessions)))
+      + "</div>";
+  }
   return '<div class="spark"><div class="sk">' + esc(title) + info(infoKey) + "</div>"
     + '<div class="sv">' + (lastVal == null ? "—" : esc(fmt(lastVal))) + "</div>"
-    + sparkline(rolled) + "</div>";
+    + note + sparkline(rolled) + "</div>";
 }
 function behavioralTrends(F) {
   var days = span(F.from, F.to), series = sessionSeries(pickSessions(F), days);
+  var counts = series.map(function (r) { return r.sessions; });
   var html = sparkCard(t18("k_tps", "Turns / session"), "turnsPerSession",
       series.map(function (r) { return r.turns_per_session; }),
-      function (v) { return v.toFixed(1); })
+      function (v) { return v.toFixed(1); }, counts)
     + sparkCard(t18("k_tcpt", "Tool calls / turn"), "toolCallsPerTurn",
       series.map(function (r) { return r.tool_calls_per_turn; }),
-      function (v) { return v.toFixed(2); })
+      function (v) { return v.toFixed(2); }, counts)
     + sparkCard(t18("k_msw", "Model-switch share"), "modelSwitchShare",
       series.map(function (r) { return r.model_switch; }),
-      function (v) { return v.toFixed(0) + "%"; });
+      function (v) { return v.toFixed(0) + "%"; }, counts);
   return '<div class="sparks">' + html + "</div>";
 }
 

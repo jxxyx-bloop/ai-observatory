@@ -7,6 +7,7 @@
     python3 observe.py all       # sync + digest + report
     python3 observe.py insights  # print findings as text (for reading in a session)
     python3 observe.py demo      # fill the store with 60 days of synthetic usage
+    python3 observe.py demo --purge   # remove that synthetic usage again
     python3 observe.py share     # build the opt-in community payload (never uploads)
 
 Stdlib only. No network. Read-only against every provider.
@@ -48,8 +49,14 @@ def cmd_demo(argv) -> int:
 
     Writes to a separate partition prefix and refuses to mix with real events —
     a demo that quietly contaminates someone's own history would be worse than
-    no demo at all.
+    no demo at all. `--purge` is the way back out for a store that took the
+    `--force` route anyway.
     """
+    if "--purge" in argv or "--clear" in argv:
+        removed = normalize.purge_synthetic(DATA)
+        print(f"demo: removed {removed:,} synthetic events. "
+              f"Re-run `python3 observe.py digest report` to rebuild.")
+        return 0
     if any(DATA.glob("events-*.ndjson")) and "--force" not in argv:
         print("demo: data/ already holds events. Re-run with --force to add "
               "synthetic ones anyway, or use a clean checkout.")
