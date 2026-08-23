@@ -98,12 +98,12 @@ Sin clave de API, sin proxy, sin cuenta, sin red. Recoger los datos cuesta cero 
 | **La tarifa de caché cambia según el proveedor** | El descuento de 0,1× es una costumbre de Anthropic, no una ley. Fallar ahí es fallar la cifra más importante de la página. |
 | **Trece monedas** | IDR, VND, THB, PHP, MYR y más, comparadas con un jornal local, porque 412 $ no significan lo mismo en todas partes. |
 
-## Un mecanismo, no una promesa
+## Privacidad por construcción
 
 **Nada sale de tu máquina salvo que edites un archivo para permitirlo.**
 
 - Nunca se guarda: prompts, respuestas, código, comandos, rutas de archivo.
-- Se bloquea en el punto donde se lee el archivo, así que una fuga sería un fallo, no una cuestión de política.
+- Se descarta al leer cada archivo, así que nunca llega al panel.
 - El panel y esta página no hacen ninguna petición externa. Sin CDN, sin fuentes, sin analítica.
 
 ## Documentación

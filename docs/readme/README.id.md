@@ -98,12 +98,12 @@ Tanpa kunci API, tanpa proxy, tanpa akun, tanpa jaringan. Pengumpulan data memak
 | **Tarif cache beda tiap vendor** | Diskon 0,1× itu kebiasaan Anthropic, bukan hukum alam. Salah di sini, angka terpenting di halaman ikut salah. |
 | **Tiga belas mata uang** | IDR, VND, THB, PHP, MYR dan lainnya — disandingkan dengan upah harian setempat, karena $412 tidak berarti sama di mana-mana. |
 
-## Mekanisme, bukan janji
+## Privasi dari cara ia dibangun
 
 **Tidak ada yang keluar dari perangkat Anda kecuali Anda sendiri yang mengubah berkasnya.**
 
 - Tidak pernah disimpan: prompt, jawaban, kode, perintah, jalur berkas.
-- Dihentikan di titik berkas dibaca — jadi kebocoran itu bug, bukan urusan kebijakan.
+- Dibuang saat tiap berkas dibaca, jadi tidak pernah sampai ke dasbor.
 - Dasbor dan halaman ini nol permintaan eksternal. Tanpa CDN, tanpa font, tanpa analitik.
 
 ## Dokumentasi
