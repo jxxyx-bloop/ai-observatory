@@ -216,6 +216,7 @@ def build_digest(events, pricing: dict) -> dict:
     sessions: dict = {}
     sidechain = _blank_bucket()
     first_ts = last_ts = None
+    synthetic_events = 0
 
     cube = Cube(CUBE_DIMS, CUBE_METRICS)
     hours = Cube(("date", "provider", "lane", "repo", "hour"), ("turns",))
@@ -223,6 +224,8 @@ def build_digest(events, pricing: dict) -> dict:
 
     events = resolve_attribution(events)
     for ev in events:
+        if ev.get("synthetic"):
+            synthetic_events += 1
         cost = cost_of(ev, pricing)
         ev["phase"] = price.window_phase(ev.get("model"), ev.get("ts"), pricing)
         if ev["phase"] == "peak":
@@ -267,6 +270,11 @@ def build_digest(events, pricing: dict) -> dict:
 
     return {
         "schema": 1,
+        # Carried in the digest so the "this is sample data" banner survives the
+        # hop to `report`, which runs as its own process and would otherwise
+        # have only a sentinel file that `sync` is free to delete.
+        "demo": synthetic_events > 0,
+        "synthetic_events": synthetic_events,
         # The peak schedules travel with the digest so the dashboard can draw
         # them over the reader's own hours. A few hundred bytes, and without
         # them the page can say *when* you work but not *what that hour costs*
@@ -373,7 +381,11 @@ def _session_roll(sessions: dict, ev: dict, cost: float, ts_local: str) -> None:
     for k in ("input", "output", "cache_create", "cache_read"):
         s[k] += ev.get(k) or 0
     s["cost"] += cost
-    if ev.get("model"):
+    # `<synthetic>` is Claude Code's placeholder for a zero-token internal turn,
+    # not a model anyone chose. Counting it as one made every session that
+    # contained a compaction look like a session that switched models, which is
+    # the single input to model-switch share.
+    if ev.get("model") and ev["model"] != "<synthetic>":
         s["models"].add(ev["model"])
     if ev.get("sidechain"):
         s["sidechain_turns"] += 1

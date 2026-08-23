@@ -7,11 +7,13 @@
     python3 observe.py all       # sync + digest + report
     python3 observe.py insights  # print findings as text (for reading in a session)
     python3 observe.py demo      # fill the store with 60 days of synthetic usage
+    python3 observe.py demo --purge   # remove that synthetic usage again
     python3 observe.py share     # build the opt-in community payload (never uploads)
     python3 observe.py install    # create a double-clickable launcher + daily sync
     python3 observe.py doctor     # check the setup and say how to fix what is wrong
 
 Flags: --no-open (never launch a browser or the app)  --notify (desktop notification)
+       --purge (with `demo`, drop every synthetic event from the store)
        --remove (with `install`, undo it)   --dock (with `install`, pin to the Dock)
        --no-daily (with `install`, skip the scheduled refresh)
        --html (with `doctor`, emit a page instead of text)
@@ -46,10 +48,23 @@ DIGEST = DATA / "digest.json"
 
 def cmd_sync(argv) -> int:
     summary = normalize.sync(DATA, full="--full" in argv)
-    if summary["events_written"]:
+    # The sentinel tracks whether the STORE holds fixture rows, not whether the
+    # last run found real ones. Clearing it on the first real sync is how a
+    # seeded store ends up looking genuine: the synthetic events are still
+    # there, still drawing peak windows for vendors the reader never used, but
+    # the page has stopped saying so. Only their absence clears it.
+    left = normalize.count_synthetic(DATA)
+    if left:
+        (DATA / ".demo").write_text(
+            "synthetic usage - run `observe.py demo --purge` to remove\n",
+            encoding="utf-8")
+    else:
         (DATA / ".demo").unlink(missing_ok=True)
     print(f"sync: {summary['events_written']} new events from "
           f"{summary['sources_scanned']} sources ({summary['mode']})")
+    if left:
+        print(f"sync: warning - {left:,} synthetic demo events are still in the "
+              f"store and are being counted. Run `observe.py demo --purge`.")
     return 0
 
 
@@ -58,8 +73,15 @@ def cmd_demo(argv) -> int:
 
     Writes to a separate partition prefix and refuses to mix with real events —
     a demo that quietly contaminates someone's own history would be worse than
-    no demo at all.
+    no demo at all. `--purge` is the way back out for a store that took the
+    `--force` route anyway.
     """
+    if "--purge" in argv or "--clear" in argv:
+        removed = normalize.purge_synthetic(DATA)
+        (DATA / ".demo").unlink(missing_ok=True)
+        print(f"demo: removed {removed:,} synthetic events. "
+              f"Re-run `python3 observe.py digest report` to rebuild.")
+        return 0
     if any(DATA.glob("events-*.ndjson")) and "--force" not in argv:
         print("demo: data/ already holds events. Re-run with --force to add "
               "synthetic ones anyway, or use a clean checkout.")
@@ -67,9 +89,11 @@ def cmd_demo(argv) -> int:
     DATA.mkdir(parents=True, exist_ok=True)
     events = demo_mod.generate()
     written = normalize.write_events(DATA, events)
-    # A sentinel rather than a flag inside the events: `digest` and `report` are
-    # separate processes on the cron path, and sample data that stops announcing
-    # itself between two of them is the worst bug this tool could ship.
+    # Belt and braces. Every fixture row carries `synthetic: true` so the store
+    # can always be cleaned, and the sentinel makes the fact cheap to read for
+    # `report` without a full scan — `digest` and `report` are separate
+    # processes on the cron path, and sample data that stops announcing itself
+    # between two of them is the worst bug this tool could ship.
     (DATA / ".demo").write_text("synthetic usage — safe to delete\n", encoding="utf-8")
     print(f"demo: wrote {written:,} synthetic events across 60 days. "
           f"Now run `python3 observe.py digest report`.")

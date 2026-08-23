@@ -113,7 +113,9 @@ Every finding that touches value — `read-heavy-no-change` above all — inheri
 
 ## Measurement artefacts
 
-- **`<synthetic>` turns** appear as a model with zero tokens — internal placeholders. Harmless, but visible in the model breakdown.
+- **`<synthetic>` turns** appear as a model with zero tokens — internal placeholders. Visible in the model breakdown, and excluded from a session's model set so they cannot make a compacted session read as a model switch.
+- **Model-switch share counts subagent turns.** A session where only a subagent ran a smaller model counts as a switch, because the rollup sees two distinct models and cannot tell a deliberate choice from a delegation default.
+- **The behavioural sparklines are a 7-*calendar*-day rolling mean.** Quiet days are skipped rather than counted as zero, so a sparse trailing week leaves the headline resting on very few days. The card names the basis when fewer than four active days are behind it; read the whole-range figure alongside it.
 - **Session ids are truncated to 8 characters.** Collision is unlikely, not impossible; two colliding sessions would merge in the rollup.
 - **`workspace` is a directory basename**, so two unrelated directories with the same name merge (any two folders called `docs`). Deliberate — the full path is not stored. `repo` (ADR-008) is the field to group by; `workspace` is kept for continuity.
 - **`repo` and `surface` are inferred, not observed.** Only tools that name a file contribute directly; `Bash`-driven work relies on the session carry-forward. A turn credited to a project sat next to one that touched it.
