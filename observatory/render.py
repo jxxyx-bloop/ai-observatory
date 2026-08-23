@@ -63,7 +63,8 @@ def findings_html(d: dict) -> str:
 
 
 def render(digest: dict, home: str | None = None, refresh: str | None = None,
-           demo: bool = False, setup: str | None = None) -> str:
+           demo: bool = False, setup: str | None = None,
+           star: str | None = None) -> str:
     """Assemble the page from the templates in `engine/assets/`.
 
     `home` is where the breadcrumb points. The hosted demo passes "../" so the
@@ -113,6 +114,10 @@ def render(digest: dict, home: str | None = None, refresh: str | None = None,
                 "refresh": refresh or "python3 observatory/observe.py all",
                 "demo": bool(demo or digest.get("demo")),
                 "setup": setup,
+                # Only the hosted demo passes this. A dashboard rendered on
+                # somebody's own machine belongs to someone who already
+                # installed the thing — they are owed a tool, not another ask.
+                "star": star,
             }, separators=(",", ":")).replace("</", "<\\/"))
             .replace("/*PAYLOAD*/",
                      json.dumps(digest, separators=(",", ":")).replace("</", "<\\/"))

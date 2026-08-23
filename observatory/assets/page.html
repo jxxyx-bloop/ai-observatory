@@ -235,6 +235,20 @@ var l=localStorage.getItem("observatory-lang");if(l)r.setAttribute("data-lang",l
     <p class="sub note lang-note" data-i18n="note_en" hidden>Findings below are
       generated in English.</p>
     <!--FINDINGS-->
+
+    <!-- The second ask, and the only one that has earned anything. The header
+         asks before the reader knows what this is; this one comes directly
+         under the findings, after the page has just told them where their money
+         is going. Revealed by script only on the hosted demo — a dashboard on
+         somebody's own machine belongs to someone who already installed it, and
+         asking them on every render would be nagging, not asking. -->
+    <p class="starask" id="starAsk" hidden>
+      <span id="starAskText"></span>
+      <a id="starAskLink" href="#" rel="noopener">
+        <svg class="star" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.6l2.5 5.3 5.6.8-4.1 4 1 5.7-5-2.7-5 2.7 1-5.7-4.1-4 5.6-.8Z"></path></svg>
+        <span id="starAskCta"></span>
+      </a>
+    </p>
   </section>
 
   <footer>

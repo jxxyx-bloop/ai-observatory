@@ -1350,6 +1350,16 @@ function initFreshness() {
       }
       flag.hidden = false;
     }
+    /* The ask that comes after the value, not before it. Same demo gate as the
+       chip above: a locally rendered dashboard never shows it. */
+    var ask = $("starAsk");
+    if (ask && meta.star) {
+      $("starAskText").textContent = t18("star_ask",
+        "Found something here worth changing?");
+      $("starAskCta").textContent = t18("star_ask_cta", "Star it on GitHub");
+      $("starAskLink").href = meta.star;
+      ask.hidden = false;
+    }
     return;                      /* nothing further to show */
   }
   if (hours >= 168) {
