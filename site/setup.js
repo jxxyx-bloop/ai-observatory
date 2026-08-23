@@ -1,17 +1,3 @@
-/* Setup page: a checklist that remembers where you got to.
- *
- * The funnel here is not lost to difficulty, it is lost to uncertainty — people
- * stop because they cannot tell whether the last command worked, or how much is
- * left, or what they are supposed to be looking at. So the page tracks three
- * things and nothing else: which step is open, which are done, and how far
- * along the bar is.
- *
- * Progress lives in localStorage. Setup spans a browser and a terminal, and
- * people switch windows, close tabs and come back tomorrow; starting them over
- * because of that would be the rudest possible response to an interruption.
- *
- * Degrades completely. Without this file every step is expanded, every command
- * is selectable, and the page reads top to bottom as ordinary instructions. */
 /* Setup page: one confirmation, and copy buttons that behave.
  *
  * There used to be a three-step checklist here. There is one command now, so
@@ -115,5 +101,4 @@ var btns = doc.querySelectorAll(".setuppage [data-copy]");
   });
 });
 
-paint({ advance: false });
 })();
