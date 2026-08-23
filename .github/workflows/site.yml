@@ -106,6 +106,13 @@ jobs:
           fi
           echo "ok — figures and translated READMEs match their sources"
 
+      # The carousel's interval and its pause zone are both invisible to a
+      # build and to a screenshot, and a browser cannot be trusted to measure
+      # them in a background tab where timers are throttled. Node runs the same
+      # script against a stubbed DOM and a fake clock instead.
+      - name: The findings carousel must advance, and pause only over the deck
+        run: node site/tools/carousel_check.js
+
       - uses: actions/upload-artifact@v4
         with:
           name: site
