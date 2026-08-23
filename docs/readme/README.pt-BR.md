@@ -13,7 +13,7 @@ Seu agente de código já registra cada turno. Isto lê esses registros e aponta
 
 `Pronto em menos de um minuto` · `Sem conta` · `Nada sai da sua máquina`
 
-**[Abrir a demo](https://ai-observatory.workers.dev/demo/)** · [AI Observatory](https://ai-observatory.workers.dev/pt-br/) · [GitHub](https://github.com/jxxyx-bloop/ai-observatory)
+**[Abrir a demo](https://aiobservatory.dev/demo/)** · [AI Observatory](https://aiobservatory.dev/pt-br/) · [GitHub](https://github.com/jxxyx-bloop/ai-observatory)
 
 <sub>
 <a href="../../README.md">English</a> ·
@@ -33,7 +33,7 @@ Seu agente de código já registra cada turno. Isto lê esses registros e aponta
 
 <br>
 
-<a href="https://ai-observatory.workers.dev/demo/">
+<a href="https://aiobservatory.dev/demo/">
 <img src="../assets/demo-light.png#gh-light-mode-only" alt="">
 <img src="../assets/demo-dark.png#gh-dark-mode-only" alt="">
 </a>

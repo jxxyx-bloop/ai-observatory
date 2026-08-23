@@ -13,7 +13,7 @@
 
 `설정에 1분도 안 걸립니다` · `계정 불필요` · `데이터는 기기 밖으로 나가지 않음`
 
-**[라이브 데모 열기](https://ai-observatory.workers.dev/demo/)** · [AI Observatory](https://ai-observatory.workers.dev/ko/) · [GitHub](https://github.com/jxxyx-bloop/ai-observatory)
+**[라이브 데모 열기](https://aiobservatory.dev/demo/)** · [AI Observatory](https://aiobservatory.dev/ko/) · [GitHub](https://github.com/jxxyx-bloop/ai-observatory)
 
 <sub>
 <a href="../../README.md">English</a> ·
@@ -33,7 +33,7 @@
 
 <br>
 
-<a href="https://ai-observatory.workers.dev/demo/">
+<a href="https://aiobservatory.dev/demo/">
 <img src="../assets/demo-light.png#gh-light-mode-only" alt="">
 <img src="../assets/demo-dark.png#gh-dark-mode-only" alt="">
 </a>

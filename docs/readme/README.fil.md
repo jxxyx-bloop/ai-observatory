@@ -13,7 +13,7 @@ Nakatala na ng iyong agent ang bawat turn. Binabasa ito ng tool at sinasabi ang 
 
 `Handa sa wala pang isang minuto` · `Walang account` · `Walang lumalabas ng makina mo`
 
-**[Buksan ang live demo](https://ai-observatory.workers.dev/demo/)** · [AI Observatory](https://ai-observatory.workers.dev/fil/) · [GitHub](https://github.com/jxxyx-bloop/ai-observatory)
+**[Buksan ang live demo](https://aiobservatory.dev/demo/)** · [AI Observatory](https://aiobservatory.dev/fil/) · [GitHub](https://github.com/jxxyx-bloop/ai-observatory)
 
 <sub>
 <a href="../../README.md">English</a> ·
@@ -33,7 +33,7 @@ Nakatala na ng iyong agent ang bawat turn. Binabasa ito ng tool at sinasabi ang 
 
 <br>
 
-<a href="https://ai-observatory.workers.dev/demo/">
+<a href="https://aiobservatory.dev/demo/">
 <img src="../assets/demo-light.png#gh-light-mode-only" alt="">
 <img src="../assets/demo-dark.png#gh-dark-mode-only" alt="">
 </a>

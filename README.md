@@ -15,14 +15,14 @@ the few changes worth making — each with a number attached.
 ![dependencies](https://img.shields.io/badge/dependencies-none-20724d)
 ![licence](https://img.shields.io/badge/licence-MIT-5c5c69)
 
-**[Live demo](https://ai-observatory.workers.dev/demo/)** ·
+**[Live demo](https://aiobservatory.dev/demo/)** ·
 [Quick start](#quick-start) ·
 [Why it's different](#why-its-different) ·
 [Privacy](#privacy) ·
 [Docs](docs/)
 
 <sub>
-<a href="https://ai-observatory.workers.dev/">English</a> ·
+<a href="https://aiobservatory.dev/">English</a> ·
 <a href="docs/readme/README.zh-Hans.md">简体中文</a> ·
 <a href="docs/readme/README.zh-Hant.md">繁體中文</a> ·
 <a href="docs/readme/README.ja.md">日本語</a> ·
@@ -39,7 +39,7 @@ the few changes worth making — each with a number attached.
 
 <br>
 
-<a href="https://ai-observatory.workers.dev/demo/">
+<a href="https://aiobservatory.dev/demo/">
 <img src="docs/assets/demo-light.png#gh-light-mode-only" alt="The dashboard: spend, cache efficiency, daily rhythm and a ranked list of what to change">
 <img src="docs/assets/demo-dark.png#gh-dark-mode-only" alt="The dashboard in dark mode">
 </a>
@@ -100,7 +100,7 @@ silent for eight seconds looks exactly like one that has crashed.
 no network, nothing to `pip install` — which is why the install is one command
 and not a requirements file.
 
-Want to look first? The [live demo](https://ai-observatory.workers.dev/demo/) is
+Want to look first? The [live demo](https://aiobservatory.dev/demo/) is
 the real dashboard, built from 60 days of sample data by the same code you would
 run yourself.
 

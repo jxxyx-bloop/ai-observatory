@@ -55,8 +55,12 @@ import i18n  # noqa: E402
 # hreflang set and a whole sitemap on every page pointing at a domain this
 # project does not own — telling search engines the real home of this content is
 # somewhere else, and leaving that somewhere else for anyone to register.
-SITE = os.environ.get(
-    "SITE_URL", "https://ai-observatory.jiayilee.workers.dev").rstrip("/")
+# The canonical host. It ends up in the sitemap, in every `hreflang` alternate
+# and in the demo's own links, so it has to be the name people should land on
+# rather than whichever hostname happens to answer — the site is also reachable
+# at its workers.dev address, and two hosts serving one page is a duplicate in
+# every index that reads this file. `SITE_URL` overrides it for a fork.
+SITE = os.environ.get("SITE_URL", "https://aiobservatory.dev").rstrip("/")
 REPO = "https://github.com/jxxyx-bloop/ai-observatory"
 
 # Cloudflare Pages reads this file. The dashboard and this page both promise

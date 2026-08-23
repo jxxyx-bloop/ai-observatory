@@ -95,7 +95,7 @@ requests, where Cloudflare's production build never runs.
 
 ### 1.4 Trigger it
 
-Push to `main`. The site appears at `https://ai-observatory.workers.dev` (or the
+Push to `main`. The site appears at `https://aiobservatory.dev` (or the
 `.pages.dev` host, depending on how the project was created — the dashboard
 shows the real one).
 

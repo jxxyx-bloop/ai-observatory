@@ -13,7 +13,7 @@
 
 `設定は1分もかからない` · `アカウント不要` · `データは端末の外に出ない`
 
-**[デモを開く](https://ai-observatory.workers.dev/demo/)** · [AI Observatory](https://ai-observatory.workers.dev/ja/) · [GitHub](https://github.com/jxxyx-bloop/ai-observatory)
+**[デモを開く](https://aiobservatory.dev/demo/)** · [AI Observatory](https://aiobservatory.dev/ja/) · [GitHub](https://github.com/jxxyx-bloop/ai-observatory)
 
 <sub>
 <a href="../../README.md">English</a> ·
@@ -33,7 +33,7 @@
 
 <br>
 
-<a href="https://ai-observatory.workers.dev/demo/">
+<a href="https://aiobservatory.dev/demo/">
 <img src="../assets/demo-light.png#gh-light-mode-only" alt="">
 <img src="../assets/demo-dark.png#gh-dark-mode-only" alt="">
 </a>

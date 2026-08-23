@@ -13,7 +13,7 @@
 
 `एक मिनट से कम में तैयार` · `अकाउंट नहीं चाहिए` · `कुछ भी मशीन से बाहर नहीं जाता`
 
-**[लाइव डेमो खोलें](https://ai-observatory.workers.dev/demo/)** · [AI Observatory](https://ai-observatory.workers.dev/hi/) · [GitHub](https://github.com/jxxyx-bloop/ai-observatory)
+**[लाइव डेमो खोलें](https://aiobservatory.dev/demo/)** · [AI Observatory](https://aiobservatory.dev/hi/) · [GitHub](https://github.com/jxxyx-bloop/ai-observatory)
 
 <sub>
 <a href="../../README.md">English</a> ·
@@ -33,7 +33,7 @@
 
 <br>
 
-<a href="https://ai-observatory.workers.dev/demo/">
+<a href="https://aiobservatory.dev/demo/">
 <img src="../assets/demo-light.png#gh-light-mode-only" alt="">
 <img src="../assets/demo-dark.png#gh-dark-mode-only" alt="">
 </a>
