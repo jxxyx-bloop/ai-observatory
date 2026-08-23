@@ -14,7 +14,8 @@
     python3 observe.py doctor     # check the setup and say how to fix what is wrong
 
 Flags: --no-open (never launch a browser or the app)  --notify (desktop notification)
-       --remove (with `install`, undo it)   --dock (with `install`, pin to the Dock)
+       --remove (with `install`, undo it)
+       --no-dock (with `install`/`setup`, do not pin to the Dock)
        --no-daily (with `install`, skip the scheduled refresh)
        --html (with `doctor`, emit a page instead of text)
 
@@ -24,6 +25,7 @@ Stdlib only. No network. Read-only against every provider.
 from __future__ import annotations
 
 import json
+import os
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -44,6 +46,25 @@ ROOT = Path(__file__).parent.parent
 DATA = ROOT / "data"
 DIST = ROOT / "dist"
 DIGEST = DATA / "digest.json"
+
+# A command's third answer, alongside 0 and a failing code: it declined to do
+# its own work and nothing is wrong. `main` prints the reason and carries on
+# down the argv line rather than dropping the commands typed after it.
+DECLINED = 3
+
+
+def _write_atomic(path, text: str) -> None:
+    """Write through a temporary file in the same directory, then rename.
+
+    Two refreshes can now land on the same second — the login-time agent and a
+    double-clicked launcher both run `sync digest report`. Two processes writing
+    digest.json a chunk at a time can leave a half-file that neither would
+    recognise; os.replace is atomic within a filesystem, so the worst case
+    becomes one of the two complete versions winning.
+    """
+    tmp = path.with_name(path.name + ".tmp")
+    tmp.write_text(text, encoding="utf-8")
+    os.replace(tmp, path)
 
 
 def cmd_sync(argv) -> int:
@@ -69,9 +90,12 @@ def cmd_demo(argv) -> int:
               f"Re-run `python3 observe.py digest report` to rebuild.")
         return 0
     if any(DATA.glob("events-*.ndjson")) and "--force" not in argv:
-        print("demo: data/ already holds events. Re-run with --force to add "
-              "synthetic ones anyway, or use a clean checkout.")
-        return 1
+        print("demo: data/ already holds real events — leaving them alone. "
+              "Sample data is only ever for an empty store, and a dashboard "
+              "built from your own numbers is the better one. `demo --force` "
+              "seeds synthetic events on top anyway; `demo --purge` removes "
+              "them again.")
+        return DECLINED
     DATA.mkdir(parents=True, exist_ok=True)
     events = demo_mod.generate()
     written = normalize.write_events(DATA, events)
@@ -108,7 +132,7 @@ def cmd_digest(argv) -> int:
     digest["generated_at"] = datetime.now(timezone.utc).isoformat(timespec="seconds")
     digest["pricing_verified_on"] = pricing.get("_verified_on")
     DATA.mkdir(parents=True, exist_ok=True)
-    DIGEST.write_text(json.dumps(digest, indent=1), encoding="utf-8")
+    _write_atomic(DIGEST, json.dumps(digest, indent=1))
     kb = DIGEST.stat().st_size / 1024
     # `setup` narrates its own phases; a second voice printing over them turns a
     # guided install back into a wall of output.
@@ -182,9 +206,9 @@ def cmd_report(argv) -> int:
         return 1
     DIST.mkdir(parents=True, exist_ok=True)
     out = DIST / "observatory.html"
-    out.write_text(render.render(
+    _write_atomic(out, render.render(
         digest, refresh=launcher.refresh_command(ROOT),
-        demo=(DATA / ".demo").exists()), encoding="utf-8")
+        demo=(DATA / ".demo").exists()))
     kb = out.stat().st_size / 1024
     if "--no-open" in argv:
         print(f"report: {out} ({kb:.0f} KB)")
@@ -248,7 +272,7 @@ def cmd_install(argv) -> int:
     print("Installed:")
     for line in created:
         print(f"  {line}")
-    if "--dock" in argv:
+    if "--no-dock" not in argv:
         print(f"  {launcher.add_to_dock()}")
 
     if "--no-open" in argv:
@@ -264,9 +288,9 @@ def cmd_install(argv) -> int:
         return 0
 
     print("\nFrom now on: click the AI Observatory icon. It refreshes, then opens.")
-    if "--dock" not in argv and not launcher.in_dock():
-        print("Keep it one click away — drag it from the Finder window to your "
-              "Dock, or re-run with --dock to pin it automatically.")
+    if not launcher.in_dock():
+        print("It is not in your Dock — drag it there from the Finder window "
+              "to keep it one click away.")
     print("Undo everything:  python3 observe.py install --remove")
     return 0
 
@@ -359,8 +383,8 @@ def cmd_setup(argv) -> int:
 
     DIST.mkdir(parents=True, exist_ok=True)
     out = DIST / "observatory.html"
-    out.write_text(render.render(digest, refresh=launcher.refresh_command(ROOT),
-                                 demo=(DATA / ".demo").exists()), encoding="utf-8")
+    _write_atomic(out, render.render(digest, refresh=launcher.refresh_command(ROOT),
+                                     demo=(DATA / ".demo").exists()))
 
     print("\nDone. Opening your dashboard now.")
     if not launcher.open_report(out):
@@ -397,21 +421,40 @@ COMMANDS = {
 
 
 def main(argv) -> int:
-    """Run every command named on the argv line, in order, stopping on failure.
+    """Run every command named on the argv line, in order.
 
     `observe.py digest report` is one process and one import of the pricing
     tables rather than two, which matters on the daily cron path.
+
+    A command that fails still stops the line — rendering a report over a failed
+    sync would publish a number nobody can stand behind. What it no longer does
+    is stop quietly: it names the commands it dropped. A chain that prints one
+    line and returns to the prompt is indistinguishable from a chain that hung,
+    and leaves the reader guessing which half of what they typed actually ran.
+
+    `DECLINED` is the third answer, for a command that refused its own work with
+    nothing wrong — `demo` against a store that already holds real events. The
+    rest of the line is still exactly what was asked for, so it runs. The exit
+    code is the last command's, so a bare `demo` still reports the refusal to a
+    script while `demo digest report` exits 0 on the dashboard it built.
     """
     names = [a for a in argv[1:] if not a.startswith("-")] or ["all"]
-    for name in names:
+    rc = 0
+    for i, name in enumerate(names):
         fn = COMMANDS.get(name)
         if fn is None:
             print(__doc__)
             return 2
         rc = fn(argv)
+        if rc == DECLINED:
+            continue
         if rc:
+            dropped = names[i + 1:]
+            if dropped:
+                print(f"stopped at `{name}` (exit {rc}) — "
+                      f"did not run: {', '.join(dropped)}")
             return rc
-    return 0
+    return rc
 
 
 if __name__ == "__main__":
