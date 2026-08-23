@@ -490,10 +490,6 @@ section>h2{font-size:var(--t-h2);max-width:28ch;margin:0 auto}
 .troublesec{margin:var(--s6) 0 0;padding:26px 24px;
   border:1px solid var(--line);border-radius:14px;background:var(--card,var(--bg))}
 .troublesec h2{margin:0 0 8px;font-size:20px;letter-spacing:-.02em}
-.troublelist{margin:18px 0 0}
-.troublelist dt{font-size:14px;font-weight:700;color:var(--ink);margin:18px 0 5px}
-.troublelist dt:first-child{margin-top:0}
-.troublelist dd{margin:0;font-size:13.5px;line-height:1.65;color:var(--muted)}
 
 @media (max-width:620px){
   .stepbar{top:56px}
