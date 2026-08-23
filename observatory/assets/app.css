@@ -106,9 +106,14 @@ h2 .info{margin-left:7px}
 .finds>.find[data-sev="low"]{--span:3}
 .finds>.find[data-sev="info"]{--span:2}
 /* Reference cards go two-up before they go one-up; everything returns to full
-   width once a third of the row would be too narrow to read. */
+   width once a third of the row would be too narrow to read.
+
+   Both resets carry `[data-sev]` so they match the specificity of the tier
+   rules above. A media query adds none of its own, so `.finds>.find` (0,2,0)
+   loses to `.finds>.find[data-sev="low"]` (0,3,0) however far down the file it
+   sits — which left the phone layout showing 163px cards. */
 @media (max-width:1080px){.finds>.find[data-sev="info"]{--span:3}}
-@media (max-width:760px){.finds>.find{--span:6}}
+@media (max-width:760px){.finds>.find[data-sev]{--span:6}}
 .find{border:1px solid var(--line);border-left:3px solid var(--c);border-radius:8px;
   padding:14px 16px;margin:0;background:var(--panel)}
 .find .top{display:flex;flex-wrap:wrap;gap:8px;align-items:baseline;margin-bottom:6px}
