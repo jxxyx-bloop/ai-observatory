@@ -764,7 +764,11 @@ function kpiCards(t, sessions) {
 }
 
 function sessionsTable(rows) {
-  rows = rows.slice().sort(function (a, b) { return b.output - a.output; }).slice(0, 15);
+  // Eight, not fifteen. This is the tallest panel on the page and the tail of
+  // it earns nothing: rows nine to fifteen are neither the heaviest sessions
+  // nor a representative sample, they are just the next seven. Eight is what
+  // the subagent panel above already shows, so the two read as a pair.
+  rows = rows.slice().sort(function (a, b) { return b.output - a.output; }).slice(0, 8);
   if (!rows.length) {
     return '<p class="empty">' + esc(t18("w_none", "No sessions in this range.")) + "</p>";
   }

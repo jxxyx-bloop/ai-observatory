@@ -54,6 +54,13 @@ def findings_html(d: dict) -> str:
             f'<p class="act">{esc(f["action"])}</p>'
             f'{meta}<p class="meta">Confidence: {esc(f.get("confidence", "—"))}</p></div>'
         )
+    # The first finding stands alone at full width — it is the answer the page
+    # exists to give. The rest flow into columns, which pack by height instead
+    # of aligning into rows: these cards differ by more than 250px and a grid
+    # row is only ever as short as its tallest card, so the difference would be
+    # spent on empty space.
+    if len(out) > 1:
+        return out[0] + '<div class="findsrest">' + "".join(out[1:]) + "</div>"
     return "".join(out)
 
 
