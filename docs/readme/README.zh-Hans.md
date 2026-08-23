@@ -13,7 +13,7 @@
 
 `一分钟内就能跑起来` · `无需账号` · `数据不出本机`
 
-**[打开在线演示](https://ai-observatory.workers.dev/demo/)** · [AI Observatory](https://ai-observatory.workers.dev/zh-hans/) · [GitHub](https://github.com/jxxyx-bloop/ai-observatory)
+**[打开在线演示](https://aiobservatory.dev/demo/)** · [AI Observatory](https://aiobservatory.dev/zh-hans/) · [GitHub](https://github.com/jxxyx-bloop/ai-observatory)
 
 <sub>
 <a href="../../README.md">English</a> ·
@@ -33,7 +33,7 @@
 
 <br>
 
-<a href="https://ai-observatory.workers.dev/demo/">
+<a href="https://aiobservatory.dev/demo/">
 <img src="../assets/demo-light.png#gh-light-mode-only" alt="">
 <img src="../assets/demo-dark.png#gh-dark-mode-only" alt="">
 </a>

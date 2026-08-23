@@ -13,7 +13,7 @@
 
 `一分鐘內就能跑起來` · `免帳號` · `資料不離開本機`
 
-**[開啟線上示範](https://ai-observatory.workers.dev/demo/)** · [AI Observatory](https://ai-observatory.workers.dev/zh-hant/) · [GitHub](https://github.com/jxxyx-bloop/ai-observatory)
+**[開啟線上示範](https://aiobservatory.dev/demo/)** · [AI Observatory](https://aiobservatory.dev/zh-hant/) · [GitHub](https://github.com/jxxyx-bloop/ai-observatory)
 
 <sub>
 <a href="../../README.md">English</a> ·
@@ -33,7 +33,7 @@
 
 <br>
 
-<a href="https://ai-observatory.workers.dev/demo/">
+<a href="https://aiobservatory.dev/demo/">
 <img src="../assets/demo-light.png#gh-light-mode-only" alt="">
 <img src="../assets/demo-dark.png#gh-dark-mode-only" alt="">
 </a>

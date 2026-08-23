@@ -13,7 +13,7 @@ Coding agent anda sudah pun merekod setiap giliran. Alat ini membaca rekod itu d
 
 `Sedia dalam kurang seminit` · `Tanpa akaun` · `Tiada data keluar dari mesin anda`
 
-**[Buka demo langsung](https://ai-observatory.workers.dev/demo/)** · [AI Observatory](https://ai-observatory.workers.dev/ms/) · [GitHub](https://github.com/jxxyx-bloop/ai-observatory)
+**[Buka demo langsung](https://aiobservatory.dev/demo/)** · [AI Observatory](https://aiobservatory.dev/ms/) · [GitHub](https://github.com/jxxyx-bloop/ai-observatory)
 
 <sub>
 <a href="../../README.md">English</a> ·
@@ -33,7 +33,7 @@ Coding agent anda sudah pun merekod setiap giliran. Alat ini membaca rekod itu d
 
 <br>
 
-<a href="https://ai-observatory.workers.dev/demo/">
+<a href="https://aiobservatory.dev/demo/">
 <img src="../assets/demo-light.png#gh-light-mode-only" alt="">
 <img src="../assets/demo-dark.png#gh-dark-mode-only" alt="">
 </a>

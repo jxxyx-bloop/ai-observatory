@@ -13,7 +13,7 @@ Agent của bạn vốn đã ghi lại từng lượt. Công cụ này đọc c�
 
 `Cài đặt trong chưa đầy một phút` · `Không cần tài khoản` · `Không gì rời khỏi máy bạn`
 
-**[Mở bản demo](https://ai-observatory.workers.dev/demo/)** · [AI Observatory](https://ai-observatory.workers.dev/vi/) · [GitHub](https://github.com/jxxyx-bloop/ai-observatory)
+**[Mở bản demo](https://aiobservatory.dev/demo/)** · [AI Observatory](https://aiobservatory.dev/vi/) · [GitHub](https://github.com/jxxyx-bloop/ai-observatory)
 
 <sub>
 <a href="../../README.md">English</a> ·
@@ -33,7 +33,7 @@ Agent của bạn vốn đã ghi lại từng lượt. Công cụ này đọc c�
 
 <br>
 
-<a href="https://ai-observatory.workers.dev/demo/">
+<a href="https://aiobservatory.dev/demo/">
 <img src="../assets/demo-light.png#gh-light-mode-only" alt="">
 <img src="../assets/demo-dark.png#gh-dark-mode-only" alt="">
 </a>

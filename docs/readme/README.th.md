@@ -13,7 +13,7 @@ agent ของคุณบันทึกทุกเทิร์นไว้�
 
 `ตั้งค่าเสร็จในไม่ถึงหนึ่งนาที` · `ไม่ต้องมีบัญชี` · `ไม่มีข้อมูลออกจากเครื่อง`
 
-**[เปิดเดโม](https://ai-observatory.workers.dev/demo/)** · [AI Observatory](https://ai-observatory.workers.dev/th/) · [GitHub](https://github.com/jxxyx-bloop/ai-observatory)
+**[เปิดเดโม](https://aiobservatory.dev/demo/)** · [AI Observatory](https://aiobservatory.dev/th/) · [GitHub](https://github.com/jxxyx-bloop/ai-observatory)
 
 <sub>
 <a href="../../README.md">English</a> ·
@@ -33,7 +33,7 @@ agent ของคุณบันทึกทุกเทิร์นไว้�
 
 <br>
 
-<a href="https://ai-observatory.workers.dev/demo/">
+<a href="https://aiobservatory.dev/demo/">
 <img src="../assets/demo-light.png#gh-light-mode-only" alt="">
 <img src="../assets/demo-dark.png#gh-dark-mode-only" alt="">
 </a>
