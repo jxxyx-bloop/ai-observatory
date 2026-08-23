@@ -10,6 +10,7 @@ dist/
 # someone points it here anyway.
 credentials.json
 .env
+.env.*
 *.pem
 *.key
 
