@@ -13,8 +13,11 @@ in their own gutters, so nothing can overflow or collide regardless of the data.
 
 from __future__ import annotations
 
+import base64
+import hashlib
 import html
 import json
+import re
 from pathlib import Path
 
 ASSETS = Path(__file__).with_name("assets")
@@ -22,6 +25,55 @@ REPO = "https://github.com/jxxyx-bloop/ai-observatory"
 
 SEV_COLOR = {"high": "var(--high)", "medium": "var(--med)",
              "low": "var(--low)", "info": "var(--info)"}
+
+
+# Inline <script> bodies, for the page's own Content-Security-Policy.
+SCRIPT_TAG = re.compile(r"<script(?![^>]*\bsrc\s*=)([^>]*)>(.*?)</script>",
+                        re.I | re.S)
+
+
+def csp_meta(page: str) -> str:
+    """The policy this page carries with it.
+
+    The hosted copy of this dashboard gets its headers from `site/dist/_headers`.
+    A dashboard on someone's laptop gets nothing: it is opened from `file://`,
+    where there is no server and no response headers, and it is exactly the copy
+    that holds real data. So the policy travels inside the document instead.
+
+    It matters because this page renders strings this project did not write —
+    repository and folder names, model ids, and the names of tools and agents
+    that arrive from whatever MCP servers the reader has configured. Every one
+    of those goes through `esc()` on the way in, and that remains the actual
+    defence; this is the second line, for the day one path misses.
+
+    script-src is hashes of the scripts this render produced, so injected markup
+    cannot execute even if it reaches the document. The hashes are computed from
+    the assembled page rather than stored, because the payload is inlined into a
+    script tag and therefore differs for every reader.
+
+    `frame-ancestors` is deliberately absent: it is ignored in a <meta> policy,
+    and listing a directive that does nothing invites someone to trust it. The
+    hosted copy gets that one from `_headers`, where it works.
+    """
+    hashes = sorted({
+        "'sha256-" + base64.b64encode(
+            hashlib.sha256(body.encode("utf-8")).digest()).decode("ascii") + "'"
+        for _attrs, body in SCRIPT_TAG.findall(page)
+    })
+    if not hashes:
+        raise RuntimeError("render: no inline scripts to authorise — a CSP "
+                           "written now would blank the dashboard")
+    policy = "; ".join((
+        "default-src 'none'",
+        "script-src " + " ".join(hashes),
+        # Data-driven bar widths and severity colours are style="" attributes,
+        # which no hash can cover. See the same note in site/build.py.
+        "style-src 'unsafe-inline'",
+        "img-src 'self' data:",
+        "form-action 'none'",
+        "base-uri 'none'",
+    ))
+    return f'<meta http-equiv="Content-Security-Policy" content="{policy}">'
 
 
 def esc(v) -> str:
@@ -90,14 +142,14 @@ def render(digest: dict, home: str | None = None, refresh: str | None = None,
     # two surfaces cannot drift apart. See docs/design/DESIGN-SYSTEM.md.
     css = ((ASSETS / "tokens.css").read_text(encoding="utf-8") + "\n"
            + (ASSETS / "app.css").read_text(encoding="utf-8"))
-    return (
+    page = (
         page.replace("/*CSS*/", css)
             .replace("/*I18N*/", (ASSETS / "i18n.js").read_text(encoding="utf-8"))
             .replace("/*JS*/", (ASSETS / "app.js").read_text(encoding="utf-8"))
             .replace("<!--HOMEATTR-->", crumb_attr)
             .replace("<!--HOMEKEY-->", crumb_key)
             .replace("<!--HOMELABEL-->", crumb_label)
-            .replace("<!--HOME-->", crumb_href)
+            .replace("<!--HOME-->", esc(crumb_href))
             .replace("<!--RAILSETUP-->", rail_setup)
             .replace("<!--FINDINGS-->", findings_html(digest))
             .replace("<!--VERIFIED-->", esc(digest.get("pricing_verified_on") or "—"))
@@ -112,3 +164,5 @@ def render(digest: dict, home: str | None = None, refresh: str | None = None,
             .replace("/*PAYLOAD*/",
                      json.dumps(digest, separators=(",", ":")).replace("</", "<\\/"))
     )
+    # Last: the policy is a hash of the scripts above, so they have to be final.
+    return page.replace("<!--CSP-->", csp_meta(page))

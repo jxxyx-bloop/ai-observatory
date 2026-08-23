@@ -30,6 +30,8 @@ dependency in the repo and it would be for a landing page.
 
 from __future__ import annotations
 
+import base64
+import hashlib
 import html
 import os
 import re
@@ -47,19 +49,106 @@ import i18n  # noqa: E402
 
 # Absolute URLs are required in hreflang and sitemap entries. The default is the
 # project's own deploy; a fork overrides it rather than editing this file.
-SITE = os.environ.get("SITE_URL", "https://ai-observatory.workers.dev").rstrip("/")
+#
+# This must stay equal to the host that actually serves the site. It had drifted
+# to a shorter name that resolves nowhere, which put a canonical link, an
+# hreflang set and a whole sitemap on every page pointing at a domain this
+# project does not own — telling search engines the real home of this content is
+# somewhere else, and leaving that somewhere else for anyone to register.
+SITE = os.environ.get(
+    "SITE_URL", "https://ai-observatory.jiayilee.workers.dev").rstrip("/")
 REPO = "https://github.com/jxxyx-bloop/ai-observatory"
 
 # Cloudflare Pages reads this file. The dashboard and this page both promise
 # zero external requests; the CSP is what makes that promise enforceable by the
 # browser rather than a claim in a README.
-HEADERS = """/*
-  X-Frame-Options: DENY
-  X-Content-Type-Options: nosniff
-  Referrer-Policy: no-referrer
-  Permissions-Policy: geolocation=(), microphone=(), camera=(), interest-cohort=()
-  Content-Security-Policy: default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; img-src 'self' data:; form-action 'none'; frame-ancestors 'none'; base-uri 'none'
-"""
+#
+# script-src carries SHA-256 hashes rather than 'unsafe-inline', and that is the
+# point of this whole block. With 'unsafe-inline' any HTML that reached a page —
+# through a build bug, a bad translation string, a future template — would
+# execute. With hashes, only the exact scripts this build produced can run, and
+# injected markup is inert. The hashes are computed from the emitted files by
+# `inline_script_hashes` below, never written by hand: a hardcoded hash is one
+# refactor away from a blank page, and a CSP nobody can safely edit gets deleted.
+#
+# style-src keeps 'unsafe-inline' deliberately. Hashes cover <style> elements
+# but not style="" attributes, which both the landing page and the dashboard use
+# for data-driven widths and colours; adding a style hash would make the browser
+# ignore 'unsafe-inline' and silently strip that styling. Inline CSS also cannot
+# execute script, so this is a much smaller surface than the one above.
+#
+# includeSubDomains is free of consequence on *.workers.dev: production is
+# ai-observatory.jiayilee.workers.dev and previews are
+# <branch>-ai-observatory.jiayilee.workers.dev, which are siblings rather than
+# subdomains, so the directive covers this host and nothing else. A custom apex
+# domain would change that — it would pin every subdomain of that apex to HTTPS
+# for a year, so any plain-HTTP sibling has to be found before such a move, not
+# after. No preload: joining the browsers' preload list is effectively
+# irreversible and is not ours to opt into silently.
+#
+# No Cache-Control: every page here is public, static and identical for every
+# reader. `no-store` belongs on authenticated or personal content, and there is
+# none — the dashboard with real data is rendered on the reader's own machine
+# and never travels through this host.
+PERMISSIONS = ", ".join(f"{feature}=()" for feature in (
+    "accelerometer", "autoplay", "browsing-topics", "camera", "display-capture",
+    "encrypted-media", "geolocation", "gyroscope", "idle-detection",
+    "interest-cohort", "magnetometer", "microphone", "midi", "payment",
+    "publickey-credentials-get", "screen-wake-lock", "serial", "usb",
+    "xr-spatial-tracking",
+))
+
+# Inline <script> bodies, minus any that loads a src — those cannot exist here
+# (site/tools/check_no_remote.py fails the build on a remote subresource) but
+# matching on the attribute keeps this correct if that ever changes.
+SCRIPT_TAG = re.compile(r"<script(?![^>]*\bsrc\s*=)([^>]*)>(.*?)</script>",
+                        re.I | re.S)
+
+
+def inline_script_hashes(root: Path) -> list[str]:
+    """Every inline script the build emitted, as CSP source expressions.
+
+    The browser hashes the exact text between the tags, so this must too — no
+    stripping, no normalising. Sorted and de-duplicated because the head theme
+    stamp and the shared app bundle are byte-identical across all thirteen
+    locales, and thirteen copies of one hash would be thirteen chances to
+    disagree.
+    """
+    found = set()
+    for page in sorted(root.rglob("*.html")):
+        for _attrs, body in SCRIPT_TAG.findall(page.read_text(encoding="utf-8")):
+            digest = hashlib.sha256(body.encode("utf-8")).digest()
+            found.add("'sha256-" + base64.b64encode(digest).decode("ascii") + "'")
+    if not found:
+        raise SystemExit("build: no inline scripts found — refusing to write a "
+                         "CSP that would allow nothing and break every page")
+    return sorted(found)
+
+
+def headers_file(script_hashes: list[str]) -> str:
+    csp = "; ".join((
+        "default-src 'none'",
+        "script-src " + " ".join(script_hashes),
+        "style-src 'unsafe-inline'",
+        "img-src 'self' data:",
+        "form-action 'none'",
+        "frame-ancestors 'none'",
+        "base-uri 'none'",
+    ))
+    return "\n".join((
+        "/*",
+        "  Strict-Transport-Security: max-age=31536000; includeSubDomains",
+        "  X-Frame-Options: DENY",
+        "  X-Content-Type-Options: nosniff",
+        "  Referrer-Policy: no-referrer",
+        "  Cross-Origin-Opener-Policy: same-origin",
+        "  Cross-Origin-Resource-Policy: same-origin",
+        "  X-Permitted-Cross-Domain-Policies: none",
+        f"  Permissions-Policy: {PERMISSIONS}",
+        f"  Content-Security-Policy: {csp}",
+        "",
+    ))
+
 
 ROBOTS = f"""User-agent: *
 Allow: /
@@ -281,9 +370,13 @@ def main() -> int:
         render_setup(setup_tpl, css, js, setup_js), encoding="utf-8")
 
     (OUT / "demo" / "index.html").write_text(build_demo(), encoding="utf-8")
-    (OUT / "_headers").write_text(HEADERS, encoding="utf-8")
     (OUT / "robots.txt").write_text(ROBOTS, encoding="utf-8")
     (OUT / "sitemap.xml").write_text(sitemap(), encoding="utf-8")
+
+    # Last, because the CSP is a hash of the pages above: every page has to
+    # exist before the header that vouches for them can be written.
+    (OUT / "_headers").write_text(
+        headers_file(inline_script_hashes(OUT)), encoding="utf-8")
 
     gaps = i18n.missing()
     if gaps:
