@@ -47,21 +47,19 @@ def findings_html(d: dict) -> str:
         save = f'<span class="save">≈{usd(saving)}/mo</span>' if saving else ""
         meta = f'<p class="meta">{esc(f["demoted"])}</p>' if f.get("demoted") else ""
         out.append(
-            f'<div class="find" style="--c:{c}">'
+            f'<div class="find" data-sev="{esc(f["severity"])}" style="--c:{c}">'
             f'<div class="top"><span class="sev">{esc(f["severity"])}</span>'
             f'<span class="ttl">{esc(f["title"])}</span>{save}</div>'
             f'<p>{esc(f["finding"])}</p>'
             f'<p class="act">{esc(f["action"])}</p>'
             f'{meta}<p class="meta">Confidence: {esc(f.get("confidence", "—"))}</p></div>'
         )
-    # The first finding stands alone at full width — it is the answer the page
-    # exists to give. The rest flow into columns, which pack by height instead
-    # of aligning into rows: these cards differ by more than 250px and a grid
-    # row is only ever as short as its tallest card, so the difference would be
-    # spent on empty space.
-    if len(out) > 1:
-        return out[0] + '<div class="findsrest">' + "".join(out[1:]) + "</div>"
-    return "".join(out)
+    # One flow, in severity order, with width carrying the priority — see the
+    # `.finds` rules. Splitting the list into a hero plus a column-flowed tail
+    # read the order out of it: three columns of mixed severity put a MEDIUM, a
+    # LOW and an INFO side by side at equal weight, and the reader lost the
+    # thread of what to do first.
+    return '<div class="finds">' + "".join(out) + "</div>"
 
 
 def render(digest: dict, home: str | None = None, refresh: str | None = None,

@@ -45,6 +45,20 @@ section{margin:30px 0 0;min-width:0}
    40px past the gutter and dragged the page into horizontal scroll. */
 .grid2{display:grid;gap:16px;
   grid-template-columns:repeat(auto-fit,minmax(min(320px,100%),1fr))}
+/* The daily chart and the calendar are stacked, not paired, and that is a
+   measurement rather than a preference.
+
+   Splitting a row down the middle is only right when both halves want the same
+   room. These do not: `#daily>svg` is pinned to a 720px canvas and
+   `#calendar svg` renders at its intrinsic 300px, both on purpose — they are
+   data charts, and shrinking one past legibility is worse than letting it
+   scroll. With panel padding and a gap the pair needs about 1130px of content.
+
+   `.wrap` caps content at 1120px, so that width is never available at any
+   viewport, and every possible split is a choice about which chart scrolls.
+   Two levers if this is ever worth revisiting: raise the cap, or tighten the
+   calendar's viewBox, which is 300 wide around 168px of ink. Until then,
+   stacked is the only arrangement where neither is cut off. */
 section>.panel+.panel,section>.grid2+.panel,section>.panel+.grid2{margin-top:16px}
 /* The info icon was wrapping onto a line of its own under a two-word KPI
    label; a little more column width keeps label and icon together. */
@@ -78,11 +92,23 @@ h2 .info{margin-left:7px}
    `auto-fit` with a `min()` floor rather than a breakpoint, so the tail
    collapses back to one column on its own when the panel is narrow — the same
    rule the other grids here already use. */
-/* `columns` takes a *width*, not a count, so the number of columns follows the
-   space available with no breakpoint to maintain: three across a full-width
-   section, two at half a screen, one on a phone. */
-.findsrest{columns:330px;column-gap:10px;margin-top:10px}
-.findsrest>.find{break-inside:avoid;margin:0 0 10px}
+/* Severity sets the width, and the cards stay in one ordered flow.
+   Reading down the page you meet the one thing to act on at full width, then
+   anything medium at full width, then the half-width "worth knowing" pair,
+   then the third-width reference row — so priority is legible from the shape
+   of the page before a single word is read, and the order is never broken
+   across columns.
+   A six-track grid because six divides by two and three: full, half and third
+   all land on the same gutters. */
+.finds{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));
+  gap:10px;align-items:start}
+.finds>.find{grid-column:span var(--span,6)}
+.finds>.find[data-sev="low"]{--span:3}
+.finds>.find[data-sev="info"]{--span:2}
+/* Reference cards go two-up before they go one-up; everything returns to full
+   width once a third of the row would be too narrow to read. */
+@media (max-width:1080px){.finds>.find[data-sev="info"]{--span:3}}
+@media (max-width:760px){.finds>.find{--span:6}}
 .find{border:1px solid var(--line);border-left:3px solid var(--c);border-radius:8px;
   padding:14px 16px;margin:0;background:var(--panel)}
 .find .top{display:flex;flex-wrap:wrap;gap:8px;align-items:baseline;margin-bottom:6px}

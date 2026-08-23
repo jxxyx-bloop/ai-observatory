@@ -160,10 +160,6 @@ var l=localStorage.getItem("observatory-lang");if(l)r.setAttribute("data-lang",l
   <section id="rhythm"><h2 data-i18n="s_daily">Daily rhythm</h2>
     <p class="sub note" data-i18n="n_daily">Every day in range. Click a day to filter
       the page to it; click again to clear.</p>
-    <!-- Side by side rather than stacked. Both are viewBox SVGs, so they scale
-         to whatever column they land in, and `grid2` drops them back to one
-         column below its own floor — no breakpoint here to keep in sync. -->
-    <div class="grid2">
     <div class="panel">
       <div class="chartbar"><div class="seg small" id="dailyMetric"></div>
         <span class="legend" id="dailyLegend"></span></div>
@@ -173,7 +169,6 @@ var l=localStorage.getItem("observatory-lang");if(l)r.setAttribute("data-lang",l
       <p class="sub note" data-i18n="n_calendar">Every day since collection began, one
         square each. Click a week to filter to it.</p>
       <div id="calendar"></div>
-    </div>
     </div>
   </section>
 
