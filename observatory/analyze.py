@@ -25,15 +25,17 @@ READ_TOOLS = {"Read", "Grep", "Glob", "NotebookRead", "read_file", "search",
               "grep", "list_dir", "view_file", "read_url_content", "search_web",
               "manage_task", "manage_subagents", "invoke_subagent", "run_command"}
 
-# Providers stamp every turn in UTC. Dates, hour-of-day, and session spans are
-# all shown in the user's own fixed offset instead (settings.json ->
-# timezone_offset_hours, default +8). Raw events on disk stay untouched; only
-# the digest — the presentation tier — is shifted. A fixed offset rather than a
-# tz database because every timezone this project targets (UTC+7 through +9)
-# has no DST, and a stdlib-only promise rules out pytz.
-LOCAL_OFFSET = timedelta(hours=float(settings.get("timezone_offset_hours", 8)))
-
-
+# Providers stamp every turn in UTC. Dates, hour-of-day and session spans are
+# all shown on the reader's own clock instead (settings.json ->
+# timezone_offset_hours, "auto" by default). Raw events on disk stay untouched;
+# only the digest — the presentation tier — is shifted.
+#
+# Resolved per timestamp rather than once at import, because "the machine's
+# offset" is not a constant: a zone that observes DST was an hour off itself six
+# months ago, and bucketing a January session with a July offset puts turns in
+# the wrong hour and occasionally the wrong day. The stdlib does this without a
+# tz database — `astimezone()` asks the OS for the offset in force at that
+# instant — so the no-dependencies promise holds. Costs ~14ms over 30k events.
 def _local_ts(ts: str) -> str:
     if not ts:
         return ""
@@ -41,9 +43,11 @@ def _local_ts(ts: str) -> str:
         dt = datetime.fromisoformat(ts.replace("Z", "+00:00"))
     except ValueError:
         return ts
-    if dt.tzinfo is not None:
-        dt = dt.astimezone(timezone.utc).replace(tzinfo=None)
-    return (dt + LOCAL_OFFSET).isoformat()
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    else:
+        dt = dt.astimezone(timezone.utc)
+    return (dt.replace(tzinfo=None) + settings.local_offset(dt)).isoformat()
 
 
 load_pricing = price.load_pricing

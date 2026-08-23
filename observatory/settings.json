@@ -1,8 +1,8 @@
 {
   "_doc": "Your preferences. Everything here is display or policy — nothing changes what is collected. Safe to commit; it contains no identity and no secrets.",
 
-  "_timezone_doc": "Fixed UTC offset in hours used for every date, hour, and session boundary in the digest. Raw events on disk stay in UTC; only the presentation tier shifts. Defaults to +8 (SGT/CST/WITA/HKT/MYT/PHT) because that is where most of this project's users are. Jakarta/Bangkok/Hanoi = 7, India = 5.5, Japan/Korea = 9.",
-  "timezone_offset_hours": 8,
+  "_timezone_doc": "Which clock every date, hour, and session boundary in the digest is shown on. Raw events on disk stay in UTC; only the presentation tier shifts. \"auto\" follows the machine, resolved per timestamp so a zone with DST reads correctly on both sides of a changeover — leave it there unless you want a clock other than the one you are sitting in. A number pins a fixed UTC offset instead: Jakarta/Bangkok/Hanoi = 7, Singapore/HK/Manila/Perth = 8, Japan/Korea = 9, India = 5.5.",
+  "timezone_offset_hours": "auto",
 
   "_currency_doc": "Display currency for every cost figure. USD keeps the raw estimate. Anything else converts via plans.json -> currencies.",
   "currency": "USD",

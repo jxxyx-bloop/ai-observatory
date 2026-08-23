@@ -112,13 +112,17 @@ no account, no network.
 python3 observe.py sync --full digest report   # --full after any topology change
 ```
 
-**2. Set three fields** in [`settings.json`](observatory/settings.json):
+**2. Set two fields** in [`settings.json`](observatory/settings.json):
 
 | Field | Set it to |
 |---|---|
-| `timezone_offset_hours` | `8` SG/CN/MY/PH/HK · `7` ID/TH/VN · `9` JP/KR · `5.5` IN |
 | `currency` | `IDR`, `VND`, `THB`, `PHP`, `MYR`, `SGD`, `CNY`… or leave `USD` |
 | `plan` | your subscription id from [`plans.json`](observatory/plans.json), or `none` |
+
+Your timezone is not one of them. `timezone_offset_hours` is `"auto"` and
+follows the machine you run it on, so the heatmap is already on your own clock
+whether you are in Singapore, Seoul or Berlin. Pin it to a number only if you
+want a clock other than the one you are sitting in.
 
 Setting `plan` is what turns the dollar figure from a number you don't
 recognise into *"your $18 plan returned 23× what you paid."*
