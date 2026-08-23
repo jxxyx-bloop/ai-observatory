@@ -27,7 +27,7 @@ ROOT = Path(__file__).resolve().parents[2]
 SITE = ROOT / "site"
 OUT = ROOT / "docs" / "readme"
 REPO = "https://github.com/jxxyx-bloop/ai-observatory"
-HOST = "https://ai-observatory.workers.dev"
+HOST = "https://aiobservatory.dev"
 
 sys.path.insert(0, str(SITE))
 import i18n  # noqa: E402
@@ -110,7 +110,7 @@ python3 observe.py demo digest report
 {t['rm_own']}
 
 ```bash
-rm -rf ../data ../dist
+python3 observe.py demo --purge
 python3 observe.py all
 ```
 

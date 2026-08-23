@@ -69,10 +69,24 @@ def _write_atomic(path, text: str) -> None:
 
 def cmd_sync(argv) -> int:
     summary = normalize.sync(DATA, full="--full" in argv)
-    if summary["events_written"]:
+    # The sentinel tracks whether the STORE holds fixture rows, not what the
+    # last run happened to find. Clearing it on the first sync that collected
+    # anything is how a seeded store ends up looking genuine: the synthetic
+    # events are still there, still drawing peak windows and a model mix for
+    # vendors the reader has never used, and the page has stopped saying so.
+    # Only their absence clears it, and a sync that finds them says so.
+    left = normalize.count_synthetic(DATA)
+    if left:
+        (DATA / ".demo").write_text(
+            "synthetic usage - run `observe.py demo --purge` to remove\n",
+            encoding="utf-8")
+    else:
         (DATA / ".demo").unlink(missing_ok=True)
     print(f"sync: {summary['events_written']} new events from "
           f"{summary['sources_scanned']} sources ({summary['mode']})")
+    if left:
+        print(f"sync: warning - {left:,} synthetic demo events are still in the "
+              f"store and are being counted. Run `observe.py demo --purge`.")
     return 0
 
 
@@ -86,6 +100,7 @@ def cmd_demo(argv) -> int:
     """
     if "--purge" in argv or "--clear" in argv:
         removed = normalize.purge_synthetic(DATA)
+        (DATA / ".demo").unlink(missing_ok=True)
         print(f"demo: removed {removed:,} synthetic events. "
               f"Re-run `python3 observe.py digest report` to rebuild.")
         return 0

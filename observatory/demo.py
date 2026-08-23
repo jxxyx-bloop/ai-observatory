@@ -42,6 +42,15 @@ MODELS = [
     ("glm", "glm-5.1", None, 0.15),
 ]
 
+# What a session escalates *to*. Frontier models only: the realistic pattern is
+# a cheap model doing the volume and an expensive one brought in for the hard
+# turn, not the reverse.
+HARDER_MODELS = [
+    ("claude-code", "claude-opus-5", "high", 0.45),
+    ("claude-code", "claude-sonnet-5", "medium", 0.35),
+    ("codex", "gpt-5-codex", "medium", 0.20),
+]
+
 REPOS = [("checkout-service", 0.34), ("growth-web", 0.24), ("data-platform", 0.18),
          ("infra-tooling", 0.14), ("scratchpad", 0.10)]
 SURFACES = {
@@ -76,7 +85,9 @@ def generate(days: int = 60, anchor: str = "2026-08-19") -> list:
     for back in range(days - 1, -1, -1):
         day = end - timedelta(days=back)
         weekend = day.weekday() >= 5
-        n_sessions = rng.randint(0, 2) if weekend else rng.randint(2, 6)
+        # Three to seven sittings on a working day, weekends quiet. Enough that
+        # a month of it adds up to something a detector can speak to.
+        n_sessions = rng.randint(0, 2) if weekend else rng.randint(3, 7)
 
         for _ in range(n_sessions):
             session_no += 1
@@ -87,8 +98,15 @@ def generate(days: int = 60, anchor: str = "2026-08-19") -> list:
             # Working hours cluster 09:00-23:00 local (UTC+8) = 01:00-15:00 UTC,
             # which lands a good share of turns inside DeepSeek's peak window —
             # the thing the peak-shift detector should notice.
+            # Tightened onto a normal office day rather than spread thin across
+            # the clock. 09:00-18:00 in UTC+8 *is* 01:00-10:00 UTC, which is
+            # exactly DeepSeek's peak window and most of Z.ai's — so a Southeast
+            # Asian developer keeping ordinary hours pays the premium on almost
+            # everything without ever making a decision about it. That is the
+            # wedge this product exists to point at, and the fixture should
+            # depict it rather than a schedule nobody keeps.
             start_hour = rng.choices(range(24), weights=(
-                [3, 5, 7, 6, 5, 4, 6, 8, 9, 8, 6, 5, 4, 4, 3, 2, 1, 1, 1, 1, 2, 2, 3, 3]
+                [2, 9, 12, 11, 4, 3, 11, 13, 14, 12, 5, 4, 3, 3, 2, 2, 1, 1, 1, 1, 2, 2, 2, 2]
             ))[0]
             ts = day.replace(hour=start_hour, minute=rng.randint(0, 55), second=0)
 
@@ -98,6 +116,23 @@ def generate(days: int = 60, anchor: str = "2026-08-19") -> list:
             churn = rng.random() < 0.17
             turns = rng.randint(1, 3) if churn else rng.randint(4, 26)
             cached = 0
+
+            # Some sessions reach for a second model partway through — the cheap
+            # daily driver for the bulk, something stronger for the turns that
+            # earned it. The chance of that rises across the range, from about
+            # one session in twenty at the start to one in two by the end.
+            #
+            # It rises rather than sitting flat because a flat line teaches the
+            # reader nothing about what the panel is for. Model-switch share is
+            # a habit metric: the question it answers is "am I getting better at
+            # matching model to task", and a demo that reads 0% for sixty days
+            # answers it with a number that looks like a broken feature.
+            done = 1 - (back / max(1, days - 1))          # 0 at the start, 1 at the end
+            second = None
+            if turns >= 4 and rng.random() < 0.05 + 0.45 * done:
+                pool = [m for m in HARDER_MODELS if m[1] != model]
+                second = _pick(rng, pool) if pool else None
+            switch_at = rng.randint(2, turns) if second else None
 
             for turn in range(1, turns + 1):
                 ev = blank_event(provider)
@@ -117,24 +152,36 @@ def generate(days: int = 60, anchor: str = "2026-08-19") -> list:
                 ev["branch"] = "main" if rng.random() < 0.4 else "feat/demo"
                 ev["entrypoint"] = rng.choice(["cli", "cli", "cli", "ide", "desktop"])
                 ev["lane"] = "personal" if repo == "growth-web" and rng.random() < 0.25 else "work"
-                ev["model"] = model
-                ev["effort"] = effort
+                if second and turn >= switch_at:
+                    ev["provider"] = second[0]
+                    ev["model"], ev["effort"] = second[1], second[2]
+                else:
+                    ev["model"] = model
+                    ev["effort"] = effort
                 ev["turn"] = turn
                 ev["sidechain"] = rng.random() < 0.12
                 if ev["sidechain"]:
                     ev["agent"] = rng.choice(["explore", "general-purpose", "code-reviewer"])
 
-                ev["output"] = rng.randint(40, 220) if rng.random() < 0.45 else rng.randint(400, 3200)
+                # Volumes are those of somebody who codes with an agent all day,
+                # because that is who the product is for and the only person its
+                # findings can say anything useful to. The earlier fixture
+                # depicted a light user, and a light user honestly has nothing
+                # worth acting on: every detector fired correctly and every one
+                # was then demoted under the $15/month materiality bar, so the
+                # whole "What to change" panel read as a list of things not
+                # worth doing. That is an accurate portrait of the wrong person.
+                ev["output"] = rng.randint(260, 1400) if rng.random() < 0.45 else rng.randint(2600, 19000)
                 if turn == 1:
-                    ev["input"] = rng.randint(1200, 4000)
-                    ev["cache_create"] = rng.randint(9000, 45000)
+                    ev["input"] = rng.randint(7000, 24000)
+                    ev["cache_create"] = rng.randint(55000, 270000)
                     ev["cache_5m"] = ev["cache_create"]
                     cached = ev["cache_create"]
                 else:
-                    ev["input"] = rng.randint(120, 900)
+                    ev["input"] = rng.randint(700, 5400)
                     ev["cache_read"] = int(cached * rng.uniform(0.85, 1.0))
                     if rng.random() < 0.22:
-                        add = rng.randint(3000, 20000)
+                        add = rng.randint(18000, 120000)
                         ev["cache_create"] = add
                         ev["cache_5m"] = add
                         cached += add

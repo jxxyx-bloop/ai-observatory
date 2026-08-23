@@ -30,7 +30,12 @@ let cleared = 0;
 function El(id, cls) {
   const el = {
     id, className: cls || '', tagName: 'DIV', type: '', href: '',
-    textContent: '', innerHTML: '', hidden: false, style: {},
+    textContent: '', innerHTML: '', hidden: false,
+    // `style` is a plain bag plus the one CSSOM method the deck uses: the
+    // transition reads its direction from two custom properties set here.
+    style: { _p: {}, setProperty(k, v) { this._p[k] = v; },
+             getPropertyValue(k) { return this._p[k] ?? ''; },
+             removeProperty(k) { delete this._p[k]; } },
     children: [], parentNode: null, _on: {},
     classList: {
       _s: new Set((cls || '').split(' ').filter(Boolean)),
@@ -130,6 +135,35 @@ ok(intervals.length === 0, 'moving between the deck and its controls stays pause
 
 deckbar.fire('mouseleave', { relatedTarget: finding });
 ok(intervals.length === 1, 'leaving the zone entirely resumes it');
+
+// ---- 4. the swap carries a direction --------------------------------------
+// The deck used to toggle `display`, which cannot be transitioned: the old
+// card vanished in one frame and the new one animated in against a collapsed
+// deck, so it read as a blink. The cross-fade that replaced it slides the two
+// cards past each other, and the offsets have to be opposites or the pair
+// travel the same way and the motion says nothing about which way it turned.
+const dirOf = () => [deck.style.getPropertyValue('--enter'),
+                     deck.style.getPropertyValue('--exit')];
+
+els.next.fire('click', {});
+let [enter, exit] = dirOf();
+ok(enter.startsWith('2') && exit.startsWith('-'),
+   `forward enters from the right and exits left (got ${enter} / ${exit})`);
+
+els.prev.fire('click', {});
+[enter, exit] = dirOf();
+ok(enter.startsWith('-') && exit.startsWith('2'),
+   `back enters from the left and exits right (got ${enter} / ${exit})`);
+
+// Exactly one card animates out. Parking the rest at the entry offset is what
+// stops the other two sliding about behind the one on top.
+els.next.fire('click', {});
+ok(cards.filter((c) => c.classList.contains('out')).length === 1,
+   'only the card being replaced is marked out');
+ok(cards.filter((c) => c.classList.contains('on')).length === 1,
+   'exactly one card is on');
+ok(!cards.some((c) => c.classList.contains('on') && c.classList.contains('out')),
+   'no card is both on and out');
 
 console.log(failures.length
   ? `\ncarousel: ${failures.length} failure(s)`

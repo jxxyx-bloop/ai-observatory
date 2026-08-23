@@ -764,7 +764,11 @@ function kpiCards(t, sessions) {
 }
 
 function sessionsTable(rows) {
-  rows = rows.slice().sort(function (a, b) { return b.output - a.output; }).slice(0, 15);
+  // Eight, not fifteen. This is the tallest panel on the page and the tail of
+  // it earns nothing: rows nine to fifteen are neither the heaviest sessions
+  // nor a representative sample, they are just the next seven. Eight is what
+  // the subagent panel above already shows, so the two read as a pair.
+  rows = rows.slice().sort(function (a, b) { return b.output - a.output; }).slice(0, 8);
   if (!rows.length) {
     return '<p class="empty">' + esc(t18("w_none", "No sessions in this range.")) + "</p>";
   }
@@ -1328,12 +1332,37 @@ function initFreshness() {
   var hours = isFinite(stamp) ? (Date.now() - stamp) / 36e5 : 0;
   var state = null;
 
+  /* Sample data says so on the title line, not in a banner. The strip below
+     exists to hand somebody a refresh command, and on a hosted demo there is no
+     local dashboard to refresh — the command was decoration with a scrollbar.
+     The disclosure itself is not optional, so it moves rather than goes: a chip
+     beside the heading, and the link the reader actually wants. */
   if (meta.demo) {
-    state = { cls: "demo", head: t18("fresh_demo_h", "This is sample data."),
-              body: t18("fresh_demo_b",
-                        "Nobody's real usage is shown here. Set it up to see your own \u2014 "
-                        + "it reads transcripts already on your machine and costs no tokens.") };
-  } else if (hours >= 168) {
+    var flag = $("demoFlag");
+    if (flag) {
+      $("demoChip").textContent = t18("demo_chip", "Sample data");
+      var try_ = $("demoTry");
+      if (meta.setup) {
+        try_.href = meta.setup;
+        try_.textContent = t18("demo_try", "Try it yourself");
+      } else {
+        try_.hidden = true;      /* a file:// copy has no site to point at */
+      }
+      flag.hidden = false;
+    }
+    /* The ask that comes after the value, not before it. Same demo gate as the
+       chip above: a locally rendered dashboard never shows it. */
+    var ask = $("starAsk");
+    if (ask && meta.star) {
+      $("starAskText").textContent = t18("star_ask",
+        "Found something here worth changing?");
+      $("starAskCta").textContent = t18("star_ask_cta", "Star it on GitHub");
+      $("starAskLink").href = meta.star;
+      ask.hidden = false;
+    }
+    return;                      /* nothing further to show */
+  }
+  if (hours >= 168) {
     state = { cls: "stale", head: t18("fresh_old_h", "This dashboard is out of date."),
               body: fill(t18("fresh_old_b", "Last built {a}. Refresh to pull in everything since."),
                          { a: ago(hours) }) };

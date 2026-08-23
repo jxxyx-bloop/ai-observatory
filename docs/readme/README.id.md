@@ -13,7 +13,7 @@ Coding agent Anda sudah mencatat setiap giliran. Alat ini membaca catatan itu da
 
 `Siap dalam kurang dari satu menit` · `Tanpa akun` · `Tidak ada data yang keluar`
 
-**[Buka demo langsung](https://ai-observatory.workers.dev/demo/)** · [AI Observatory](https://ai-observatory.workers.dev/id/) · [GitHub](https://github.com/jxxyx-bloop/ai-observatory)
+**[Buka demo langsung](https://aiobservatory.dev/demo/)** · [AI Observatory](https://aiobservatory.dev/id/) · [GitHub](https://github.com/jxxyx-bloop/ai-observatory)
 
 <sub>
 <a href="../../README.md">English</a> ·
@@ -33,7 +33,7 @@ Coding agent Anda sudah mencatat setiap giliran. Alat ini membaca catatan itu da
 
 <br>
 
-<a href="https://ai-observatory.workers.dev/demo/">
+<a href="https://aiobservatory.dev/demo/">
 <img src="../assets/demo-light.png#gh-light-mode-only" alt="">
 <img src="../assets/demo-dark.png#gh-dark-mode-only" alt="">
 </a>
@@ -69,7 +69,7 @@ python3 observe.py demo digest report
 Lalu pada pemakaian Anda sendiri:
 
 ```bash
-rm -rf ../data ../dist
+python3 observe.py demo --purge
 python3 observe.py all
 ```
 
@@ -98,12 +98,12 @@ Tanpa kunci API, tanpa proxy, tanpa akun, tanpa jaringan. Pengumpulan data memak
 | **Tarif cache beda tiap vendor** | Diskon 0,1× itu kebiasaan Anthropic, bukan hukum alam. Salah di sini, angka terpenting di halaman ikut salah. |
 | **Tiga belas mata uang** | IDR, VND, THB, PHP, MYR dan lainnya — disandingkan dengan upah harian setempat, karena $412 tidak berarti sama di mana-mana. |
 
-## Mekanisme, bukan janji
+## Privasi dari cara ia dibangun
 
 **Tidak ada yang keluar dari perangkat Anda kecuali Anda sendiri yang mengubah berkasnya.**
 
 - Tidak pernah disimpan: prompt, jawaban, kode, perintah, jalur berkas.
-- Dihentikan di titik berkas dibaca — jadi kebocoran itu bug, bukan urusan kebijakan.
+- Dibuang saat tiap berkas dibaca, jadi tidak pernah sampai ke dasbor.
 - Dasbor dan halaman ini nol permintaan eksternal. Tanpa CDN, tanpa font, tanpa analitik.
 
 ## Dokumentasi

@@ -13,7 +13,7 @@ Seu agente de código já registra cada turno. Isto lê esses registros e aponta
 
 `Pronto em menos de um minuto` · `Sem conta` · `Nada sai da sua máquina`
 
-**[Abrir a demo](https://ai-observatory.workers.dev/demo/)** · [AI Observatory](https://ai-observatory.workers.dev/pt-br/) · [GitHub](https://github.com/jxxyx-bloop/ai-observatory)
+**[Abrir a demo](https://aiobservatory.dev/demo/)** · [AI Observatory](https://aiobservatory.dev/pt-br/) · [GitHub](https://github.com/jxxyx-bloop/ai-observatory)
 
 <sub>
 <a href="../../README.md">English</a> ·
@@ -33,7 +33,7 @@ Seu agente de código já registra cada turno. Isto lê esses registros e aponta
 
 <br>
 
-<a href="https://ai-observatory.workers.dev/demo/">
+<a href="https://aiobservatory.dev/demo/">
 <img src="../assets/demo-light.png#gh-light-mode-only" alt="">
 <img src="../assets/demo-dark.png#gh-dark-mode-only" alt="">
 </a>
@@ -69,7 +69,7 @@ python3 observe.py demo digest report
 Depois, no seu próprio uso:
 
 ```bash
-rm -rf ../data ../dist
+python3 observe.py demo --purge
 python3 observe.py all
 ```
 
@@ -98,12 +98,12 @@ Sem chave de API, sem proxy, sem conta, sem rede. A coleta custa zero tokens.
 | **A taxa de cache muda por fornecedor** | O desconto de 0,1× é um costume da Anthropic, não uma lei. Errar isso é errar o maior número da página. |
 | **Treze moedas** | BRL, IDR, VND, THB, PHP, MYR e outras — comparadas a uma diária local, porque US$ 412 não significa a mesma coisa em todo lugar. |
 
-## Um mecanismo, não uma promessa
+## Privacidade por construção
 
 **Nada sai da sua máquina a menos que você edite um arquivo autorizando.**
 
 - Nunca armazenado: prompts, respostas, código, comandos, caminhos de arquivo.
-- Bloqueado no ponto em que o arquivo é lido — então um vazamento seria um bug, não uma questão de política.
+- Descartado à medida que cada arquivo é lido, então nunca chega ao painel.
 - O painel e esta página fazem zero requisições externas. Sem CDN, sem fontes, sem analytics.
 
 ## Documentação

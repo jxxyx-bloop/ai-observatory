@@ -38,13 +38,24 @@ section+section{padding-top:var(--s8)}
 .topbar .bar{max-width:var(--page);margin:0 auto;padding:var(--s2) var(--gutter);
   display:flex;align-items:center;gap:var(--s4)}
 
+/* A step above the nav links rather than level with them. The wordmark is the
+   one thing in the bar that says which product this is; at the same size as
+   "Privacy" it read as the first item in the menu. The mark grows with it so
+   the lockup keeps its proportions. */
 .brand{display:flex;align-items:center;gap:var(--s2);color:var(--ink);
-  font-weight:640;font-size:var(--t-sm);letter-spacing:-.01em;white-space:nowrap}
+  font-weight:640;font-size:15.5px;letter-spacing:-.012em;white-space:nowrap}
 .brand:hover{text-decoration:none}
-.brand .mark{width:20px;height:20px;fill:none;stroke:var(--accent);
+.brand .mark{width:22px;height:22px;fill:none;stroke:var(--accent);
   stroke-width:1.5;stroke-linecap:round}
 
-.mainnav{display:flex;gap:var(--s5);margin-left:var(--s6);font-size:var(--t-sm)}
+/* `center`, explicitly. This row mixes plain text links with the "Set up"
+   pill, so the default `stretch` grew each link to the pill's height and left
+   its text sitting at the top of that taller box — the whole menu riding about
+   ten pixels above the pill and everything in `.tools`, which are centred by
+   the bar itself. Nothing else in the bar had the problem because nothing else
+   mixes heights. */
+.mainnav{display:flex;align-items:center;gap:var(--s5);margin-left:var(--s6);
+  font-size:var(--t-sm)}
 .mainnav a{color:var(--muted)}
 .mainnav a:hover{color:var(--ink);text-decoration:none}
 
@@ -156,9 +167,36 @@ section>h2{font-size:var(--t-h2);max-width:28ch;margin:0 auto}
   border-radius:var(--r-md);padding:var(--s5);text-align:left;
   box-shadow:inset 3px 0 0 var(--sev,var(--high)),var(--shadow-sm)}
 .deck .find+.find{margin-top:var(--s3)}
-.js .deck .find{display:none}
-.js .deck .find.on{display:block;animation:rise var(--d-slow) var(--ease) both}
+/* A cross-fade, not a cut. `display:none` cannot be transitioned: the outgoing
+   card vanished in a single frame, the deck collapsed to nothing, and the next
+   card animated in against the gap — which reads as a blink rather than as
+   movement. The cards now share one grid cell, so the deck always stands at
+   the height of the tallest and nothing jumps, and the two swap by opacity.
+   The slide carries direction: going forward sends the old card left and
+   brings the new one in from the right, so the motion says which way the deck
+   turned instead of only that it changed. `visibility` rather than `display`
+   keeps the hidden cards out of the tab order and the accessibility tree while
+   staying animatable — it flips only once the fade has finished. */
+/* `start`, not the default `stretch`: the cards share one row, so stretching
+   would force a short card to the height of the tallest and render it as a
+   part-empty box. The deck still stands at the tallest card's height, which
+   is the point — nothing below it moves when the card changes. */
+.js .deck{display:grid;align-items:start}
+.js .deck .find{grid-area:1/1;opacity:0;visibility:hidden;
+  transform:translateX(var(--enter,28px));
+  transition:opacity var(--d-slow) var(--ease),transform var(--d-slow) var(--ease),
+             visibility 0s linear var(--d-slow)}
+.js .deck .find.on{opacity:1;visibility:visible;transform:none;
+  transition:opacity var(--d-slow) var(--ease),transform var(--d-slow) var(--ease),
+             visibility 0s}
+.js .deck .find.out{transform:translateX(var(--exit,-28px))}
 .js .deck .find+.find{margin-top:0}
+/* Reduced motion gets the swap without the travel. Still not a `display`
+   toggle, so the deck keeps its steady height either way. */
+@media (prefers-reduced-motion:reduce){
+  .js .deck .find,.js .deck .find.on,.js .deck .find.out{
+    transform:none;transition:visibility 0s}
+}
 @keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 
 .find .top{display:flex;flex-wrap:wrap;align-items:baseline;gap:var(--s2);
@@ -403,16 +441,55 @@ section>h2{font-size:var(--t-h2);max-width:28ch;margin:0 auto}
 .afterlist kbd{font-size:11.5px;padding:2px 6px;border-radius:5px;
   border:1px solid var(--line);background:var(--bg);font-family:inherit}
 
-.agentcard,.troublesec{margin:var(--s6) 0 0;padding:26px 24px;
+/* ── Setup: the two install paths ─────────────────────────────────────────
+   The agent path leads, so it gets the accent border and the filled tag; the
+   terminal path is quieter but not hidden. Left-aligned inside a centred hero
+   on purpose — a paragraph of prompt text centred is unreadable. */
+.path{text-align:left;max-width:720px;margin:var(--s5) auto 0;padding:22px 22px 20px;
+  border:1px solid var(--line);border-radius:var(--r-md);background:var(--panel)}
+.path.lead{border-color:color-mix(in srgb,var(--accent) 45%,var(--line));
+  box-shadow:0 0 0 1px color-mix(in srgb,var(--accent) 14%,transparent),var(--shadow-sm)}
+.path h2{margin:6px 0 0;font-size:19px;letter-spacing:-.02em}
+.path .pathtag{margin:0;font-size:11px;font-weight:700;letter-spacing:.08em;
+  text-transform:uppercase;color:var(--accent)}
+.path.alt .pathtag{color:var(--muted)}
+.path .pathlede{margin:8px 0 0;font-size:14px;line-height:1.6;color:var(--muted)}
+.path .cmd{margin:14px 0 0}
+.path.lead .cmd code{white-space:pre-wrap;line-height:1.7;max-height:none}
+.path .fine{margin:11px 0 0}
+
+/* ── Collapsibles ─────────────────────────────────────────────────────────
+   One marker, drawn by us: the native triangle differs per browser and sits
+   at a different size in each, which is the sort of thing that makes a page
+   look assembled rather than designed. */
+.fold>summary,.qa>summary{cursor:pointer;list-style:none;display:flex;
+  align-items:center;gap:10px}
+.fold>summary::-webkit-details-marker,.qa>summary::-webkit-details-marker{display:none}
+.fold>summary::before,.qa>summary::before{content:"";flex:0 0 auto;width:9px;height:9px;
+  border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);
+  transform:rotate(-45deg);transition:transform var(--d-mid) var(--ease)}
+.fold[open]>summary::before,.qa[open]>summary::before{transform:rotate(45deg)}
+.fold>summary h2{margin:0}
+.fold>summary:focus-visible,.qa>summary:focus-visible{outline:2px solid var(--accent);
+  outline-offset:3px;border-radius:var(--r-sm)}
+
+/* ── Trouble: an accordion rather than a wall ─────────────────────────── */
+/* The heading and intro were centred over a left-aligned list, which is most
+   of why this section read as awkward: two alignments arguing inside one card.
+   The list cannot be centred — questions of different lengths would ragged
+   down the middle — so the prose comes left to meet it. */
+.troublesec{text-align:left}
+.troublesec>h2{text-align:left}
+.troublesec>.lede{margin-left:0;margin-right:0;text-align:left;max-width:62ch}
+.qalist{margin:18px 0 0;border-top:1px solid var(--line)}
+.qa{border-bottom:1px solid var(--line)}
+.qa>summary{padding:13px 2px;font-size:14px;font-weight:650;color:var(--ink)}
+.qa>summary:hover{color:var(--accent)}
+.qabody{padding:0 2px 15px 19px;font-size:13.5px;line-height:1.65;color:var(--muted)}
+
+.troublesec{margin:var(--s6) 0 0;padding:26px 24px;
   border:1px solid var(--line);border-radius:14px;background:var(--card,var(--bg))}
-.agentcard h2,.troublesec h2{margin:0 0 8px;font-size:20px;letter-spacing:-.02em}
-.agentcard .cmd{margin-top:16px}
-.agentcard .cmd code{white-space:pre-wrap;line-height:1.7;max-height:none}
-.agentcard .fine{margin:12px 0 0}
-.troublelist{margin:18px 0 0}
-.troublelist dt{font-size:14px;font-weight:700;color:var(--ink);margin:18px 0 5px}
-.troublelist dt:first-child{margin-top:0}
-.troublelist dd{margin:0;font-size:13.5px;line-height:1.65;color:var(--muted)}
+.troublesec h2{margin:0 0 8px;font-size:20px;letter-spacing:-.02em}
 
 @media (max-width:620px){
   .stepbar{top:56px}

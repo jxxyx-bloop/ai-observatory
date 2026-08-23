@@ -128,11 +128,10 @@ def cold_cache_sessions(digest, pricing):
     return [_f(
         "cache-write-never-read", "high",
         "Sessions that paid to cache and then ended",
-        f"{len(victims)} session(s) wrote {wasted:,} tokens to cache and never read a "
-        f"single one back. That is the 1.25x write premium paid for nothing.",
-        "These are sessions abandoned right after the first big context load — usually a "
-        "question asked, answered, and the session closed. Ask the follow-ups in the same "
-        "session; the second turn is where caching starts paying.",
+        f"{len(victims)} session(s) wrote {wasted:,} tokens to cache and never read one "
+        f"back — the 1.25x write premium paid for nothing.",
+        "Ask the follow-ups in the same session — the second turn is where caching starts "
+        "paying. These were closed right after the first big context load.",
         {"sessions": len(victims), "tokens_written_unused": wasted,
          "observed_cost_usd": round(cost, 2),
          "examples": [{"session": s["session"], "workspace": s["workspace"],
@@ -186,12 +185,12 @@ def exploration_without_output(digest, pricing):
     return [_f(
         "read-heavy-no-change", "medium",
         "Sessions that read a lot and changed nothing",
-        f"{len(victims)} session(s) made {reads} read-type tool calls without a single "
-        f"edit or write, at {cost:.2f} USD. Some of this is legitimate research — but it "
-        f"is also the signature of hunting for something a targeted search would have found.",
-        "For 'where is X' questions, delegate to a search subagent instead of reading files "
-        "into the main context — the finding comes back without the file bodies. Ask the "
-        "question you actually want answered rather than reading toward it.",
+        f"{len(victims)} session(s) made {reads} read-type tool calls with no edit or "
+        f"write, at {cost:.2f} USD. Some is real research; some is hunting for what a "
+        f"targeted search would have found.",
+        ["Delegate 'where is X' to a search subagent — the answer comes back without the "
+         "file bodies.",
+         "Ask the question you want answered rather than reading toward it."],
         {"sessions": len(victims), "read_calls": reads, "observed_cost_usd": round(cost, 2),
          "examples": [{"session": s["session"], "workspace": s["workspace"],
                        "reads": s["reads"], "cost_usd": s["cost"]}
@@ -208,12 +207,11 @@ def context_bloat(digest, pricing):
     return [_f(
         "context-bloat", "medium",
         "Some sessions carry a very large context per turn",
-        f"{len(victims)} session(s) peaked above {T['context_bloat_tokens']:,} tokens of "
-        f"context on a single turn (worst: {worst['peak_context']:,}). Every later turn in "
-        f"that session re-reads all of it.",
-        "When a session's context gets this large, the cheap fix is to finish the current "
-        "thread and start the next piece of work fresh with only what it needs. The "
-        "expensive habit is carrying an exploration transcript into unrelated work.",
+        f"{len(victims)} session(s) peaked above {T['context_bloat_tokens']:,} tokens on a "
+        f"single turn (worst: {worst['peak_context']:,}), and every later turn re-reads it.",
+        ["Finish the thread and start the next piece of work in a fresh session.",
+         "Carry forward only what that work needs — an exploration transcript dragged into "
+         "unrelated work is what makes context this expensive."],
         {"sessions": len(victims), "worst_peak_context": worst["peak_context"],
          "worst_session": worst["session"], "worst_workspace": worst["workspace"]},
         "medium",
@@ -335,8 +333,8 @@ def tool_concentration(digest, pricing):
         f"{top['tool']} was called {top['calls']} times — {_pct(top['calls'], total)}% of all "
         f"{total} tool calls. A single dominant tool usually means a workflow that could be "
         f"one step instead of many.",
-        f"Look at what {top['tool']} is being used for repeatedly. If it is the same target "
-        f"more than once per session, that is context you already had.",
+        f"Check what {top['tool']} repeats on. The same target twice in a session is "
+        f"context you already had.",
         {"tool": top["tool"], "calls": top["calls"], "share_pct": _pct(top["calls"], total),
          "total_calls": total,
          "next": [{"tool": r["tool"], "calls": r["calls"]} for r in tools[1:4]]},
@@ -355,8 +353,8 @@ def investment_concentration(digest, pricing):
     return [_f(
         "where-the-time-goes", "info",
         "Where your AI investment is concentrated",
-        f"{top['workspace']} absorbed {_pct(top['cost'], total)}% of estimated spend across "
-        f"{top['sessions']} sessions. The top three account for "
+        f"{top['workspace']} took {_pct(top['cost'], total)}% of estimated spend across "
+        f"{top['sessions']} sessions; the top three take "
         f"{_pct(sum(w['cost'] for w in ws[:3]), total)}%.",
         "Compare this ranking against where you would say your priorities are. A workspace "
         "high on this list and low on your own priority list is the finding.",
@@ -450,15 +448,15 @@ def peak_window_arbitrage(digest, pricing):
     return [_f(
         "peak-window-arbitrage", "high",
         "You are buying tokens at peak rates you did not have to pay",
-        f"{_pct(peak['cost'], timed_cost)}% of your spend on time-priced vendors "
-        f"({', '.join(vendors)}) landed inside a peak window, where the same tokens cost "
-        f"up to twice the off-peak rate. Over this period that timing cost about "
-        f"${premium:.2f} more than running the identical work off-peak.",
-        "Peak windows are published and narrow — DeepSeek's are 01:00-04:00 and 06:00-10:00 "
-        "UTC; Z.ai's GLM peaks only 14:00-18:00 UTC+8 on weekdays, so weekends are free of "
-        "it entirely. Anything that does not need you watching — test generation, migrations, "
-        "doc sweeps, bulk refactors — can be queued for an off-peak hour at no cost to you. "
-        "Interactive work is worth the premium; a batch job is not.",
+        f"{_pct(peak['cost'], timed_cost)}% of your time-priced spend "
+        f"({', '.join(vendors)}) ran inside a peak window, where the same tokens cost up to "
+        f"twice the off-peak rate. That timing cost about ${premium:.2f} over the period.",
+        ["Queue unattended work for an off-peak hour — test generation, migrations, "
+         "doc sweeps, bulk refactors.",
+         "Leave interactive work where it is: the premium buys your attention, and a batch "
+         "job does not need it.",
+         "The windows are narrow — DeepSeek 01:00-04:00 and 06:00-10:00 UTC, GLM "
+         "14:00-18:00 UTC+8 on weekdays, so weekends are free of it entirely."],
         {"peak_share_pct": _pct(peak["cost"], timed_cost),
          "peak_cost_usd": round(peak["cost"], 2),
          "off_peak_cost_usd": round(off["cost"], 2) if off else 0.0,

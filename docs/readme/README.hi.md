@@ -13,7 +13,7 @@
 
 `एक मिनट से कम में तैयार` · `अकाउंट नहीं चाहिए` · `कुछ भी मशीन से बाहर नहीं जाता`
 
-**[लाइव डेमो खोलें](https://ai-observatory.workers.dev/demo/)** · [AI Observatory](https://ai-observatory.workers.dev/hi/) · [GitHub](https://github.com/jxxyx-bloop/ai-observatory)
+**[लाइव डेमो खोलें](https://aiobservatory.dev/demo/)** · [AI Observatory](https://aiobservatory.dev/hi/) · [GitHub](https://github.com/jxxyx-bloop/ai-observatory)
 
 <sub>
 <a href="../../README.md">English</a> ·
@@ -33,7 +33,7 @@
 
 <br>
 
-<a href="https://ai-observatory.workers.dev/demo/">
+<a href="https://aiobservatory.dev/demo/">
 <img src="../assets/demo-light.png#gh-light-mode-only" alt="">
 <img src="../assets/demo-dark.png#gh-dark-mode-only" alt="">
 </a>
@@ -69,7 +69,7 @@ python3 observe.py demo digest report
 फिर अपने ख़ुद के इस्तेमाल पर:
 
 ```bash
-rm -rf ../data ../dist
+python3 observe.py demo --purge
 python3 observe.py all
 ```
 
@@ -98,12 +98,12 @@ python3 observe.py all
 | **कैश दर हर वेंडर की अलग** | 0.1× Anthropic की आदत है, नियम नहीं। यह ग़लत हुआ तो पेज का सबसे बड़ा आँकड़ा ग़लत हो जाता है। |
 | **तेरह मुद्राएँ** | INR, IDR, VND, THB, PHP, MYR और भी — स्थानीय दिहाड़ी के सामने रखकर, क्योंकि $412 हर जगह एक जैसा नहीं होता। |
 
-## वादा नहीं, बनावट
+## निजता बनावट से आती है
 
 **जब तक आप ख़ुद कोई फ़ाइल बदलकर अनुमति न दें, कुछ भी आपकी मशीन से बाहर नहीं जाता।**
 
 - कभी संग्रहित नहीं: प्रॉम्प्ट, जवाब, कोड, कमांड, फ़ाइल पाथ।
-- फ़ाइल पढ़ने की जगह पर ही रोका जाता है — इसलिए रिसाव नीति का सवाल नहीं, बग है।
+- हर फ़ाइल पढ़ते ही हटा दिया जाता है, इसलिए यह डैशबोर्ड तक पहुँचता ही नहीं।
 - डैशबोर्ड और यह पेज कोई बाहरी अनुरोध नहीं करते। न CDN, न फ़ॉन्ट, न एनालिटिक्स।
 
 ## दस्तावेज़

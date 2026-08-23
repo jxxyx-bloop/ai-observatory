@@ -75,6 +75,21 @@ try {
   if (shown && !(els['freshCmd'] || {}).textContent) {
     console.error('freshness strip shown without a refresh command'); process.exit(1);
   }
+
+  // Sample data discloses itself on the title line instead of in the strip —
+  // and the disclosure is the one thing on this page that must never be
+  // possible to lose, so it is asserted rather than assumed. A demo build that
+  // silently stops saying it is a demo is the worst bug this page could ship.
+  const chip = (els['demoChip'] || {}).textContent || '';
+  console.log('DEMO FLAG: chip="' + chip + '" link="'
+    + ((els['demoTry'] || {}).textContent || '') + '"');
+  if (want === 'demo') {
+    if (!chip) { console.error('sample data did not disclose itself'); process.exit(1); }
+    if (shown) { console.error('sample data should use the title flag, not the strip'); process.exit(1); }
+  }
+  if (want === 'hidden' && chip) {
+    console.error('real data must not be flagged as a sample'); process.exit(1);
+  }
 } catch (e) {
   console.error('RUNTIME ERROR:', e.message, '\n', e.stack.split('\n').slice(0,4).join('\n'));
   process.exit(1);

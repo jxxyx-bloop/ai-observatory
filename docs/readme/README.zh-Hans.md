@@ -13,7 +13,7 @@
 
 `一分钟内就能跑起来` · `无需账号` · `数据不出本机`
 
-**[打开在线演示](https://ai-observatory.workers.dev/demo/)** · [AI Observatory](https://ai-observatory.workers.dev/zh-hans/) · [GitHub](https://github.com/jxxyx-bloop/ai-observatory)
+**[打开在线演示](https://aiobservatory.dev/demo/)** · [AI Observatory](https://aiobservatory.dev/zh-hans/) · [GitHub](https://github.com/jxxyx-bloop/ai-observatory)
 
 <sub>
 <a href="../../README.md">English</a> ·
@@ -33,7 +33,7 @@
 
 <br>
 
-<a href="https://ai-observatory.workers.dev/demo/">
+<a href="https://aiobservatory.dev/demo/">
 <img src="../assets/demo-light.png#gh-light-mode-only" alt="">
 <img src="../assets/demo-dark.png#gh-dark-mode-only" alt="">
 </a>
@@ -69,7 +69,7 @@ python3 observe.py demo digest report
 然后在你自己的用量上运行：
 
 ```bash
-rm -rf ../data ../dist
+python3 observe.py demo --purge
 python3 observe.py all
 ```
 
@@ -98,12 +98,12 @@ python3 observe.py all
 | **缓存折扣因厂商而异** | 0.1× 是 Anthropic 的惯例，不是定律。算错它，页面上最重要的那个数字就错了。 |
 | **十三种货币** | IDR、VND、THB、PHP、MYR 等——并对照当地日薪，因为 412 美元在各地的分量并不一样。 |
 
-## 这是机制，不是承诺
+## 隐私源于结构本身
 
 **除非你亲手改配置文件，否则没有任何数据离开本机。**
 
 - 从不存储：提示词、回复、代码、命令、文件路径。
-- 在解析文件的那一层就挡掉——所以泄漏是 bug，而不是政策问题。
+- 读取每个文件时即丢弃，因此从不会进入仪表板。
 - 看板和本页都不发起任何外部请求。无 CDN、无字体、无统计。
 
 ## 文档

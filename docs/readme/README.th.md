@@ -13,7 +13,7 @@ agent ของคุณบันทึกทุกเทิร์นไว้�
 
 `ตั้งค่าเสร็จในไม่ถึงหนึ่งนาที` · `ไม่ต้องมีบัญชี` · `ไม่มีข้อมูลออกจากเครื่อง`
 
-**[เปิดเดโม](https://ai-observatory.workers.dev/demo/)** · [AI Observatory](https://ai-observatory.workers.dev/th/) · [GitHub](https://github.com/jxxyx-bloop/ai-observatory)
+**[เปิดเดโม](https://aiobservatory.dev/demo/)** · [AI Observatory](https://aiobservatory.dev/th/) · [GitHub](https://github.com/jxxyx-bloop/ai-observatory)
 
 <sub>
 <a href="../../README.md">English</a> ·
@@ -33,7 +33,7 @@ agent ของคุณบันทึกทุกเทิร์นไว้�
 
 <br>
 
-<a href="https://ai-observatory.workers.dev/demo/">
+<a href="https://aiobservatory.dev/demo/">
 <img src="../assets/demo-light.png#gh-light-mode-only" alt="">
 <img src="../assets/demo-dark.png#gh-dark-mode-only" alt="">
 </a>
@@ -69,7 +69,7 @@ python3 observe.py demo digest report
 จากนั้นรันกับการใช้งานจริงของคุณ:
 
 ```bash
-rm -rf ../data ../dist
+python3 observe.py demo --purge
 python3 observe.py all
 ```
 
@@ -98,12 +98,12 @@ python3 observe.py all
 | **อัตราแคชต่างกันตามผู้ให้บริการ** | ส่วนลด 0.1× เป็นธรรมเนียมของ Anthropic ไม่ใช่กฎ ถ้าคิดผิด ตัวเลขที่สำคัญที่สุดบนหน้าก็ผิดตาม |
 | **สิบสามสกุลเงิน** | THB, IDR, VND, PHP, MYR และอื่น ๆ — เทียบกับค่าแรงรายวันในพื้นที่ เพราะ 412 ดอลลาร์ไม่ได้มีความหมายเท่ากันทุกที่ |
 
-## เป็นกลไก ไม่ใช่คำสัญญา
+## ความเป็นส่วนตัวมาจากโครงสร้าง
 
 **ไม่มีอะไรออกจากเครื่องคุณ เว้นแต่คุณจะแก้ไฟล์เพื่ออนุญาตเอง**
 
 - ไม่เก็บเด็ดขาด: พรอมป์ต์ คำตอบ โค้ด คำสั่ง และพาธไฟล์
-- ปิดกั้นตั้งแต่จุดที่อ่านไฟล์ — การรั่วไหลจึงเป็นบั๊ก ไม่ใช่เรื่องนโยบาย
+- ถูกทิ้งตั้งแต่ตอนอ่านแต่ละไฟล์ จึงไม่เคยไปถึงแดชบอร์ด
 - ทั้งแดชบอร์ดและหน้านี้ไม่มีการเรียกภายนอกเลย ไม่มี CDN ไม่มีฟอนต์ ไม่มี analytics
 
 ## เอกสาร
