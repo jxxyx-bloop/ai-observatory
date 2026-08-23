@@ -116,7 +116,19 @@ var l=localStorage.getItem("observatory-lang");if(l)r.setAttribute("data-lang",l
   </div>
 
   <header class="pagehead">
-    <h1 data-i18n="title">Your AI coding, measured.</h1>
+    <!-- The sample-data disclosure lives on the title line rather than in a
+         banner above it. The banner carried a `git clone` command with a
+         scrollbar, which is the least useful thing it could offer a reader who
+         is looking at a hosted page and is not in a terminal. A chip and a link
+         say the same thing in a tenth of the space, and the link goes where the
+         command was trying to send them anyway. -->
+    <div class="pageheadrow">
+      <h1 data-i18n="title">Your AI coding, measured.</h1>
+      <p class="demoflag" id="demoFlag" hidden>
+        <span class="demochip" id="demoChip">Sample data</span>
+        <a class="demotry" id="demoTry" href="#">Try it yourself</a>
+      </p>
+    </div>
     <p class="sub" id="span">Loading…</p>
   </header>
 

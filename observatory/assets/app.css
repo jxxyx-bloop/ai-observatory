@@ -297,7 +297,10 @@ code{font:12.5px ui-monospace,SFMono-Regular,Menlo,monospace;background:var(--tr
    nav item because it leaves the page, and a link that navigates away should
    not look identical to the seven that scroll. */
 .railcta{display:flex;flex-direction:column;align-items:center;gap:5px;
-  margin:6px 8px 0;padding:10px 4px;border-radius:var(--r-sm,10px);
+  /* Wider than the label needs. At 8px of side margin against 4px of padding
+     the fill hugged the word, which read as cramped next to the rail items
+     above it — those get their breathing room from the rail's own padding. */
+  margin:6px 4px 0;padding:11px 10px;border-radius:var(--r-sm,10px);
   color:var(--accent-ink);background:var(--accent);
   font-size:10.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;
   text-decoration:none;text-align:center}
@@ -336,11 +339,21 @@ code{font:12.5px ui-monospace,SFMono-Regular,Menlo,monospace;background:var(--tr
    be read. Three states share one box: `demo` (indigo — sample data), `aging`
    (a day behind) and `stale` (a week behind). A fresh report renders nothing,
    so the strip costs zero pixels in the normal case. */
+/* Title line: heading left, sample-data flag right. Wraps to its own line on a
+   narrow screen rather than squeezing the heading. */
+.pageheadrow{display:flex;align-items:baseline;justify-content:space-between;
+  gap:12px;flex-wrap:wrap}
+.demoflag{margin:0;display:flex;align-items:center;gap:9px;flex:none}
+.demochip{font-size:10.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;
+  padding:3px 8px;border-radius:999px;white-space:nowrap;
+  color:var(--accent-ink);background:var(--accent)}
+.demotry{font-size:12.5px;font-weight:600;color:var(--accent);white-space:nowrap}
+.demotry:hover{text-decoration:underline}
+
 .fresh{display:flex;gap:14px;align-items:center;flex-wrap:wrap;
   margin:0 0 22px;padding:13px 16px;border:1px solid var(--line);
   border-left-width:3px;border-radius:var(--r-sm,10px);background:var(--card,var(--bg))}
 .fresh[hidden]{display:none}
-.fresh.demo{border-left-color:var(--accent);background:var(--accent-soft)}
 .fresh.aging{border-left-color:var(--med)}
 .fresh.stale{border-left-color:var(--high)}
 /* Pinned to the first line rather than centred: once the text wraps to three

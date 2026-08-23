@@ -1328,12 +1328,27 @@ function initFreshness() {
   var hours = isFinite(stamp) ? (Date.now() - stamp) / 36e5 : 0;
   var state = null;
 
+  /* Sample data says so on the title line, not in a banner. The strip below
+     exists to hand somebody a refresh command, and on a hosted demo there is no
+     local dashboard to refresh — the command was decoration with a scrollbar.
+     The disclosure itself is not optional, so it moves rather than goes: a chip
+     beside the heading, and the link the reader actually wants. */
   if (meta.demo) {
-    state = { cls: "demo", head: t18("fresh_demo_h", "This is sample data."),
-              body: t18("fresh_demo_b",
-                        "Nobody's real usage is shown here. Set it up to see your own \u2014 "
-                        + "it reads transcripts already on your machine and costs no tokens.") };
-  } else if (hours >= 168) {
+    var flag = $("demoFlag");
+    if (flag) {
+      $("demoChip").textContent = t18("demo_chip", "Sample data");
+      var try_ = $("demoTry");
+      if (meta.setup) {
+        try_.href = meta.setup;
+        try_.textContent = t18("demo_try", "Try it yourself");
+      } else {
+        try_.hidden = true;      /* a file:// copy has no site to point at */
+      }
+      flag.hidden = false;
+    }
+    return;                      /* nothing further to show */
+  }
+  if (hours >= 168) {
     state = { cls: "stale", head: t18("fresh_old_h", "This dashboard is out of date."),
               body: fill(t18("fresh_old_b", "Last built {a}. Refresh to pull in everything since."),
                          { a: ago(hours) }) };
