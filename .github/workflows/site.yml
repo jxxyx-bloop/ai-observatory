@@ -25,8 +25,12 @@ jobs:
     name: build site
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          # This job never pushes, so it has no use for the token —
+          # and it runs unreviewed pull-request code.
+          persist-credentials: false
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
         with:
           python-version: "3.12"
 
@@ -69,6 +73,130 @@ jobs:
           test -s "$ASSETS/_headers" || { echo "::error::_headers missing from '$ASSETS'"; exit 1; }
           test -s "$ASSETS/sitemap.xml" || { echo "::error::sitemap.xml missing from '$ASSETS'"; exit 1; }
           echo "ok — $ASSETS has index.html, demo/index.html, _headers and sitemap.xml"
+
+      - name: _headers must carry every required security header
+        env:
+          ASSETS: ${{ steps.cfg.outputs.assets }}
+        run: |
+          # A green `test -s` above is exactly why HSTS could go missing
+          # unnoticed: the file existing says nothing about what is in it. Name
+          # the headers the deployment owes its readers, and check for them.
+          python3 - <<'PY'
+          import os, pathlib, re
+          text = (pathlib.Path(os.environ["ASSETS"]) / "_headers").read_text()
+          got = {m.group(1).lower(): m.group(2).strip()
+                 for m in re.finditer(r"^\s*([A-Za-z-]+):\s*(.+)$", text, re.M)}
+          fail = []
+
+          for h in ("Strict-Transport-Security", "X-Frame-Options",
+                    "X-Content-Type-Options", "Referrer-Policy",
+                    "Permissions-Policy", "Content-Security-Policy",
+                    "Cross-Origin-Opener-Policy", "Cross-Origin-Resource-Policy",
+                    "X-Permitted-Cross-Domain-Policies"):
+              if h.lower() not in got:
+                  fail.append(f"missing header: {h}")
+
+          # Present but max-age=0 reads as configured while switching HSTS off,
+          # so the floor is checked too, not just the header's name.
+          hsts = got.get("strict-transport-security", "")
+          age = re.search(r"max-age=(\d+)", hsts)
+          if not age or int(age.group(1)) < 31536000:
+              fail.append(f"Strict-Transport-Security needs max-age >= 31536000, got: {hsts!r}")
+          # preload is close to irreversible; it is not something to acquire by
+          # accident in a refactor.
+          if "preload" in hsts:
+              fail.append("Strict-Transport-Security must not claim preload without a deliberate decision")
+
+          if got.get("referrer-policy") != "no-referrer":
+              fail.append(f"Referrer-Policy must stay no-referrer, got: {got.get('referrer-policy')!r}")
+
+          csp = got.get("content-security-policy", "")
+          directives = {d.strip().split(" ")[0]: d.strip()
+                        for d in csp.split(";") if d.strip()}
+          for d in ("default-src", "script-src", "frame-ancestors", "base-uri",
+                    "form-action"):
+              if d not in directives:
+                  fail.append(f"CSP is missing {d}")
+          # The point of the hashes. If 'unsafe-inline' ever comes back to
+          # script-src, injected markup executes again and the rest of this
+          # file is decoration.
+          script = directives.get("script-src", "")
+          if "'unsafe-inline'" in script or "'unsafe-eval'" in script:
+              fail.append("CSP script-src must not allow 'unsafe-inline' or 'unsafe-eval'")
+          if "sha256-" not in script:
+              fail.append("CSP script-src must pin the build's own inline scripts by hash")
+          if "*" in csp:
+              fail.append("CSP must not contain a wildcard source")
+
+          if fail:
+              for line in fail:
+                  print(f"::error::{line}")
+              raise SystemExit(1)
+          print(f"ok — {len(got)} headers, CSP pins "
+                f"{script.count('sha256-')} inline scripts by hash")
+          PY
+
+      - name: The CSP must match the scripts actually shipped
+        env:
+          ASSETS: ${{ steps.cfg.outputs.assets }}
+        run: |
+          # The hashes are generated, so they cannot be wrong by typo — but they
+          # can be stale if the build ever writes _headers before a page. A hash
+          # that matches nothing fails silently in CI and blanks the page in a
+          # browser, so recompute independently and compare.
+          python3 - <<'PY'
+          import base64, hashlib, os, pathlib, re
+          root = pathlib.Path(os.environ["ASSETS"])
+          tag = re.compile(r"<script(?![^>]*\bsrc\s*=)[^>]*>(.*?)</script>", re.I | re.S)
+          shipped = set()
+          for page in sorted(root.rglob("*.html")):
+              for body in tag.findall(page.read_text(encoding="utf-8")):
+                  shipped.add("'sha256-" + base64.b64encode(
+                      hashlib.sha256(body.encode("utf-8")).digest()).decode() + "'")
+          csp = (root / "_headers").read_text()
+          declared = set(re.findall(r"'sha256-[A-Za-z0-9+/=]+'", csp))
+          if shipped - declared:
+              print("::error::inline scripts the CSP would block: "
+                    + ", ".join(sorted(shipped - declared)))
+              raise SystemExit(1)
+          if declared - shipped:
+              print("::error::CSP authorises scripts that are not on any page: "
+                    + ", ".join(sorted(declared - shipped)))
+              raise SystemExit(1)
+          print(f"ok — {len(shipped)} inline scripts, every one authorised")
+          PY
+
+      - name: The local dashboard must carry its own policy
+        run: |
+          # The hosted copy gets headers from _headers. The copy people open from
+          # file:// gets nothing, and it is the one holding real data — so the
+          # policy has to be inside the document. Render one and look.
+          python3 - <<'PY'
+          import pathlib, re, sys
+          sys.path.insert(0, "observatory")
+          import analyze, demo, insights, normalize, pricing, render
+          import tempfile
+          with tempfile.TemporaryDirectory() as tmp:
+              data = pathlib.Path(tmp)
+              normalize.write_events(data, demo.generate())
+              prices = pricing.load_pricing()
+              digest = analyze.build_digest(normalize.read_events(data), prices)
+              digest["findings"] = insights.generate(digest, prices)
+              page = render.render(digest)
+          meta = re.search(r'<meta http-equiv="Content-Security-Policy" content="([^"]+)"', page)
+          if not meta:
+              print("::error::the rendered dashboard carries no Content-Security-Policy")
+              raise SystemExit(1)
+          policy = meta.group(1)
+          if "'unsafe-inline'" in policy.split("style-src")[0]:
+              print("::error::dashboard script-src allows 'unsafe-inline'")
+              raise SystemExit(1)
+          if "sha256-" not in policy:
+              print("::error::dashboard CSP pins no script hashes")
+              raise SystemExit(1)
+          print(f"ok — dashboard ships a CSP pinning "
+                f"{policy.count('sha256-')} of its own scripts")
+          PY
 
       - name: Every declared locale must have a page
         env:
@@ -117,7 +245,7 @@ jobs:
       - name: The findings carousel must advance, and pause only over the deck
         run: node site/tools/carousel_check.js
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: site
           path: ${{ steps.cfg.outputs.assets }}
