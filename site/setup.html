@@ -58,13 +58,38 @@ r.setAttribute("data-theme",t);}catch(e){}r.className+=" js";})();
   <p class="eyebrow">Setup</p>
   <h1>One command, about a minute</h1>
   <p class="lede narrow">You have seen the demo. This puts the same dashboard on
-    your machine, with your own numbers in it. Paste one line — it checks your
-    setup, collects what is already on your disk, builds the dashboard, puts an
-    icon in your Dock, and opens it.</p>
-  <div class="cmd hero-cmd">
-    <code id="cmd1">git clone https://github.com/jxxyx-bloop/ai-observatory.git &amp;&amp; cd ai-observatory/observatory &amp;&amp; python3 observe.py setup</code>
-    <button class="copybtn" type="button" data-copy data-done="Copied">Copy</button>
+    your machine, with your own numbers in it. Two ways to get there — pick
+    whichever you are already sitting in front of.</p>
+
+  <!-- Agent first, and by a clear margin. Everyone reading this has a coding
+       agent open — that is the whole premise of the product — and for them the
+       install is one paste with nothing to read and no terminal to find. The
+       terminal path is not hidden, it is second: someone who prefers it knows
+       they prefer it and will look. Putting them side by side and letting the
+       reader guess is what makes a page feel technical. -->
+  <div class="path lead">
+    <p class="pathtag">Easiest — no terminal</p>
+    <h2>Let your coding agent do it</h2>
+    <p class="pathlede">Paste this into Claude Code, Codex, Cursor or Gemini CLI.
+      It installs everything, then tells you what it found in your own usage.</p>
+    <div class="cmd">
+      <code id="cmdagent">Clone https://github.com/jxxyx-bloop/ai-observatory, then from its observatory/ folder run: python3 observe.py setup — it checks the machine, collects my local transcripts, builds the dashboard and installs a launcher. Then run python3 observe.py insights and summarise the top three findings for me.</code>
+      <button class="copybtn" type="button" data-copy data-done="Copied">Copy</button>
+    </div>
+    <p class="fine">It only reads transcript files already on your disk and
+      writes inside the project folder. Nothing is uploaded, nothing is deleted,
+      and collecting costs no tokens.</p>
   </div>
+
+  <div class="path alt">
+    <p class="pathtag">Prefer the terminal?</p>
+    <h2>Paste one line yourself</h2>
+    <div class="cmd">
+      <code id="cmd1">git clone https://github.com/jxxyx-bloop/ai-observatory.git &amp;&amp; cd ai-observatory/observatory &amp;&amp; python3 observe.py setup</code>
+      <button class="copybtn" type="button" data-copy data-done="Copied">Copy</button>
+    </div>
+  </div>
+
   <ul class="facts" role="list">
     <li>Works on macOS, Linux and Windows</li>
     <li>Python 3 — already on macOS and Linux</li>
@@ -82,7 +107,12 @@ r.setAttribute("data-theme",t);}catch(e){}r.className+=" js";})();
      happens, and the terminal prints these same five headings as it runs, so
      the page and the screen agree. -->
 <section class="phases">
-  <h2>What that one line does</h2>
+  <!-- `details`, not a script: it works with JavaScript off, keyboard and
+       screen-reader behaviour comes free, and the browser handles the state.
+       Open by default — somebody about to let a command read their transcripts
+       should not have to go looking for what it does. -->
+  <details class="fold" open>
+    <summary><h2>What that one line does</h2></summary>
   <ol class="phaselist" role="list">
     <li>
       <span class="phasenum" aria-hidden="true">1</span>
@@ -195,6 +225,8 @@ Done. Opening your dashboard now.</pre>
     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12.5l5 5L20 6.5"></path></svg>
     My dashboard opened
   </button>
+
+  </details>
 </section>
 
 <!-- ── Done ────────────────────────────────────────────────────────────────
@@ -235,55 +267,53 @@ Done. Opening your dashboard now.</pre>
   </dl>
 </section>
 
-<!-- ── Agent path ──────────────────────────────────────────────────────────
-     This tool's users are, by definition, people with a coding agent open. For
-     them the fastest install is not three commands but one paragraph, and
-     pretending otherwise ignores the audience. -->
-<section class="agentcard">
-  <h2>Or let your coding agent do it</h2>
-  <p class="lede narrow">You already have one open — that is why you are here.
-    Paste this into Claude Code, Codex, Cursor or Gemini CLI and it will run
-    every step above, then tell you what it found.</p>
-  <div class="cmd">
-    <code id="cmdagent">Clone https://github.com/jxxyx-bloop/ai-observatory, then from its observatory/ folder run: python3 observe.py demo digest report — check the dashboard renders, then clear ../data and ../dist, run python3 observe.py all to collect my real usage, and finish with python3 observe.py install --dock. Then run python3 observe.py insights and summarise the top three findings for me.</code>
-    <button class="copybtn" type="button" data-copy data-done="Copied">Copy</button>
-  </div>
-  <p class="fine">It only reads local transcript files and writes inside the
-    project folder — nothing is uploaded, and no tokens are spent collecting.</p>
-</section>
 
 <!-- ── Trouble ─────────────────────────────────────────────────────────── -->
+<!-- ── Trouble ───────────────────────────────────────────────────────────
+     Five questions, five short answers. As a `dl` it was five headings and
+     five paragraphs stacked in a wall — the shape said "read all of this",
+     when the reader wants exactly one of them and does not yet know which.
+     An accordion shows the five questions and nothing else, so finding yours
+     is scanning, not reading. Answers start closed for that reason; the
+     questions stay visible, because collapsing those too would hide the only
+     thing worth scanning. -->
 <section class="troublesec">
   <h2>If something did not work</h2>
   <p class="lede narrow">Five things go wrong, and all five have a one-line
     answer. <code>python3 observe.py doctor</code> checks every step and prints
     the fix for whichever failed.</p>
-  <dl class="troublelist">
-    <dt>“python3: command not found”</dt>
-    <dd>macOS and Linux ship Python 3, so this is almost always Windows.
+  <div class="qalist">
+    <details class="qa">
+      <summary>“python3: command not found”</summary>
+      <div class="qabody">macOS and Linux ship Python 3, so this is almost always Windows.
       Install it from python.org, tick <em>Add Python to PATH</em>, then use
-      <code>python</code> instead of <code>python3</code>.</dd>
-
-    <dt>“sync: 0 new events from 0 sources”</dt>
-    <dd>No supported tool has run on this machine yet, or its transcripts live
+      <code>python</code> instead of <code>python3</code>.</div>
+    </details>
+    <details class="qa">
+      <summary>“sync: 0 new events from 0 sources”</summary>
+      <div class="qabody">No supported tool has run on this machine yet, or its transcripts live
       somewhere non-standard. Expected on a fresh laptop — the sample data from
-      step 1 still shows the whole product.</dd>
-
-    <dt>The page says there is no digest yet</dt>
-    <dd>Collecting and rendering are separate steps. Run
-      <code>python3 observe.py all</code>, which does every step in order.</dd>
-
-    <dt>Nothing opened in my browser</dt>
-    <dd>The file is still there — open <code>dist/observatory.html</code> from
+      step 1 still shows the whole product.</div>
+    </details>
+    <details class="qa">
+      <summary>The page says there is no digest yet</summary>
+      <div class="qabody">Collecting and rendering are separate steps. Run
+      <code>python3 observe.py all</code>, which does every step in order.</div>
+    </details>
+    <details class="qa">
+      <summary>Nothing opened in my browser</summary>
+      <div class="qabody">The file is still there — open <code>dist/observatory.html</code> from
       the project folder. Scheduled runs never open a browser on purpose, so a
-      morning refresh cannot steal focus while you work.</dd>
-
-    <dt>macOS says the app is from an unidentified developer</dt>
-    <dd>That warning belongs to downloaded apps. This one is generated on your
+      morning refresh cannot steal focus while you work.</div>
+    </details>
+    <details class="qa">
+      <summary>macOS says the app is from an unidentified developer</summary>
+      <div class="qabody">That warning belongs to downloaded apps. This one is generated on your
       own machine, so it should never appear — if it does, the app was copied
       from another computer. Delete it and run
-      <code>python3 observe.py install --dock</code> again.</dd>
-  </dl>
+      <code>python3 observe.py install --dock</code> again.</div>
+    </details>
+  </div>
 </section>
 
 </main>

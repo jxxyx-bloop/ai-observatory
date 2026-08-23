@@ -69,7 +69,7 @@ python3 observe.py demo digest report
 फिर अपने ख़ुद के इस्तेमाल पर:
 
 ```bash
-rm -rf ../data ../dist
+python3 observe.py demo --purge
 python3 observe.py all
 ```
 

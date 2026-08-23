@@ -69,7 +69,7 @@ python3 observe.py demo digest report
 그다음, 본인의 사용 기록으로 실행합니다:
 
 ```bash
-rm -rf ../data ../dist
+python3 observe.py demo --purge
 python3 observe.py all
 ```
 
