@@ -1,79 +1,113 @@
 # Repository metadata — the description and the topics
 
-GitHub indexes the repository **description** and **topics** as well as the
-name, and topic pages are their own browse surface. Both were empty until this
+GitHub indexes the repository **description** and **topics** alongside the name,
+and topic pages are their own browse surface. Both were empty until this
 document; an empty description is a search result with nothing in it.
 
-They are set in the GitHub UI (**About** → gear, and Settings → General), not in
-this repository, so they are recorded here to stop them drifting or being lost.
+They are set in the GitHub UI (**About** → gear), not in this repository, so
+they are recorded here to stop them drifting or being lost.
 
-## The split
+## What the category actually does
 
-The two fields do different jobs, and the strongest repos in this category do
-not make them do the same one.
+Sixteen repositories carrying `topic:token-usage`, from 116 to 9,611 stars,
+measured rather than eyeballed:
 
-| Field | Job |
+| Trait | Share |
 |---|---|
-| **Description** | Sell. Short imperative sentences a stranger reads in one pass. |
-| **Topics** | Carry the keywords. Exact-match browse surfaces, no prose. |
+| Contains "token" | **93%** |
+| Names at least one tool (Claude Code, Codex, Cursor…) | **87%** |
+| Opens with a qualifier + a category noun | **81%** |
+| Contains "cost" | 62% |
+| Ends on a differentiator clause | 56% |
+| Says "local" / "local-first" | 50% |
+| Contains a digit | 25% |
 
-[`token-optimizer`](https://github.com/alexgreensh/token-optimizer) (1.9k stars)
-is the clearest example: its description — *"Find the ghost tokens. Fix them.
-Survive compaction. Avoid context quality decay."* — is 80 characters, four
-imperatives, and names **no tool at all**. `claude-code`, `token-usage` and
-`context-window` are topics instead. The description does not have to carry the
-search terms, so it is free to be a sentence rather than a keyword list.
+**Median length 155 characters**; 160 across the repos above 600 stars.
+[`token-optimizer`](https://github.com/alexgreensh/token-optimizer)'s
+80-character *"Find the ghost tokens. Fix them…"* is the shortest in the set and
+an outlier, not the pattern — imitating it means dropping the three traits that
+nearly everyone else keeps.
+
+The recurring shape, clearest in
+[`TokenTracker`](https://github.com/xiufengsun/TokenTracker) (159 chars) and
+[`token-monitor`](https://github.com/Javis603/token-monitor) (179):
+
+> **[qualifier] [what it measures] [category noun] for [tools] — [differentiator]**
+
+"AI coding" appears in 43%, but always as a concrete category noun — *AI coding
+**agents***, *AI coding **tools***. Never as a bare possessive. "your AI coding"
+is the vague version and is what to avoid, not the phrase itself.
 
 ## Description
 
-> Find the waste in your AI coding. Price it. Fix it. Runs on your machine.
+> Local-first token usage & cost tracker that says what to change, not just what you spent. 15 checks, each priced. Claude Code, Codex, Kimi, Antigravity.
 
-Seventy-two characters, four clauses, one idea each. It states the loop the
-product actually performs — find, price, fix — and closes on the local-first
-promise that is table stakes in this category and the first thing a reader
-checks for.
+152 characters, against a category median of 155.
 
-Deliberately absent: "token", "cost", "Claude Code". Those are topics. Spending
-description characters on words that are already indexed elsewhere buys nothing
-and costs the sentence its rhythm.
+**The first sentence is 89 characters, and that is deliberate.** GitHub's About
+box truncates around ninety; `token-monitor`'s tool list is cut mid-word there.
+Everything past that point is indexed by search but never read by a human, so
+the ordering is forced: the claim no competitor can make goes first, and the
+tool names — which are also topics, and so indexed twice over — take the tail.
+
+That first sentence is the whole product. Every other tracker in the table above
+reports *what you spent*. This one says *what to change*. Putting the contrast
+inside the visible window is worth more than putting the tool list there.
+
+Rejected, and why:
+
+- *"Find the waste in your AI coding. Price it. Fix it. Runs on your machine."*
+  — 73 characters, no "token", no "cost", no tool named. Three of the category's
+  strongest traits dropped at once, in exchange for a rhythm copied from the one
+  repo that is an outlier.
+- A version leading with the tool list — conventional, but it spends the visible
+  ninety characters on the half a reader could get from thirty other repos.
 
 ## Topics
 
+Frequency across the fourteen top repos in the category, which is what decides
+the first nine:
+
 ```
-token-usage      token-tracker    token-cost       ai-cost
-cost-tracker     cost-optimization
-claude-code      codex            kimi             antigravity
-deepseek         glm
+token-usage 13/14 · claude-code 12/14 · developer-tools 10/14 · cli 8/14
+codex 8/14 · cost-tracking 7/14 · observability 6/14 · local-first 6/14
+dashboard 6/14
+```
+
+The twenty to set, at the cap:
+
+```
+token-usage      claude-code      developer-tools   cli
+codex            cost-tracking    observability     local-first
+dashboard        privacy-first    python
+token-tracker    usage-tracker    ai-cost
+kimi             antigravity      deepseek          glm
 peak-pricing     plan-value
-local-first      privacy-first
 ```
 
-Four groups, and each is there for a different reason.
+Four groups, and only the last is a guess.
 
-**The category words** (`token-usage`, `token-tracker`, `token-cost`, `ai-cost`,
-`cost-tracker`, `cost-optimization`) are what someone types when they do not yet
-know this project exists. `token-usage` in particular is carried by every
-serious competitor — [`token-monitor`](https://github.com/Javis603/token-monitor),
-[`TokenTracker`](https://github.com/xiufengsun/TokenTracker), `token-optimizer`
-— which is the evidence that it is the browse path that matters.
+**Proven by frequency** (row 1–3 above). `cost-tracking` — not `cost-tracker`,
+which one repo in fourteen uses. `observability` is included on the evidence
+even though it also means LLM tracing elsewhere: six of fourteen here use it,
+including the two largest, and the data beats the worry.
 
-**The tools we actually read** (`claude-code`, `codex`, `kimi`, `antigravity`)
-and no others. A topic for a tool without a collector would draw a visitor who
-bounces on the first paragraph, and this project's whole argument is that it
-does not overclaim.
+**The tools we actually read** — `claude-code`, `codex`, `kimi`, `antigravity`,
+and no others, checked against `observatory/collectors/`. A topic for a tool
+with no collector draws a visitor who bounces on the first paragraph, and not
+overclaiming is this project's whole argument.
 
-**The vendors we price by the hour** (`deepseek`, `glm`). Defensible because
-peak/off-peak billing for exactly these two is implemented in
-[`pricing.py`](../../observatory/pricing.py), not aspirational.
+**The vendors we price by the hour** — `deepseek`, `glm`. Both are implemented
+in [`pricing.py`](../../observatory/pricing.py), not aspirational.
 
-**The terms we would like to own** (`peak-pricing`, `plan-value`). Nothing else
-in this category uses either. A topic nobody competes for is a page this project
-sits alone on, and both name a real differentiator rather than a slogan —
-the same move `token-optimizer` makes with `ghost-tokens`.
+**Terms to own** — `peak-pricing`, `plan-value`. Nothing in the category uses
+either. Speculative by construction: an uncontested topic is a page this project
+sits alone on, and both name a real differentiator rather than a slogan. The
+same move `token-optimizer` makes with `ghost-tokens`.
 
-Held in reserve, if a slot frees up: `usage-tracker`, `llm-cost`,
-`developer-tools`, `cli`, `python`, `dashboard`. All real browse paths, all
-lower signal than the sixteen above. The cap is twenty.
+Dropped after measuring: `token-cost` and `cost-optimization` (rare), and
+`llm-cost` (rarer). Reserve, if a slot frees: `ai-coding`, `anthropic`, `llm`,
+`ai-tools`.
 
 ## Homepage
 
