@@ -70,12 +70,20 @@ document.documentElement.className+=" js";})();
         </svg>
       </button>
 
-      <!-- Wide, like the language button beside it: the octocat alone reads as
-           any circular mark until you already know what this site is, and
-           "GitHub" is a name, not copy, so it stays as-is in every locale. -->
-      <a class="iconbtn wide" href="{{repo}}" rel="noopener" title="GitHub" aria-label="GitHub">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 19c-4.3 1.3-4.3-2.2-6-2.6m12 5v-3.4a3 3 0 0 0-.8-2.3c2.7-.3 5.5-1.3 5.5-6a4.6 4.6 0 0 0-1.3-3.2 4.3 4.3 0 0 0-.1-3.2s-1-.3-3.4 1.3a11.7 11.7 0 0 0-6 0C6.5 2.9 5.5 3.2 5.5 3.2a4.3 4.3 0 0 0-.1 3.2A4.6 4.6 0 0 0 4 9.7c0 4.6 2.8 5.6 5.5 6a3 3 0 0 0-.8 2.2V21"></path></svg>
-        <span class="label">GitHub</span>
+      <!-- Asking, rather than pointing. The octocat alone reads as any circular
+           mark until you already know what this site is, and "GitHub" as a label
+           names a destination without saying why anyone would go there. A star
+           is the one thing a reader of an open-source page can give back in a
+           second, so the button asks for it outright and leads with the star
+           rather than the wordmark.
+
+           Filled star, outlined button: the Demo pill beside it is still the
+           primary action and this must not compete with it. "GitHub" stays
+           untranslated inside the translated phrase — it is a name. -->
+      <a class="iconbtn wide starbtn" href="{{repo}}" rel="noopener"
+         title="{{star_cta}}" aria-label="{{star_cta}}">
+        <svg class="star" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.6l2.5 5.3 5.6.8-4.1 4 1 5.7-5-2.7-5 2.7 1-5.7-4.1-4 5.6-.8Z"></path></svg>
+        <span class="label">{{star_cta}}</span>
       </a>
 
       <a class="cta sm" href="{{base}}demo/">{{nav_demo}}</a>
