@@ -74,97 +74,15 @@ jobs:
           test -s "$ASSETS/sitemap.xml" || { echo "::error::sitemap.xml missing from '$ASSETS'"; exit 1; }
           echo "ok — $ASSETS has index.html, demo/index.html, _headers and sitemap.xml"
 
-      - name: _headers must carry every required security header
+      - name: _headers must protect every page it serves
         env:
           ASSETS: ${{ steps.cfg.outputs.assets }}
         run: |
-          # A green `test -s` above is exactly why HSTS could go missing
-          # unnoticed: the file existing says nothing about what is in it. Name
-          # the headers the deployment owes its readers, and check for them.
-          python3 - <<'PY'
-          import os, pathlib, re
-          text = (pathlib.Path(os.environ["ASSETS"]) / "_headers").read_text()
-          got = {m.group(1).lower(): m.group(2).strip()
-                 for m in re.finditer(r"^\s*([A-Za-z-]+):\s*(.+)$", text, re.M)}
-          fail = []
-
-          for h in ("Strict-Transport-Security", "X-Frame-Options",
-                    "X-Content-Type-Options", "Referrer-Policy",
-                    "Permissions-Policy", "Content-Security-Policy",
-                    "Cross-Origin-Opener-Policy", "Cross-Origin-Resource-Policy",
-                    "X-Permitted-Cross-Domain-Policies"):
-              if h.lower() not in got:
-                  fail.append(f"missing header: {h}")
-
-          # Present but max-age=0 reads as configured while switching HSTS off,
-          # so the floor is checked too, not just the header's name.
-          hsts = got.get("strict-transport-security", "")
-          age = re.search(r"max-age=(\d+)", hsts)
-          if not age or int(age.group(1)) < 31536000:
-              fail.append(f"Strict-Transport-Security needs max-age >= 31536000, got: {hsts!r}")
-          # preload is close to irreversible; it is not something to acquire by
-          # accident in a refactor.
-          if "preload" in hsts:
-              fail.append("Strict-Transport-Security must not claim preload without a deliberate decision")
-
-          if got.get("referrer-policy") != "no-referrer":
-              fail.append(f"Referrer-Policy must stay no-referrer, got: {got.get('referrer-policy')!r}")
-
-          csp = got.get("content-security-policy", "")
-          directives = {d.strip().split(" ")[0]: d.strip()
-                        for d in csp.split(";") if d.strip()}
-          for d in ("default-src", "script-src", "frame-ancestors", "base-uri",
-                    "form-action"):
-              if d not in directives:
-                  fail.append(f"CSP is missing {d}")
-          # The point of the hashes. If 'unsafe-inline' ever comes back to
-          # script-src, injected markup executes again and the rest of this
-          # file is decoration.
-          script = directives.get("script-src", "")
-          if "'unsafe-inline'" in script or "'unsafe-eval'" in script:
-              fail.append("CSP script-src must not allow 'unsafe-inline' or 'unsafe-eval'")
-          if "sha256-" not in script:
-              fail.append("CSP script-src must pin the build's own inline scripts by hash")
-          if "*" in csp:
-              fail.append("CSP must not contain a wildcard source")
-
-          if fail:
-              for line in fail:
-                  print(f"::error::{line}")
-              raise SystemExit(1)
-          print(f"ok — {len(got)} headers, CSP pins "
-                f"{script.count('sha256-')} inline scripts by hash")
-          PY
-
-      - name: The CSP must match the scripts actually shipped
-        env:
-          ASSETS: ${{ steps.cfg.outputs.assets }}
-        run: |
-          # The hashes are generated, so they cannot be wrong by typo — but they
-          # can be stale if the build ever writes _headers before a page. A hash
-          # that matches nothing fails silently in CI and blanks the page in a
-          # browser, so recompute independently and compare.
-          python3 - <<'PY'
-          import base64, hashlib, os, pathlib, re
-          root = pathlib.Path(os.environ["ASSETS"])
-          tag = re.compile(r"<script(?![^>]*\bsrc\s*=)[^>]*>(.*?)</script>", re.I | re.S)
-          shipped = set()
-          for page in sorted(root.rglob("*.html")):
-              for body in tag.findall(page.read_text(encoding="utf-8")):
-                  shipped.add("'sha256-" + base64.b64encode(
-                      hashlib.sha256(body.encode("utf-8")).digest()).decode() + "'")
-          csp = (root / "_headers").read_text()
-          declared = set(re.findall(r"'sha256-[A-Za-z0-9+/=]+'", csp))
-          if shipped - declared:
-              print("::error::inline scripts the CSP would block: "
-                    + ", ".join(sorted(shipped - declared)))
-              raise SystemExit(1)
-          if declared - shipped:
-              print("::error::CSP authorises scripts that are not on any page: "
-                    + ", ".join(sorted(declared - shipped)))
-              raise SystemExit(1)
-          print(f"ok — {len(shipped)} inline scripts, every one authorised")
-          PY
+          # Was sixty lines of Python inlined here. It moved into a tool when
+          # `_headers` gained a second block, because a check that only ever
+          # read the last one would have passed a policy it never looked at —
+          # and because a contributor should be able to run it before pushing.
+          python3 site/tools/check_headers.py "$ASSETS"
 
       - name: The local dashboard must carry its own policy
         run: |
@@ -250,3 +168,36 @@ jobs:
           name: site
           path: ${{ steps.cfg.outputs.assets }}
           retention-days: 7
+
+      # Everything above built the site the way a fork gets it: no ANALYTICS_ID
+      # in the environment, so no tag, and the zero-network promise holds
+      # literally. The production deploy sets that variable, which means the
+      # bytes Cloudflare serves are not the bytes CI just checked — so build
+      # the other shape too and put it through the same gates. Without this the
+      # only place the analytics path is ever exercised is the live site.
+      #
+      # The id here is a syntactically valid fake. It reaches no property, and
+      # the real one stays in Cloudflare's build environment where a public
+      # repository cannot carry it.
+      - name: The analytics build must clear the same gates
+        env:
+          ANALYTICS_ID: G-CIONLY00000
+        run: |
+          sh -c '${{ steps.cfg.outputs.build }}' > /dev/null
+          ASSETS="${{ steps.cfg.outputs.assets }}"
+          python3 site/tools/check_headers.py "$ASSETS"
+          python3 site/tools/check_no_remote.py "$ASSETS" \
+            --allow www.googletagmanager.com
+          python3 - <<'PY'
+          import pathlib
+          # The boundary the whole arrangement exists to hold. Belt and braces
+          # with check_no_remote's own refusal to exempt demo/, because this is
+          # the line that would be quietly crossed by a future refactor that
+          # gave the engine's renderer a template hook.
+          demo = pathlib.Path("site/dist/demo/index.html").read_text()
+          for host in ("googletagmanager", "google-analytics", "analytics.google"):
+              if host in demo:
+                  print(f"::error::the demo dashboard carries {host}")
+                  raise SystemExit(1)
+          print("ok — the tag is on the marketing pages and nowhere else")
+          PY

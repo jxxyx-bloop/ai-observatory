@@ -275,7 +275,7 @@ see the [protocol](docs/specs/Community-Share-Protocol.md).*
 | **Never stored** | prompt text · completion text · thinking content · file contents · tool arguments · shell commands · absolute paths |
 | **What is stored** | counts, model names, tool names, and coarse derived labels like `app:checkout` |
 | **Where it's enforced** | dropped as each file is read, not cleaned up afterwards — so anything reaching the store is a bug, not a policy call ([ADR-006](docs/adr/ADR-006-Metadata-Only.md), [ADR-008](docs/adr/ADR-008-Derived-Path-Labels.md)) |
-| **Network** | the dashboard and the site make **zero external requests**. No CDN, no fonts, no analytics. |
+| **Network** | the dashboard makes **zero external requests** — no CDN, no fonts, no analytics — and neither does anything else you run. The public site's marketing pages count visits when the deployment sets `ANALYTICS_ID`; `/demo/` and the dashboard never do, and CI fails if they ever do ([ANALYTICS.md](docs/setup/ANALYTICS.md)). |
 
 If you ever turn on the community layer, what it would send is under a
 kilobyte, and every number in it is a range rather than a value — no repository
@@ -346,6 +346,7 @@ match the data. A redesign updates its own documentation.
 | [`docs/adr/`](docs/adr/) | Fifteen decision records, including what was rejected and why |
 | [`docs/specs/`](docs/specs/) | Event schema · cost estimation · peak/off-peak · plans · community protocol · auth |
 | [`docs/context/`](docs/context/) | Glossary · **known limitations** |
+| [`docs/setup/`](docs/setup/) | Deploying your own instance · [visitor analytics on the public site](docs/setup/ANALYTICS.md) |
 
 > **Read [Known-Limitations](docs/context/Known-Limitations.md) before trusting
 > any finding about value.** This tool measures where effort went precisely, and
@@ -382,6 +383,7 @@ language, no framework.
 observatory/tests/run.sh                 # engine, collectors, dashboard
 python3 site/build.py                    # every locale
 python3 site/tools/check_no_remote.py site/dist
+python3 site/tools/check_headers.py site/dist
 ```
 
 See [CONTRIBUTING.md](CONTRIBUTING.md).
