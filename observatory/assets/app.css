@@ -293,6 +293,18 @@ code{font:12.5px ui-monospace,SFMono-Regular,Menlo,monospace;background:var(--tr
 
 /* On a phone the rail becomes a scrolling strip above the content: same
    controls, same order, nothing hidden behind a menu. */
+/* The rail's one call to action. Styled as a filled tile rather than another
+   nav item because it leaves the page, and a link that navigates away should
+   not look identical to the seven that scroll. */
+.railcta{display:flex;flex-direction:column;align-items:center;gap:5px;
+  margin:6px 8px 0;padding:10px 4px;border-radius:var(--r-sm,10px);
+  color:var(--accent-ink);background:var(--accent);
+  font-size:10.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;
+  text-decoration:none;text-align:center}
+.railcta:hover{opacity:.9}
+.railcta svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;
+  stroke-linecap:round;stroke-linejoin:round}
+
 @media (max-width:820px){
   .shell{grid-template-columns:minmax(0,1fr)}
   /* The rail itself must not scroll — it holds the pinned theme/language
@@ -306,8 +318,49 @@ code{font:12.5px ui-monospace,SFMono-Regular,Menlo,monospace;background:var(--tr
     overflow-x:auto;overflow-y:hidden;scrollbar-width:none}
   .railnav::-webkit-scrollbar{display:none}
   .railnav a{padding:6px 10px;min-width:64px}
-  .railfoot{margin-top:0;margin-left:auto;display:flex;width:auto;padding:0}
+  /* Horizontal rail: the CTA has to match the tiles' height and sit on one
+     line, or it stretches the whole strip and pushes the settings off-screen.
+     It also leaves the scrolling nav and pins next to them, so "set up" stays
+     reachable without scrolling the strip sideways to find it. */
+  .railcta{flex:none;order:2;flex-direction:row;gap:6px;align-self:center;
+    margin:0 0 0 6px;padding:8px 12px;font-size:10px;white-space:nowrap}
+  .railcta svg{width:16px;height:16px}
+  .railfoot{margin-top:0;margin-left:6px;order:3;display:flex;width:auto;padding:0}
   .railbtn{width:auto;padding:8px 10px}
   .sheet{bottom:auto;top:calc(100% + 8px);left:auto;right:0}
 }
 @media print{.rail{display:none}.shell{grid-template-columns:1fr}}
+
+/* ── Freshness strip ────────────────────────────────────────────────────────
+   Sits above the page title because it changes how every number below should
+   be read. Three states share one box: `demo` (indigo — sample data), `aging`
+   (a day behind) and `stale` (a week behind). A fresh report renders nothing,
+   so the strip costs zero pixels in the normal case. */
+.fresh{display:flex;gap:14px;align-items:center;flex-wrap:wrap;
+  margin:0 0 22px;padding:13px 16px;border:1px solid var(--line);
+  border-left-width:3px;border-radius:var(--r-sm,10px);background:var(--card,var(--bg))}
+.fresh[hidden]{display:none}
+.fresh.demo{border-left-color:var(--accent);background:var(--accent-soft)}
+.fresh.aging{border-left-color:var(--med)}
+.fresh.stale{border-left-color:var(--high)}
+/* Pinned to the first line rather than centred: once the text wraps to three
+   lines on a phone, a vertically centred dot floats beside the middle of the
+   paragraph and reads as a bullet for the wrong sentence. */
+.freshdot{width:8px;height:8px;border-radius:50%;flex:none;margin-top:6px;
+  align-self:flex-start;background:var(--accent)}
+.fresh.aging .freshdot{background:var(--med)}
+.fresh.stale .freshdot{background:var(--high)}
+.freshtext{margin:0;flex:1 1 260px;font-size:13.5px;line-height:1.55;color:var(--muted)}
+.freshtext strong{color:var(--ink);font-weight:650}
+.freshact{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.freshact code{font-size:12px;padding:5px 9px;border-radius:6px;
+  background:var(--bg);border:1px solid var(--line);color:var(--ink);
+  white-space:nowrap;overflow-x:auto;max-width:min(56vw,420px)}
+.freshbtn{flex:none;padding:6px 14px;font:inherit;font-size:12.5px;font-weight:650;
+  color:var(--accent-ink);background:var(--accent);border:0;
+  border-radius:6px;cursor:pointer}
+.freshbtn:hover{opacity:.9}
+@media print{.fresh{display:none}}
+.freshlink{flex:none;font-size:12.5px;font-weight:650;color:var(--accent);
+  text-decoration:underline;text-underline-offset:3px}
+.freshlink[hidden]{display:none}

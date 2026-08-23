@@ -1,0 +1,304 @@
+<!doctype html>
+<html lang="en" data-page="setup"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<title>Set up — AI Observatory</title>
+<meta name="description" content="Three commands, about a minute. What to paste, what you will see, how long each step takes, and where to find your dashboard tomorrow.">
+<link rel="canonical" href="{{site}}/setup/">
+<style>/*CSS*/</style>
+<script>
+(function(){var r=document.documentElement;try{
+var t=localStorage.getItem("observatory-theme");
+if(t!=="dark"&&t!=="light"){t=matchMedia("(prefers-color-scheme:dark)").matches?"dark":"light";}
+r.setAttribute("data-theme",t);}catch(e){}r.className+=" js";})();
+</script>
+</head><body>
+
+<header class="topbar glass noprint">
+  <div class="bar">
+    <a class="brand" href="{{base}}">
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <circle cx="12" cy="12" r="8.5"></circle><circle cx="12" cy="12" r="3"></circle>
+        <path d="M12 3.5v3M12 17.5v3M3.5 12h3M17.5 12h3"></path>
+      </svg>
+      <span>AI Observatory</span>
+    </a>
+    <nav class="mainnav" aria-label="Navigation">
+      <a href="{{base}}#finding">Findings</a>
+      <a href="{{base}}#how">How</a>
+      <a href="{{base}}#privacy">Privacy</a>
+    </nav>
+    <div class="tools">
+      <button class="iconbtn" id="theme" type="button" title="Light / dark" aria-label="Light / dark">
+        <svg class="ico-sun" viewBox="0 0 24 24" aria-hidden="true">
+          <circle cx="12" cy="12" r="4.2"></circle>
+          <path d="M12 2v2.4M12 19.6V22M2 12h2.4M19.6 12H22M4.9 4.9l1.7 1.7M17.4 17.4l1.7 1.7M19.1 4.9l-1.7 1.7M6.6 17.4l-1.7 1.7"></path>
+        </svg>
+        <svg class="ico-moon" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M20 14.2A8.4 8.4 0 1 1 9.8 4a6.6 6.6 0 0 0 10.2 10.2Z"></path>
+        </svg>
+      </button>
+      <a class="iconbtn wide" href="{{repo}}" rel="noopener" title="GitHub" aria-label="GitHub">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a10 10 0 0 0-3.2 19.5c.5.1.7-.2.7-.5v-1.7c-2.8.6-3.4-1.3-3.4-1.3-.4-1.2-1.1-1.5-1.1-1.5-.9-.6.1-.6.1-.6 1 .1 1.5 1 1.5 1 .9 1.5 2.3 1.1 2.9.8.1-.6.3-1.1.6-1.3-2.2-.3-4.6-1.1-4.6-4.9 0-1.1.4-2 1-2.7-.1-.3-.4-1.3.1-2.7 0 0 .8-.3 2.7 1a9.4 9.4 0 0 1 5 0c1.9-1.3 2.7-1 2.7-1 .5 1.4.2 2.4.1 2.7.6.7 1 1.6 1 2.7 0 3.8-2.4 4.6-4.6 4.9.3.3.7 1 .7 2v3c0 .3.2.6.7.5A10 10 0 0 0 12 2Z"></path></svg>
+        <span>GitHub</span>
+      </a>
+      <a class="cta small" href="{{base}}demo/">Demo</a>
+    </div>
+  </div>
+</header>
+
+<main class="setuppage">
+
+<!-- ── Hero ────────────────────────────────────────────────────────────────
+     States the total cost up front. "About a minute" is the single most
+     load-bearing sentence on this page: the reason people abandon a setup is
+     not that it is hard, it is that they cannot see how long it goes on for. -->
+<section class="setuphero">
+  <p class="eyebrow">Setup</p>
+  <h1>One command, about a minute</h1>
+  <p class="lede narrow">You have seen the demo. This puts the same dashboard on
+    your machine, with your own numbers in it. Paste one line — it checks your
+    setup, collects what is already on your disk, builds the dashboard, puts an
+    icon in your Dock, and opens it.</p>
+  <div class="cmd hero-cmd">
+    <code id="cmd1">git clone https://github.com/jxxyx-bloop/ai-observatory.git &amp;&amp; cd ai-observatory/observatory &amp;&amp; python3 observe.py setup</code>
+    <button class="copybtn" type="button" data-copy data-done="Copied">Copy</button>
+  </div>
+  <ul class="facts" role="list">
+    <li>Works on macOS, Linux and Windows</li>
+    <li>Python 3 — already on macOS and Linux</li>
+    <li>No account, no API key, no packages to install</li>
+    <li>Reads only files already on your disk</li>
+  </ul>
+</section>
+
+<!-- ── What it does ───────────────────────────────────────────────────────
+     The numbered list survives, but as explanation rather than instruction.
+     People still want to know what a command is about to do on their machine —
+     especially one that reads their transcripts — and a single opaque line
+     invites more hesitation than five plain sentences do. Nothing here is a
+     separate thing to paste: it narrates the one line above, in the order it
+     happens, and the terminal prints these same five headings as it runs, so
+     the page and the screen agree. -->
+<section class="phases">
+  <h2>What that one line does</h2>
+  <ol class="phaselist" role="list">
+    <li>
+      <span class="phasenum" aria-hidden="true">1</span>
+      <div>
+        <h3>Checks your machine</h3>
+        <p>Confirms Python 3.9 or newer and finds which AI coding tools have run
+          here. There are no packages to install — the whole engine is standard
+          library, which is why this is one command and not a dependency file.</p>
+      </div>
+    </li>
+    <li>
+      <span class="phasenum" aria-hidden="true">2</span>
+      <div>
+        <h3>Updates itself</h3>
+        <p>Fast-forwards to the latest version if it can reach GitHub. Never a
+          merge and never a rebase — no network, or local edits of your own,
+          simply means it keeps the version you have.</p>
+      </div>
+    </li>
+    <li>
+      <span class="phasenum" aria-hidden="true">3</span>
+      <div>
+        <h3>Reads your transcripts <span class="slow">the slow part</span></h3>
+        <p>Your coding agents already write a log of every turn. This reads those
+          files, counts them, and throws the text away. Read-only, no network,
+          and it costs no tokens.</p>
+      </div>
+    </li>
+    <li>
+      <span class="phasenum" aria-hidden="true">4</span>
+      <div>
+        <h3>Builds your dashboard</h3>
+        <p>Prices every turn against a local rate card and runs fifteen checks
+          over the result, so the page opens on findings rather than on numbers
+          you still have to interpret.</p>
+      </div>
+    </li>
+    <li>
+      <span class="phasenum" aria-hidden="true">5</span>
+      <div>
+        <h3>Puts it in your Dock, and opens it</h3>
+        <p>Creates the app, pins it, and schedules a quiet refresh each morning
+          at 09:00. Then your dashboard opens — which is how you know it
+          worked.</p>
+      </div>
+    </li>
+  </ol>
+
+  <div class="expect">
+    <p class="expectlabel">Your terminal will look like this</p>
+    <pre>AI Observatory — setting up
+
+<span class="dim">1/5</span>  Checking your machine
+      ✓ Python 3.12
+      ✓ Nothing to install — standard library only
+      ✓ 3 provider directory(ies) found.
+
+<span class="dim">2/5</span>  Updating to the latest version
+      ✓ already up to date
+
+<span class="dim">3/5</span>  Reading the transcripts already on this disk
+      nothing is uploaded, and no tokens are spent
+      ✓ 18,095 new events from 274 sources
+
+<span class="dim">4/5</span>  Building your dashboard
+      ✓ 18,095 turns, 311 sessions, 9 findings
+
+<span class="dim">5/5</span>  Putting it in your Dock
+      ✓ launcher ~/Applications/AI Observatory.app
+      ✓ pinned
+
+Done. Opening your dashboard now.</pre>
+    <p class="expectnote"><strong>Seeing <code>0 new events from 0 sources</code>?</strong>
+      That is not a failure — no supported tool has run on this machine yet. It
+      fills in sample data so you still finish with a dashboard, and the page
+      says so at the top until your own usage arrives.</p>
+  </div>
+
+  <!-- The Dock, drawn rather than screenshotted: a screenshot of somebody
+       else's Dock dates instantly and never matches the reader's own. -->
+  <div class="dockshot" role="img"
+       aria-label="A macOS Dock with the AI Observatory icon pinned at the right-hand end">
+    <svg viewBox="0 0 360 96" aria-hidden="true">
+      <rect x="4" y="30" width="352" height="62" rx="16" class="docktray"></rect>
+      <g class="dockapps">
+        <rect x="22" y="42" width="38" height="38" rx="9"></rect>
+        <rect x="68" y="42" width="38" height="38" rx="9"></rect>
+        <rect x="114" y="42" width="38" height="38" rx="9"></rect>
+        <rect x="160" y="42" width="38" height="38" rx="9"></rect>
+        <rect x="206" y="42" width="38" height="38" rx="9"></rect>
+      </g>
+      <line x1="256" y1="46" x2="256" y2="76" class="dockrule"></line>
+      <g class="dockours">
+        <rect x="272" y="38" width="46" height="46" rx="11"></rect>
+        <circle cx="295" cy="61" r="13"></circle>
+        <circle cx="295" cy="61" r="4.6"></circle>
+        <path d="M295 45v4.5M295 72.5V77M279 61h4.5M306.5 61H311"></path>
+      </g>
+      <circle cx="295" cy="88" r="2.4" class="dockdot"></circle>
+    </svg>
+    <p class="dockcap">Your Dock, once it finishes. The icon is yours — click it
+      any time.</p>
+  </div>
+
+  <p class="expectnote">Not on a Mac? The same command writes
+    <code>Open AI Observatory.cmd</code> (Windows) or a <code>.sh</code> script
+    (Linux) beside the project. Double-click it, or pin it to your taskbar.</p>
+
+  <button class="stepdone" type="button" id="setupdone">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12.5l5 5L20 6.5"></path></svg>
+    My dashboard opened
+  </button>
+</section>
+
+<!-- ── Done ────────────────────────────────────────────────────────────────
+     Revealed by the third tick. Answers the only question that matters after
+     setup — "what do I do tomorrow?" — while the reader is still here to read
+     it, rather than leaving them to work it out a week later. -->
+<!-- `hidden` is set by the script, not the markup: with JavaScript off
+     this card must still be readable, because it holds the only answer to
+     "how do I open this tomorrow". -->
+<section class="donecard" id="donecard">
+  <div class="donemark" aria-hidden="true">
+    <svg viewBox="0 0 24 24"><path d="M4 12.5l5 5L20 6.5"></path></svg>
+  </div>
+  <h2>That's it — here's what happens now</h2>
+  <dl class="afterlist">
+    <dt>Tomorrow, and after you restart your Mac</dt>
+    <dd>Click the icon in your Dock. It refreshes first, then opens — so what
+      you see is always current. Nothing needs to be running in the background
+      for this to work.</dd>
+
+    <dt>Each morning at 09:00</dt>
+    <dd>It collects quietly and rebuilds the dashboard, without opening a
+      window or interrupting you. If your Mac is asleep, it runs at the next
+      opportunity instead.</dd>
+
+    <dt>If you ever lose it</dt>
+    <dd>Spotlight (<kbd>⌘</kbd> <kbd>Space</kbd>) and type <em>Observatory</em>.
+      It also lives in <code>~/Applications</code>.</dd>
+
+    <dt>If a number looks stale</dt>
+    <dd>The dashboard dates itself — a report more than a day old says so above
+      the title and hands you the one line that refreshes it. You never have to
+      guess whether you are looking at old numbers.</dd>
+
+    <dt>To undo all of it</dt>
+    <dd>Run <code>python3 observe.py install --remove</code>. It removes the app
+      and the schedule, and never touches your collected data.</dd>
+  </dl>
+</section>
+
+<!-- ── Agent path ──────────────────────────────────────────────────────────
+     This tool's users are, by definition, people with a coding agent open. For
+     them the fastest install is not three commands but one paragraph, and
+     pretending otherwise ignores the audience. -->
+<section class="agentcard">
+  <h2>Or let your coding agent do it</h2>
+  <p class="lede narrow">You already have one open — that is why you are here.
+    Paste this into Claude Code, Codex, Cursor or Gemini CLI and it will run
+    every step above, then tell you what it found.</p>
+  <div class="cmd">
+    <code id="cmdagent">Clone https://github.com/jxxyx-bloop/ai-observatory, then from its observatory/ folder run: python3 observe.py demo digest report — check the dashboard renders, then clear ../data and ../dist, run python3 observe.py all to collect my real usage, and finish with python3 observe.py install --dock. Then run python3 observe.py insights and summarise the top three findings for me.</code>
+    <button class="copybtn" type="button" data-copy data-done="Copied">Copy</button>
+  </div>
+  <p class="fine">It only reads local transcript files and writes inside the
+    project folder — nothing is uploaded, and no tokens are spent collecting.</p>
+</section>
+
+<!-- ── Trouble ─────────────────────────────────────────────────────────── -->
+<section class="troublesec">
+  <h2>If something did not work</h2>
+  <p class="lede narrow">Five things go wrong, and all five have a one-line
+    answer. <code>python3 observe.py doctor</code> checks every step and prints
+    the fix for whichever failed.</p>
+  <dl class="troublelist">
+    <dt>“python3: command not found”</dt>
+    <dd>macOS and Linux ship Python 3, so this is almost always Windows.
+      Install it from python.org, tick <em>Add Python to PATH</em>, then use
+      <code>python</code> instead of <code>python3</code>.</dd>
+
+    <dt>“sync: 0 new events from 0 sources”</dt>
+    <dd>No supported tool has run on this machine yet, or its transcripts live
+      somewhere non-standard. Expected on a fresh laptop — the sample data from
+      step 1 still shows the whole product.</dd>
+
+    <dt>The page says there is no digest yet</dt>
+    <dd>Collecting and rendering are separate steps. Run
+      <code>python3 observe.py all</code>, which does every step in order.</dd>
+
+    <dt>Nothing opened in my browser</dt>
+    <dd>The file is still there — open <code>dist/observatory.html</code> from
+      the project folder. Scheduled runs never open a browser on purpose, so a
+      morning refresh cannot steal focus while you work.</dd>
+
+    <dt>macOS says the app is from an unidentified developer</dt>
+    <dd>That warning belongs to downloaded apps. This one is generated on your
+      own machine, so it should never appear — if it does, the app was copied
+      from another computer. Delete it and run
+      <code>python3 observe.py install --dock</code> again.</dd>
+  </dl>
+</section>
+
+</main>
+
+<footer class="foot">
+  <div class="bar">
+    <span class="tag">Local-first · no account · no telemetry</span>
+    <nav aria-label="Navigation">
+      <a href="{{repo}}" rel="noopener">GitHub</a>
+      <a href="{{repo}}/tree/main/docs" rel="noopener">Docs</a>
+      <a href="{{base}}demo/">Demo</a>
+    </nav>
+  </div>
+</footer>
+
+<script>/*JS*/</script>
+<script>/*SETUPJS*/</script>
+</body></html>

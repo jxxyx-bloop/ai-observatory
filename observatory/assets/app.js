@@ -1308,9 +1308,93 @@ function initLang() {
   }
 }
 
+
+/* ── Freshness ──────────────────────────────────────────────────────────────
+   A file cannot ask a server whether it is current, but it does not need to:
+   the renderer stamped when it ran, so the page subtracts that from the clock
+   and speaks for itself. Three states, and two of them say nothing at all —
+   a banner that is always on is a banner nobody reads.
+
+   `demo` is the exception that is always shown: sample data that quietly looks
+   like your own would be the single most damaging thing this page could do. */
+function initFreshness() {
+  var el = $("fresh"); if (!el) return;
+  var meta = {};
+  try { meta = JSON.parse(document.getElementById("meta").textContent) || {}; }
+  catch (e) { return; }
+
+  var cmd = meta.refresh || "python3 observatory/observe.py all";
+  var stamp = Date.parse(meta.generated_at || "");
+  var hours = isFinite(stamp) ? (Date.now() - stamp) / 36e5 : 0;
+  var state = null;
+
+  if (meta.demo) {
+    state = { cls: "demo", head: t18("fresh_demo_h", "This is sample data."),
+              body: t18("fresh_demo_b",
+                        "Nobody's real usage is shown here. Set it up to see your own \u2014 "
+                        + "it reads transcripts already on your machine and costs no tokens.") };
+  } else if (hours >= 168) {
+    state = { cls: "stale", head: t18("fresh_old_h", "This dashboard is out of date."),
+              body: fill(t18("fresh_old_b", "Last built {a}. Refresh to pull in everything since."),
+                         { a: ago(hours) }) };
+  } else if (hours >= 24) {
+    state = { cls: "aging", head: fill(t18("fresh_age_h", "Last built {a}."), { a: ago(hours) }),
+              body: t18("fresh_age_b", "New sessions since then are not in these numbers yet.") };
+  }
+  if (!state) return;                       /* fresh: say nothing, show nothing */
+
+  el.className = "fresh " + state.cls;
+  $("freshHead").textContent = state.head;
+  $("freshBody").textContent = state.body;
+  $("freshCmd").textContent = cmd;
+  el.hidden = false;
+
+  /* The hosted demo has somewhere to send people; a file:// copy does not, so
+     the link only exists when the build supplied one. */
+  var more = $("freshMore");
+  if (more && meta.setup) {
+    more.href = meta.setup;
+    more.textContent = t18("fresh_guide", "Full setup guide");
+    more.hidden = false;
+  }
+
+  var btn = $("freshCopy");
+  btn.textContent = t18("fresh_copy", "Copy");
+  btn.addEventListener("click", function () {
+    var done = function () {
+      btn.textContent = t18("fresh_copied", "Copied");
+      setTimeout(function () { btn.textContent = t18("fresh_copy", "Copy"); }, 2000);
+    };
+    /* navigator.clipboard is undefined on file:// in several browsers, so the
+       execCommand path is the primary one here rather than a legacy fallback. */
+    try {
+      var ta = document.createElement("textarea");
+      ta.value = cmd; ta.setAttribute("readonly", "");
+      ta.style.cssText = "position:absolute;left:-9999px";
+      document.body.appendChild(ta); ta.select();
+      document.execCommand("copy"); document.body.removeChild(ta); done();
+    } catch (e) {
+      if (navigator.clipboard) navigator.clipboard.writeText(cmd).then(done, function () {});
+    }
+  });
+
+  function ago(h) {
+    if (h < 48) return t18("fresh_yesterday", "yesterday");
+    var d = Math.round(h / 24);
+    return d < 14 ? fill(t18("fresh_days", "{n} days ago"), { n: d })
+                  : fill(t18("fresh_weeks", "{n} weeks ago"), { n: Math.round(d / 7) });
+  }
+  function fill(tpl, vars) {
+    return String(tpl).replace(/\{(\w+)\}/g, function (_, k) {
+      return vars[k] == null ? "" : vars[k];
+    });
+  }
+}
+
 initTheme();
 init();
 initLang();
 initCalendar();
 initRail();
+initFreshness();
 })();

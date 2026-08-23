@@ -84,20 +84,59 @@ tool that invents problems to look useful is a tool you stop believing.
 ## Quick start
 
 ```bash
-git clone https://github.com/jxxyx-bloop/ai-observatory
-cd ai-observatory/observatory
-python3 observe.py demo digest report      # 60 days of sample data → dist/observatory.html
+git clone https://github.com/jxxyx-bloop/ai-observatory.git && cd ai-observatory/observatory && python3 observe.py setup
 ```
 
-Then on your own usage:
+One line. It checks your machine, fast-forwards to the latest version, reads the
+transcripts your coding agents already wrote on this disk, builds your
+dashboard, puts an icon in your Dock, and opens it. It narrates all five as it
+goes — a command that prints nothing for eight seconds is indistinguishable from
+one that has hung.
+
+**Python 3 standard library only.** No dependencies, no build step, no account,
+no network, and nothing to `pip install` — which is why the whole install is one
+command rather than a requirements file.
+
+Want to see it before installing anything? The
+[live demo](https://ai-observatory.workers.dev/demo/) is the real dashboard,
+rendered from 60 days of sample data by the same code you would run locally.
+
+<details>
+<summary>Prefer to run the steps yourself</summary>
 
 ```bash
-rm -rf ../data ../dist        # sample data must not mix with yours
-python3 observe.py all        # sync → digest → report
+python3 observe.py demo digest report   # 60 days of sample data
+python3 observe.py all                  # sync → digest → report, on your own usage
+python3 observe.py install --dock       # the app, the Dock icon and a 09:00 refresh
 ```
 
-**Python 3 standard library only.** No install, no dependencies, no build step,
-no account, no network.
+`install` writes `~/Applications/AI Observatory.app` on macOS — a 3 KB shell
+script in a bundle, not an Electron build. It is *generated on your machine
+rather than downloaded*, so Gatekeeper never prompts and nothing needs code
+signing.
+
+| Flag | Effect |
+|---|---|
+| `--dock` | Pin it to the Dock. Without this it is only revealed in Finder, so your Dock is never rearranged behind your back. |
+| `--no-daily` | Skip the scheduled refresh. |
+| `--no-open` | Install silently — for scripts. |
+| `--remove` | Undo all of it. |
+
+Everything it writes lives under `$HOME`, and nothing it does touches `data/`.
+
+</details>
+
+### When something looks wrong
+
+```bash
+python3 observe.py doctor     # checks each step, prints the fix for what failed
+```
+
+The rendered dashboard also dates itself: a report more than a day old says so
+above the title and offers the one line that refreshes it. It computes that from
+its own timestamp, so it works with no network and no server — the page can
+always know its own age, even though a file can never be told that a newer one
+exists.
 
 <details>
 <summary><b>Your first five minutes</b> — the three edits that are worth making</summary>
@@ -142,6 +181,8 @@ recognise into *"your $18 plan returned 23× what you paid."*
 | `observe.py digest` | Aggregate + run the detectors → `data/digest.json` |
 | `observe.py report` | Render → `dist/observatory.html` |
 | `observe.py insights` | Print the findings as text — for reading inside an agent session |
+| `observe.py setup` | The whole install in one command — check, update, collect, build, pin, open |
+| `observe.py doctor` | Check every step and print the fix for whichever failed |
 | `observe.py demo` | 60 deterministic days of synthetic usage |
 | `observe.py demo --purge` | remove that synthetic usage from the store again |
 | `observe.py share` | Build the community payload and **print it** — never uploads |

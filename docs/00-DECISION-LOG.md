@@ -16,6 +16,7 @@ Index of Architectural Decision Records. Full record for each in `adr/`. Status:
 | [010](adr/ADR-010-Cohort-Analytics-Store.md) | Add `daily` (per-person-day facts, unlinkable salt) + `cohort_daily` (pre-aggregated histograms) tables to power a dedicated cohort-comparison page | The four-number benchmark, held back below 5 participants, was the least useful part of the product — everything on the wish list was already in the uploaded cube, just discarded at store time | accepted |
 | [016](adr/ADR-016-Design-System-And-Localisation.md) | One token file for every surface; a static page per locale; every README figure generated | Two stylesheets had already copied the same palette by hand, the regional wedge shipped in English only, and the README's counts were restated in four places | accepted |
 | [017](adr/ADR-017-Dashboard-Shell-And-The-Meter.md) | A side rail, one weekday×hour grid with peak windows drawn on it, a calendar heatmap — and no 3D | The page had no landmarks, two charts answered the same question in different panels, and the daily bars structurally cannot show a year | accepted |
+| [018](adr/ADR-018-Launch-Surface-And-First-Run.md) | One command installs everything; the launcher is a locally *generated* app, not a downloaded one; the page dates itself | Setup was three pastes and a printed file path, there was no way back to the dashboard tomorrow, and a `file://` page could not say it was a week old | accepted |
 
 ## Deferred decisions
 

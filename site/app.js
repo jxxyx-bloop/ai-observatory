@@ -57,6 +57,12 @@ var deck = $("deck");
 if (deck) {
   var cards = [].slice.call(deck.querySelectorAll(".find"));
   var dots = $("dots"), i = 0, timer = null;
+  // 2s: long enough to register as motion, short enough that someone who stops
+  // on this section sees it happen rather than assuming three cards is all
+  // there is. Reading is protected by the hover pause below, not by the
+  // interval — at seven seconds the deck was still on its first card by the
+  // time most readers had scrolled past.
+  var ADVANCE_MS = 2000;
   var reduceMotion = window.matchMedia &&
     window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
@@ -78,15 +84,29 @@ if (deck) {
     if (next) next.addEventListener("click", function () { show(i + 1); });
 
     if (!reduceMotion) {
-      // The whole act — card plus its arrows and dots — pauses as one region;
-      // a reader aiming for the "next" arrow should not have the card change
-      // under their cursor first.
-      var act = $("finding") || deck;
-      act.addEventListener("mouseenter", stop);
-      act.addEventListener("mouseleave", start);
-      act.addEventListener("focusin", stop);
-      act.addEventListener("focusout", function (e) {
-        if (!act.contains(e.relatedTarget)) start();
+      // Pause over the card and its controls — and ONLY those. This used to
+      // bind to the whole #finding section, which is a full-width band holding
+      // the eyebrow, the heading and the note underneath. At that size, reading
+      // the section means hovering it, so the deck stopped on arrival and never
+      // started again: the carousel looked broken rather than paused. A reader
+      // aiming for the "next" arrow still should not have the card change under
+      // their cursor, so the arrows and dots stay part of the pause zone.
+      var zone = [deck, $("deckbar")].filter(Boolean);
+      var inZone = function (node) {
+        return zone.some(function (el) { return el.contains(node); });
+      };
+      zone.forEach(function (el) {
+        el.addEventListener("mouseenter", stop);
+        // Moving between the deck and its controls fires leave-then-enter;
+        // resuming only when the pointer is genuinely outside both keeps the
+        // timer from being restarted mid-gesture.
+        el.addEventListener("mouseleave", function (e) {
+          if (!inZone(e.relatedTarget)) start();
+        });
+        el.addEventListener("focusin", stop);
+        el.addEventListener("focusout", function (e) {
+          if (!inZone(e.relatedTarget)) start();
+        });
       });
     }
   } else {
@@ -104,7 +124,7 @@ if (deck) {
       b.setAttribute("aria-selected", k === i ? "true" : "false");
     });
   }
-  function start() { if (!timer) timer = setInterval(function () { show(i + 1); }, 7000); }
+  function start() { if (!timer) timer = setInterval(function () { show(i + 1); }, ADVANCE_MS); }
   function stop() { if (timer) { clearInterval(timer); timer = null; } }
 }
 
@@ -130,4 +150,38 @@ if (!reduce && "IntersectionObserver" in window) {
     io.observe(s);
   });
 }
+
+/* ── Copy buttons ───────────────────────────────────────────────────────────
+   Every command in the setup walkthrough is one click away from the clipboard.
+   `execCommand` first rather than as a fallback: `navigator.clipboard` is
+   undefined on insecure origins and on file://, and this same pattern is used
+   by the dashboard, which is opened that way by design. */
+(function () {
+  var btns = doc.querySelectorAll("[data-copy]");
+  [].forEach.call(btns, function (btn) {
+    btn.addEventListener("click", function () {
+      var box = btn.parentNode.querySelector("code");
+      if (!box) return;
+      var text = box.textContent;
+      var label = btn.textContent;
+      var ok = function () {
+        btn.textContent = btn.getAttribute("data-done") || "Copied";
+        btn.classList.add("done");
+        setTimeout(function () {
+          btn.textContent = label; btn.classList.remove("done");
+        }, 2000);
+      };
+      try {
+        var ta = doc.createElement("textarea");
+        ta.value = text; ta.setAttribute("readonly", "");
+        ta.style.cssText = "position:absolute;left:-9999px";
+        doc.body.appendChild(ta); ta.select();
+        doc.execCommand("copy"); doc.body.removeChild(ta); ok();
+      } catch (e) {
+        if (navigator.clipboard) navigator.clipboard.writeText(text).then(ok, function () {});
+      }
+    });
+  });
+})();
+
 })();

@@ -154,6 +154,31 @@ def render_landing(code: str, template: str, css: str, js: str) -> str:
     return page
 
 
+def render_setup(template: str, css: str, js: str, setup_js: str) -> str:
+    """The setup walkthrough, in English only — deliberately.
+
+    Every other page here ships in thirteen languages. This one does not, and
+    the reason is the same one `site/tools/readmes.py` gives for leaving the
+    command table out of the translated READMEs: it is a dense procedural page
+    of shell commands, flags and file paths, where **a stale translation of a
+    command is worse than an English one**. A mistranslated heading costs a
+    reader a moment; a mistranslated command costs them the install.
+
+    The chrome still resolves through the same placeholders as the landing
+    page, so the header, footer and theme cannot drift.
+    """
+    page = (template.replace("/*CSS*/", css)
+                    .replace("/*SETUPJS*/", setup_js)
+                    .replace("/*JS*/", js))
+    for key, value in {"repo": REPO, "site": SITE, "base": "../"}.items():
+        page = page.replace("{{" + key + "}}", str(value))
+    if "{{" in page:
+        start = page.index("{{")
+        raise SystemExit(f"build: unresolved placeholder in setup.html near "
+                         f"{page[start:start + 40]!r}")
+    return page
+
+
 # ── Demo dashboard ───────────────────────────────────────────────────────────
 
 def build_demo() -> str:
@@ -179,7 +204,14 @@ def build_demo() -> str:
     # `home` is what puts a breadcrumb back to the landing page on the hosted
     # copy. A locally rendered dashboard passes nothing and links to the repo
     # instead, because there is no site to go back to.
-    html_out = render.render(digest, home="../")
+    # The demo says what it is on every visit, and its call to action is the
+    # first real command rather than a link to a link. Someone who reaches the
+    # demo has already decided to look; the next click should start the install,
+    # not open another page that asks them to decide again.
+    html_out = render.render(
+        digest, home="../", demo=True, setup="../setup/",
+        refresh="git clone " + REPO + ".git && cd ai-observatory/observatory "
+                "&& python3 observe.py sync digest report")
     shutil.rmtree(data)
     return html_out
 
@@ -210,6 +242,7 @@ def sitemap() -> str:
         rows.append(f"  <url><loc>{SITE}/{d}/</loc></url>" if d
                     else f"  <url><loc>{SITE}/</loc></url>")
     rows.append(f"  <url><loc>{SITE}/demo/</loc></url>")
+    rows.append(f"  <url><loc>{SITE}/setup/</loc></url>")
     body = "\n".join(rows)
     return ('<?xml version="1.0" encoding="UTF-8"?>\n'
             '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
@@ -240,6 +273,12 @@ def main() -> int:
         target = OUT / d / "index.html" if d else OUT / "index.html"
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_text(page, encoding="utf-8")
+
+    setup_tpl = (HERE / "setup.html").read_text(encoding="utf-8")
+    setup_js = (HERE / "setup.js").read_text(encoding="utf-8")
+    (OUT / "setup").mkdir(parents=True, exist_ok=True)
+    (OUT / "setup" / "index.html").write_text(
+        render_setup(setup_tpl, css, js, setup_js), encoding="utf-8")
 
     (OUT / "demo" / "index.html").write_text(build_demo(), encoding="utf-8")
     (OUT / "_headers").write_text(HEADERS, encoding="utf-8")

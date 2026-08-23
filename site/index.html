@@ -43,6 +43,7 @@ document.documentElement.className+=" js";})();
       <a href="#how">{{nav_how}}</a>
       <a href="#why">{{nav_why}}</a>
       <a href="#privacy">{{nav_privacy}}</a>
+      <a href="{{base}}setup/" class="navcta">{{nav_setup}}</a>
     </nav>
 
     <div class="tools">
@@ -121,7 +122,7 @@ document.documentElement.className+=" js";})();
     {{findings}}
   </div>
 
-  <div class="deckbar">
+  <div class="deckbar" id="deckbar">
     <button class="iconbtn" id="prev" type="button" aria-label="{{prev_label}}">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6l-6 6 6 6"></path></svg>
     </button>
@@ -165,6 +166,10 @@ document.documentElement.className+=" js";})();
     <article class="card"><h3>{{why_3_t}}</h3><p>{{why_3_d}}</p></article>
     <article class="card"><h3>{{why_4_t}}</h3><p>{{why_4_d}}</p></article>
   </div>
+  <!-- What the rate card actually is. Sits under the pricing cards because
+       that is where the dollar claims are made, and a reader who takes those
+       figures for an invoice has misread the whole section. -->
+  <p class="fine center">{{why_note}}</p>
 </section>
 
 <!-- ── Privacy ───────────────────────────────────────────────────────────── -->
@@ -177,15 +182,59 @@ document.documentElement.className+=" js";})();
   </ul>
 </section>
 
+<!-- ── Staying current ───────────────────────────────────────────────────
+     Placed last before the install, because it answers the question somebody
+     asks only once they can picture owning this: what happens when I forget
+     to run it. A `band` here also restores the alternation — #privacy and
+     #start were both plain. The strip's own strings live in the dashboard's
+     i18n (observatory/assets/i18n.js); these describe the feature, and are
+     prefixed `age_` so the two sets can never be mistaken for each other. -->
+<section id="aging" class="band">
+  <p class="eyebrow">{{age_eyebrow}}</p>
+  <h2>{{age_h2}}</h2>
+  <p class="lede narrow">{{age_lede}}</p>
+  <div class="cards">
+    <article class="card"><h3>{{age_1_t}}</h3><p>{{age_1_d}}</p></article>
+    <article class="card"><h3>{{age_2_t}}</h3><p>{{age_2_d}}</p></article>
+    <article class="card"><h3>{{age_3_t}}</h3><p>{{age_3_d}}</p></article>
+  </div>
+  <p class="fine center">{{age_note}}</p>
+</section>
+
 <!-- ── Start ─────────────────────────────────────────────────────────────── -->
-<section class="start">
+<!-- ── Start ─────────────────────────────────────────────────────────────
+     The demo's call to action lands here, so this is where a stranger becomes
+     a user. Three commands, each copyable in one click, then the troubleshooting
+     for the four things that actually go wrong. `observe.py doctor` prints the
+     same checks locally — one definition, two renderings. -->
+<section class="start" id="start">
   <div class="startcard glass">
     <h2>{{start_h2}}</h2>
     <p class="lede narrow">{{start_d}}</p>
+
+    <div class="cmd hero-cmd">
+      <code>git clone https://github.com/jxxyx-bloop/ai-observatory.git &amp;&amp; cd ai-observatory/observatory &amp;&amp; python3 observe.py setup</code>
+      <button class="copybtn" type="button" data-copy
+              data-done="{{setup_copied}}">{{setup_copy}}</button>
+    </div>
+    <p class="fine center"><a href="{{base}}setup/">{{setup_more}}</a></p>
+
+    <details class="trouble">
+      <summary>{{tr_h}}</summary>
+      <dl>
+        <dt>{{tr_1_q}}</dt><dd>{{tr_1_a}}</dd>
+        <dt>{{tr_2_q}}</dt><dd>{{tr_2_a}}</dd>
+        <dt>{{tr_3_q}}</dt><dd>{{tr_3_a}}</dd>
+        <dt>{{tr_4_q}}</dt><dd>{{tr_4_a}}</dd>
+        <dt>{{tr_5_q}}</dt><dd>{{tr_5_a}}</dd>
+      </dl>
+      <p class="fine">{{tr_note}}</p>
+    </details>
+
     <div class="ctas center">
       <a class="cta" href="{{base}}demo/">{{start_cta1}}
         <svg viewBox="0 0 24 24" aria-hidden="true" class="arw"><path d="M5 12h13M13 6l6 6-6 6"></path></svg></a>
-      <a class="cta ghost" href="{{repo}}#quick-start" rel="noopener">{{start_cta2}}</a>
+      <a class="cta ghost" href="{{repo}}" rel="noopener">GitHub</a>
     </div>
   </div>
 </section>

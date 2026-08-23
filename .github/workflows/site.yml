@@ -62,6 +62,10 @@ jobs:
           test -d "$ASSETS" || { echo "::error::wrangler.toml points at '$ASSETS', which the build did not create"; exit 1; }
           test -s "$ASSETS/index.html" || { echo "::error::'$ASSETS' has no index.html"; exit 1; }
           test -s "$ASSETS/demo/index.html" || { echo "::error::demo dashboard missing from '$ASSETS'"; exit 1; }
+          # The demo's rail and its sample-data banner both lead here. If the
+          # page stops being emitted, the funnel dead-ends on a 404 and the
+          # build still looks green.
+          test -s "$ASSETS/setup/index.html" || { echo "::error::setup walkthrough missing from '$ASSETS'"; exit 1; }
           test -s "$ASSETS/_headers" || { echo "::error::_headers missing from '$ASSETS'"; exit 1; }
           test -s "$ASSETS/sitemap.xml" || { echo "::error::sitemap.xml missing from '$ASSETS'"; exit 1; }
           echo "ok — $ASSETS has index.html, demo/index.html, _headers and sitemap.xml"
@@ -105,6 +109,13 @@ jobs:
             exit 1
           fi
           echo "ok — figures and translated READMEs match their sources"
+
+      # The carousel's interval and its pause zone are both invisible to a
+      # build and to a screenshot, and a browser cannot be trusted to measure
+      # them in a background tab where timers are throttled. Node runs the same
+      # script against a stubbed DOM and a fake clock instead.
+      - name: The findings carousel must advance, and pause only over the deck
+        run: node site/tools/carousel_check.js
 
       - uses: actions/upload-artifact@v4
         with:

@@ -72,6 +72,7 @@ STRINGS["en"] = {
     "nav_why": "Different",
     "nav_privacy": "Privacy",
     "nav_demo": "Demo",
+    "nav_setup": "Set up",
     "lang_label": "Language",
     "theme_label": "Light / dark",
 
@@ -130,6 +131,17 @@ STRINGS["en"] = {
     "how_3_t": "Act",
     "how_3_d": "A ranked list of changes, each with its evidence and what it is "
                "worth per month.",
+    "age_eyebrow": "Staying current",
+    "age_h2": "It tells you when it has gone stale",
+    "age_lede": "The dashboard is a file, not a server. The renderer stamps when it ran, and the page does the subtraction itself — offline, with nothing to check in with.",
+    "age_1_t": "Under a day",
+    "age_1_d": "Nothing. A banner that is always on is a banner nobody reads.",
+    "age_2_t": "After a day",
+    "age_2_d": "Says when it was last built, and that newer sessions are not in these numbers yet.",
+    "age_3_t": "After a week",
+    "age_3_d": "Says plainly that it is out of date, with the refresh command on a copy button.",
+    "age_note": "Sample data always says so, however freshly it was rendered.",
+    "why_note": "Every figure here is public API list price — the ceiling. Enterprise contracts and monthly plans cost less.",
     "how_note": "No API key, no proxy, no account, no network. Collection costs zero tokens.",
 
     "why_eyebrow": "Why it's different",
@@ -155,11 +167,48 @@ STRINGS["en"] = {
     "priv_3": "The dashboard and this page make zero external requests. No CDN, no "
               "fonts, no analytics.",
 
-    "start_h2": "See it before you install it",
-    "start_d": "The demo is the real dashboard, built from 60 days of sample data by "
-               "the same code you would run locally.",
+    "start_h2": "One command, about a minute",
+    "start_d": "One line. It checks your setup, reads what your coding agents "
+               "already wrote on this disk, builds your dashboard, puts an icon "
+               "in your Dock and opens it.",
     "start_cta1": "Open the live demo",
-    "start_cta2": "Quick start",
+
+    # ── Setup walkthrough ───────────────────────────────────────────────────
+    # Three commands, in the order a person actually runs them: see it, then
+    # make it yours, then keep it. Step 1 deliberately uses sample data — the
+    # product has to be visible before anyone earns the right to ask for a
+    # real sync.
+    "setup_copy": "Copy",
+    "setup_more": "What that command does, step by step \u2192",
+    "setup_copied": "Copied",
+
+    # ── Troubleshooting ─────────────────────────────────────────────────────
+    # The five things that actually go wrong. `observe.py doctor` prints the
+    # same list locally, so a person who is offline is not worse off.
+    "tr_h": "Something did not work",
+    "tr_1_q": "\u201cpython3: command not found\u201d",
+    "tr_1_a": "macOS and Linux ship Python 3 already, so this is almost always "
+              "Windows. Install it from python.org and tick \u201cAdd Python to "
+              "PATH\u201d during setup, then use python instead of python3.",
+    "tr_2_q": "\u201csync: 0 new events from 0 sources\u201d",
+    "tr_2_a": "No supported tool has run on this machine yet, or its transcripts "
+              "live somewhere non-standard. This is expected on a fresh laptop \u2014 "
+              "the sample data in step 1 still shows the whole product.",
+    "tr_3_q": "The page says there is no digest yet",
+    "tr_3_a": "Collection and rendering are separate steps. Run "
+              "python3 observe.py digest report, or just python3 observe.py all, "
+              "which does every step in order.",
+    "tr_4_q": "Nothing opened in my browser",
+    "tr_4_a": "The file is still there \u2014 open dist/observatory.html from the "
+              "project folder. Scheduled runs never open a browser on purpose, "
+              "so a morning refresh cannot steal focus while you work.",
+    "tr_5_q": "macOS says the app is from an unidentified developer",
+    "tr_5_a": "That warning belongs to downloaded apps. The launcher is generated "
+              "on your own machine, so it should never appear \u2014 if it does, the "
+              "app was copied from another computer. Delete it and run "
+              "python3 observe.py install again to build a local one.",
+    "tr_note": "Still stuck? Run python3 observe.py doctor \u2014 it checks every "
+               "step and prints the exact fix for whichever one failed.",
 
     "foot_tag": "MIT licensed · Local-first · No account",
     "foot_docs": "Docs",
@@ -232,6 +281,17 @@ STRINGS["zh-Hans"] = {
     "how_2_d": "token、缓存、时段与成本——按任务实际运行时生效的价格计算。",
     "how_3_t": "行动",
     "how_3_d": "一份排好序的改进清单，每条都附证据，以及每月值多少钱。",
+    "age_eyebrow": "保持最新",
+    "age_h2": "过期时它会主动告诉你",
+    "age_lede": "仪表板是一个文件，不是服务器。渲染时会打上时间戳，页面自己完成时间差计算——离线运行，无需向任何服务查询。",
+    "age_1_t": "一天以内",
+    "age_1_d": "什么都不显示。始终亮着的横幅没有人会看。",
+    "age_2_t": "超过一天",
+    "age_2_d": "提示上次构建的时间，并说明此后的新会话尚未计入这些数字。",
+    "age_3_t": "超过一周",
+    "age_3_d": "直接说明它已过期，并附上刷新命令和一键复制按钮。",
+    "age_note": "示例数据始终会标明身份，无论刚刚生成与否。",
+    "why_note": "此处所有金额均为公开 API 标价——即价格上限。企业合同与订阅套餐的实际成本更低。",
     "how_note": "无需 API key、无代理、无账号、不联网。采集本身消耗零 token。",
 
     "why_eyebrow": "有何不同",
@@ -252,10 +312,7 @@ STRINGS["zh-Hans"] = {
     "priv_2": "在解析文件的那一层就挡掉——所以泄漏是 bug，而不是政策问题。",
     "priv_3": "看板和本页都不发起任何外部请求。无 CDN、无字体、无统计。",
 
-    "start_h2": "先看，再决定要不要装",
-    "start_d": "演示就是真实看板，由你在本地会运行的同一套代码，用 60 天示例数据生成。",
     "start_cta1": "打开在线演示",
-    "start_cta2": "快速开始",
 
     "foot_tag": "MIT 许可 · 本地优先 · 无需账号",
     "foot_docs": "文档",
@@ -328,6 +385,17 @@ STRINGS["zh-Hant"] = {
     "how_2_d": "token、快取、時段與成本——依工作實際執行當下生效的價格計算。",
     "how_3_t": "行動",
     "how_3_d": "一份排序過的改進清單，每條都附證據，以及每月值多少錢。",
+    "age_eyebrow": "保持最新",
+    "age_h2": "過期時它會主動告訴你",
+    "age_lede": "儀表板是一個檔案，不是伺服器。算繪時會打上時間戳記，頁面自己完成時間差計算——離線運作，無需向任何服務查詢。",
+    "age_1_t": "一天以內",
+    "age_1_d": "什麼都不顯示。始終亮著的橫幅沒有人會看。",
+    "age_2_t": "超過一天",
+    "age_2_d": "提示上次建置的時間，並說明此後的新工作階段尚未計入這些數字。",
+    "age_3_t": "超過一週",
+    "age_3_d": "直接說明它已過期，並附上重新整理指令和一鍵複製按鈕。",
+    "age_note": "範例資料始終會標明身分，無論剛剛產生與否。",
+    "why_note": "此處所有金額均為公開 API 標價——即價格上限。企業合約與訂閱方案的實際成本更低。",
     "how_note": "免 API key、免 proxy、免帳號、不連網。蒐集本身消耗零 token。",
 
     "why_eyebrow": "有何不同",
@@ -348,10 +416,7 @@ STRINGS["zh-Hant"] = {
     "priv_2": "在解析檔案那一層就擋掉——所以外洩是 bug，不是政策問題。",
     "priv_3": "儀表板與本頁都不發出任何外部請求。無 CDN、無字型、無分析。",
 
-    "start_h2": "先看看，再決定要不要裝",
-    "start_d": "示範就是真實儀表板，由你在本機會執行的同一套程式，用 60 天範例資料產生。",
     "start_cta1": "開啟線上示範",
-    "start_cta2": "快速開始",
 
     "foot_tag": "MIT 授權 · 本機優先 · 免帳號",
     "foot_docs": "文件",
@@ -424,6 +489,17 @@ STRINGS["ja"] = {
     "how_2_d": "トークン、キャッシュ、時間帯、コスト。実行された時点で有効だった料金で計算します。",
     "how_3_t": "動く",
     "how_3_d": "優先順位つきの変更リスト。根拠と、月あたりの価値が必ず添えられます。",
+    "age_eyebrow": "最新に保つ",
+    "age_h2": "古くなったらページ自身が知らせます",
+    "age_lede": "ダッシュボードはサーバーではなくファイルです。生成時刻が刻まれ、ページ自身が差を計算します。オフラインで、問い合わせ先は不要です。",
+    "age_1_t": "1日以内",
+    "age_1_d": "何も出しません。常に出ている告知は誰も読まないからです。",
+    "age_2_t": "1日を過ぎたら",
+    "age_2_d": "最後に生成した時刻と、それ以降のセッションがまだ数値に入っていないことを示します。",
+    "age_3_t": "1週間を過ぎたら",
+    "age_3_d": "古い状態だとはっきり伝え、更新コマンドをコピーボタン付きで示します。",
+    "age_note": "サンプルデータは、生成直後であっても必ずその旨を表示します。",
+    "why_note": "ここの金額はすべて公開 API の定価、つまり上限です。エンタープライズ契約や月額プランはこれより安くなります。",
     "how_note": "APIキー・プロキシ・アカウント・通信、いずれも不要。収集自体のトークン消費はゼロです。",
 
     "why_eyebrow": "違い",
@@ -444,10 +520,7 @@ STRINGS["ja"] = {
     "priv_2": "解析の入口で遮断しています。だから漏えいは方針の問題ではなく、バグです。",
     "priv_3": "ダッシュボードもこのページも外部リクエストはゼロ。CDNもフォントも解析タグもありません。",
 
-    "start_h2": "入れる前に、見てください",
-    "start_d": "デモは本物のダッシュボードです。ローカルで動かすのと同じコードが、60日分のサンプルから生成しています。",
     "start_cta1": "デモを開く",
-    "start_cta2": "クイックスタート",
 
     "foot_tag": "MITライセンス · ローカルファースト · アカウント不要",
     "foot_docs": "ドキュメント",
@@ -520,6 +593,17 @@ STRINGS["ko"] = {
     "how_2_d": "토큰, 캐시, 시간대, 비용 — 작업이 실제로 실행된 시점의 요율로 계산합니다.",
     "how_3_t": "실행",
     "how_3_d": "우선순위가 매겨진 변경 목록. 근거와 월 단위 가치가 함께 붙습니다.",
+    "age_eyebrow": "최신 상태 유지",
+    "age_h2": "오래되면 페이지가 먼저 알려줍니다",
+    "age_lede": "대시보드는 서버가 아니라 파일입니다. 생성 시각이 기록되고, 페이지가 스스로 경과 시간을 계산합니다. 오프라인이며 조회할 대상이 없습니다.",
+    "age_1_t": "하루 이내",
+    "age_1_d": "아무것도 표시하지 않습니다. 항상 떠 있는 배너는 아무도 읽지 않습니다.",
+    "age_2_t": "하루가 지나면",
+    "age_2_d": "마지막으로 생성한 시점과, 그 이후 세션이 아직 반영되지 않았음을 알립니다.",
+    "age_3_t": "일주일이 지나면",
+    "age_3_d": "오래됐다고 분명히 말하고, 복사 버튼과 함께 새로고침 명령을 제시합니다.",
+    "age_note": "샘플 데이터는 아무리 방금 만들었더라도 항상 그 사실을 밝힙니다.",
+    "why_note": "여기 모든 금액은 공개 API 정가, 즉 상한선입니다. 기업 계약과 월 구독 요금은 이보다 낮습니다.",
     "how_note": "API 키도, 프록시도, 계정도, 네트워크도 없습니다. 수집 자체는 토큰을 쓰지 않습니다.",
 
     "why_eyebrow": "무엇이 다른가",
@@ -540,10 +624,7 @@ STRINGS["ko"] = {
     "priv_2": "파일을 파싱하는 지점에서 차단합니다. 그래서 유출은 정책 문제가 아니라 버그입니다.",
     "priv_3": "대시보드도 이 페이지도 외부 요청이 0건입니다. CDN도, 폰트도, 애널리틱스도 없습니다.",
 
-    "start_h2": "설치하기 전에 먼저 보세요",
-    "start_d": "데모는 진짜 대시보드입니다. 로컬에서 돌릴 코드와 똑같은 코드가 60일치 샘플로 만들어냅니다.",
     "start_cta1": "라이브 데모 열기",
-    "start_cta2": "빠른 시작",
 
     "foot_tag": "MIT 라이선스 · 로컬 우선 · 계정 불필요",
     "foot_docs": "문서",
@@ -616,6 +697,17 @@ STRINGS["hi"] = {
     "how_2_d": "टोकन, कैश, समय और लागत — उसी दर पर जो काम चलने के वक़्त लागू थी।",
     "how_3_t": "करना",
     "how_3_d": "बदलावों की क्रमबद्ध सूची, हर एक के साथ सबूत और महीने की क़ीमत।",
+    "age_eyebrow": "अद्यतन बनाए रखना",
+    "age_h2": "पुराना पड़ने पर यह खुद बता देता है",
+    "age_lede": "डैशबोर्ड एक फ़ाइल है, सर्वर नहीं। रेंडर करते समय समय दर्ज हो जाता है और पेज खुद अंतर निकाल लेता है — ऑफ़लाइन, बिना किसी से पूछे।",
+    "age_1_t": "एक दिन के भीतर",
+    "age_1_d": "कुछ नहीं। हमेशा दिखने वाला बैनर कोई नहीं पढ़ता।",
+    "age_2_t": "एक दिन बाद",
+    "age_2_d": "बताता है कि आख़िरी बार कब बना, और उसके बाद के सत्र अभी इन आँकड़ों में नहीं हैं।",
+    "age_3_t": "एक सप्ताह बाद",
+    "age_3_d": "साफ़ कहता है कि यह पुराना है, और कॉपी बटन के साथ रिफ़्रेश कमांड देता है।",
+    "age_note": "नमूना डेटा हमेशा यह बताता है, चाहे अभी-अभी बना हो।",
+    "why_note": "यहाँ हर आँकड़ा सार्वजनिक API सूची-मूल्य है — यानी अधिकतम सीमा। एंटरप्राइज़ अनुबंध और मासिक प्लान इससे सस्ते पड़ते हैं।",
     "how_note": "न API की, न प्रॉक्सी, न अकाउंट, न नेटवर्क। डेटा जुटाने में शून्य टोकन लगते हैं।",
 
     "why_eyebrow": "यह अलग क्यों है",
@@ -636,10 +728,7 @@ STRINGS["hi"] = {
     "priv_2": "फ़ाइल पढ़ने की जगह पर ही रोका जाता है — इसलिए रिसाव नीति का सवाल नहीं, बग है।",
     "priv_3": "डैशबोर्ड और यह पेज कोई बाहरी अनुरोध नहीं करते। न CDN, न फ़ॉन्ट, न एनालिटिक्स।",
 
-    "start_h2": "इंस्टॉल करने से पहले देख लीजिए",
-    "start_d": "डेमो असली डैशबोर्ड है — वही कोड जो आप लोकल चलाते, 60 दिन के नमूना डेटा से बनाकर।",
     "start_cta1": "लाइव डेमो खोलें",
-    "start_cta2": "क्विक स्टार्ट",
 
     "foot_tag": "MIT लाइसेंस · लोकल-फ़र्स्ट · बिना अकाउंट",
     "foot_docs": "दस्तावेज़",
@@ -712,6 +801,17 @@ STRINGS["id"] = {
     "how_2_d": "Token, cache, waktu, dan biaya — dihitung pada tarif yang benar-benar berlaku saat itu.",
     "how_3_t": "Bertindak",
     "how_3_d": "Daftar perubahan berperingkat, lengkap dengan buktinya dan nilainya per bulan.",
+    "age_eyebrow": "Tetap mutakhir",
+    "age_h2": "Ia memberi tahu saat sudah usang",
+    "age_lede": "Dasbor ini berupa berkas, bukan server. Perender mencatat kapan ia berjalan, dan halaman menghitung selisihnya sendiri — luring, tanpa perlu menanyakan apa pun.",
+    "age_1_t": "Kurang dari sehari",
+    "age_1_d": "Tidak ada. Spanduk yang selalu tampil tidak akan dibaca siapa pun.",
+    "age_2_t": "Setelah sehari",
+    "age_2_d": "Menyebut kapan terakhir dibuat, dan bahwa sesi setelah itu belum masuk angka-angka ini.",
+    "age_3_t": "Setelah sepekan",
+    "age_3_d": "Menyatakan terus terang bahwa ia usang, lengkap dengan perintah penyegaran pada tombol salin.",
+    "age_note": "Data contoh selalu menyatakan dirinya, sebaru apa pun ia dirender.",
+    "why_note": "Semua angka di sini memakai harga daftar API publik — batas tertingginya. Kontrak enterprise dan paket bulanan lebih murah.",
     "how_note": "Tanpa kunci API, tanpa proxy, tanpa akun, tanpa jaringan. Pengumpulan data memakai nol token.",
 
     "why_eyebrow": "Apa bedanya",
@@ -732,10 +832,7 @@ STRINGS["id"] = {
     "priv_2": "Dihentikan di titik berkas dibaca — jadi kebocoran itu bug, bukan urusan kebijakan.",
     "priv_3": "Dasbor dan halaman ini nol permintaan eksternal. Tanpa CDN, tanpa font, tanpa analitik.",
 
-    "start_h2": "Lihat dulu sebelum memasang",
-    "start_d": "Demo ini dasbor sungguhan, dibuat dari 60 hari data contoh oleh kode yang sama persis dengan yang Anda jalankan sendiri.",
     "start_cta1": "Buka demo langsung",
-    "start_cta2": "Mulai cepat",
 
     "foot_tag": "Lisensi MIT · Lokal dulu · Tanpa akun",
     "foot_docs": "Dokumentasi",
@@ -808,6 +905,17 @@ STRINGS["vi"] = {
     "how_2_d": "Token, cache, thời điểm và chi phí — tính theo đúng mức giá đang áp dụng lúc chạy.",
     "how_3_t": "Hành động",
     "how_3_d": "Một danh sách thay đổi có xếp hạng, kèm bằng chứng và giá trị mỗi tháng.",
+    "age_eyebrow": "Luôn cập nhật",
+    "age_h2": "Nó tự báo khi đã cũ",
+    "age_lede": "Bảng điều khiển là một tệp, không phải máy chủ. Trình kết xuất ghi lại thời điểm chạy, và trang tự tính phần chênh lệch — ngoại tuyến, không cần hỏi ai.",
+    "age_1_t": "Dưới một ngày",
+    "age_1_d": "Không hiện gì. Một dải thông báo luôn bật thì không ai đọc.",
+    "age_2_t": "Sau một ngày",
+    "age_2_d": "Cho biết lần dựng gần nhất, và rằng các phiên sau đó chưa nằm trong những con số này.",
+    "age_3_t": "Sau một tuần",
+    "age_3_d": "Nói thẳng rằng nó đã lỗi thời, kèm lệnh làm mới trên một nút sao chép.",
+    "age_note": "Dữ liệu mẫu luôn tự nói rõ, dù vừa mới được kết xuất.",
+    "why_note": "Mọi con số ở đây là giá niêm yết API công khai — tức mức trần. Hợp đồng doanh nghiệp và gói thuê bao đều rẻ hơn.",
     "how_note": "Không API key, không proxy, không tài khoản, không mạng. Việc thu thập tốn 0 token.",
 
     "why_eyebrow": "Khác ở chỗ nào",
@@ -828,10 +936,7 @@ STRINGS["vi"] = {
     "priv_2": "Chặn ngay tại chỗ đọc tệp — nên rò rỉ là một lỗi, không phải câu chuyện chính sách.",
     "priv_3": "Bảng điều khiển và trang này không gửi bất kỳ yêu cầu ra ngoài nào. Không CDN, không font, không analytics.",
 
-    "start_h2": "Xem trước khi cài",
-    "start_d": "Bản demo chính là bảng điều khiển thật, dựng từ 60 ngày dữ liệu mẫu bằng đúng đoạn mã bạn sẽ chạy ở máy mình.",
     "start_cta1": "Mở bản demo",
-    "start_cta2": "Bắt đầu nhanh",
 
     "foot_tag": "Giấy phép MIT · Ưu tiên cục bộ · Không cần tài khoản",
     "foot_docs": "Tài liệu",
@@ -904,6 +1009,17 @@ STRINGS["th"] = {
     "how_2_d": "โทเคน แคช ช่วงเวลา และต้นทุน — คิดตามอัตราที่มีผลจริงตอนงานนั้นรัน",
     "how_3_t": "ลงมือ",
     "how_3_d": "รายการสิ่งที่ควรเปลี่ยน จัดลำดับไว้ พร้อมหลักฐานและมูลค่าต่อเดือน",
+    "age_eyebrow": "ให้ข้อมูลใหม่เสมอ",
+    "age_h2": "มันบอกเองเมื่อข้อมูลเก่าไปแล้ว",
+    "age_lede": "แดชบอร์ดนี้เป็นไฟล์ ไม่ใช่เซิร์ฟเวอร์ ตัวเรนเดอร์ประทับเวลาที่รัน และหน้าเว็บคำนวณส่วนต่างเอง — ออฟไลน์ ไม่ต้องเรียกถามที่ใด",
+    "age_1_t": "ไม่ถึงหนึ่งวัน",
+    "age_1_d": "ไม่แสดงอะไรเลย แบนเนอร์ที่ขึ้นตลอดเวลาคือแบนเนอร์ที่ไม่มีใครอ่าน",
+    "age_2_t": "เกินหนึ่งวัน",
+    "age_2_d": "บอกว่าสร้างครั้งล่าสุดเมื่อใด และเซสชันหลังจากนั้นยังไม่รวมอยู่ในตัวเลขเหล่านี้",
+    "age_3_t": "เกินหนึ่งสัปดาห์",
+    "age_3_d": "บอกตรง ๆ ว่าข้อมูลล้าสมัย พร้อมคำสั่งรีเฟรชบนปุ่มคัดลอก",
+    "age_note": "ข้อมูลตัวอย่างจะบอกตัวเองเสมอ ไม่ว่าจะเพิ่งเรนเดอร์มาสดแค่ไหน",
+    "why_note": "ทุกตัวเลขที่นี่คือราคา API ตามบัญชีราคาสาธารณะ — คือเพดานราคา สัญญาองค์กรและแพ็กเกจรายเดือนถูกกว่านี้",
     "how_note": "ไม่ต้องใช้ API key ไม่ต้องมีพร็อกซี ไม่ต้องมีบัญชี ไม่ต้องต่อเน็ต การเก็บข้อมูลใช้โทเคนเป็นศูนย์",
 
     "why_eyebrow": "ต่างอย่างไร",
@@ -924,10 +1040,7 @@ STRINGS["th"] = {
     "priv_2": "ปิดกั้นตั้งแต่จุดที่อ่านไฟล์ — การรั่วไหลจึงเป็นบั๊ก ไม่ใช่เรื่องนโยบาย",
     "priv_3": "ทั้งแดชบอร์ดและหน้านี้ไม่มีการเรียกภายนอกเลย ไม่มี CDN ไม่มีฟอนต์ ไม่มี analytics",
 
-    "start_h2": "ดูก่อนค่อยติดตั้ง",
-    "start_d": "เดโมคือแดชบอร์ดจริง สร้างจากข้อมูลตัวอย่าง 60 วันด้วยโค้ดชุดเดียวกับที่คุณจะรันบนเครื่องตัวเอง",
     "start_cta1": "เปิดเดโม",
-    "start_cta2": "เริ่มต้นอย่างรวดเร็ว",
 
     "foot_tag": "สัญญาอนุญาต MIT · ทำงานบนเครื่องเป็นหลัก · ไม่ต้องมีบัญชี",
     "foot_docs": "เอกสาร",
@@ -1000,6 +1113,17 @@ STRINGS["ms"] = {
     "how_2_d": "Token, cache, masa dan kos — dikira pada kadar yang benar-benar berkuat kuasa ketika itu.",
     "how_3_t": "Bertindak",
     "how_3_d": "Senarai perubahan yang tersusun, lengkap dengan buktinya dan nilainya sebulan.",
+    "age_eyebrow": "Sentiasa terkini",
+    "age_h2": "Ia memberitahu apabila sudah lapuk",
+    "age_lede": "Papan pemuka ini ialah fail, bukan pelayan. Perender mencap masa ia dijalankan, dan halaman mengira bezanya sendiri — luar talian, tanpa perlu bertanya sesiapa.",
+    "age_1_t": "Kurang sehari",
+    "age_1_d": "Tiada apa-apa. Sepanduk yang sentiasa menyala tidak dibaca sesiapa.",
+    "age_2_t": "Selepas sehari",
+    "age_2_d": "Menyatakan bila kali terakhir ia dibina, dan sesi selepas itu belum masuk dalam angka ini.",
+    "age_3_t": "Selepas seminggu",
+    "age_3_d": "Menyatakan terus terang bahawa ia sudah lapuk, dengan arahan segar semula pada butang salin.",
+    "age_note": "Data contoh sentiasa menyatakannya, walau baru sahaja dirender.",
+    "why_note": "Setiap angka di sini ialah harga senarai API awam — iaitu had tertinggi. Kontrak perusahaan dan pelan bulanan lebih murah.",
     "how_note": "Tanpa kunci API, tanpa proksi, tanpa akaun, tanpa rangkaian. Pengumpulan data menggunakan sifar token.",
 
     "why_eyebrow": "Apa bezanya",
@@ -1020,10 +1144,7 @@ STRINGS["ms"] = {
     "priv_2": "Dihalang pada titik fail dibaca — jadi kebocoran ialah pepijat, bukan soal dasar.",
     "priv_3": "Papan pemuka dan halaman ini sifar permintaan luar. Tanpa CDN, tanpa fon, tanpa analitik.",
 
-    "start_h2": "Lihat dulu sebelum pasang",
-    "start_d": "Demo ini papan pemuka sebenar, dibina daripada 60 hari data contoh oleh kod yang sama seperti yang anda jalankan sendiri.",
     "start_cta1": "Buka demo langsung",
-    "start_cta2": "Mula pantas",
 
     "foot_tag": "Lesen MIT · Tempatan dahulu · Tanpa akaun",
     "foot_docs": "Dokumentasi",
@@ -1096,6 +1217,17 @@ STRINGS["fil"] = {
     "how_2_d": "Token, cache, oras at gastos — sa presyong talagang umiiral noong tumakbo ang trabaho.",
     "how_3_t": "Kumilos",
     "how_3_d": "Nakaranggong listahan ng mga pagbabago, may ebidensiya at halaga kada buwan.",
+    "age_eyebrow": "Mananatiling napapanahon",
+    "age_h2": "Sinasabi nito kapag luma na ang datos",
+    "age_lede": "Isang file ang dashboard, hindi server. Tinatatakan ng renderer kung kailan ito tumakbo, at ang pahina na mismo ang kumukuwenta ng agwat — offline, walang kailangang tanungin.",
+    "age_1_t": "Wala pang isang araw",
+    "age_1_d": "Wala. Ang banner na laging nakabukas ay hindi na binabasa ninuman.",
+    "age_2_t": "Pagkalipas ng isang araw",
+    "age_2_d": "Sinasabi kung kailan huling ginawa, at hindi pa kasama sa mga bilang ang mga sesyon pagkatapos noon.",
+    "age_3_t": "Pagkalipas ng isang linggo",
+    "age_3_d": "Deretsahang sinasabing luma na ito, kasama ang refresh command sa isang copy button.",
+    "age_note": "Laging inaamin ng sample data na sample data ito, gaano man kabago ang pagkakagawa.",
+    "why_note": "Lahat ng halaga rito ay pampublikong list price ng API — ang pinakamataas. Mas mura ang enterprise contract at buwanang plano.",
     "how_note": "Walang API key, walang proxy, walang account, walang network. Zero token ang gastos ng pangongolekta.",
 
     "why_eyebrow": "Bakit ito kakaiba",
@@ -1116,10 +1248,7 @@ STRINGS["fil"] = {
     "priv_2": "Hinaharang sa mismong pagbasa ng file — kaya bug ang leak, hindi usapin ng patakaran.",
     "priv_3": "Zero external request ang dashboard at ang pahinang ito. Walang CDN, walang font, walang analytics.",
 
-    "start_h2": "Tingnan mo muna bago i-install",
-    "start_d": "Totoong dashboard ang demo, gawa mula sa 60 araw na sample data ng parehong code na patatakbuhin mo sa sarili mong makina.",
     "start_cta1": "Buksan ang live demo",
-    "start_cta2": "Mabilisang simula",
 
     "foot_tag": "MIT license · Lokal muna · Walang account",
     "foot_docs": "Dokumentasyon",
@@ -1192,6 +1321,17 @@ STRINGS["pt-BR"] = {
     "how_2_d": "Tokens, cache, horário e custo — pelo preço que realmente estava valendo na hora.",
     "how_3_t": "Agir",
     "how_3_d": "Uma lista ordenada de mudanças, cada uma com a evidência e quanto vale por mês.",
+    "age_eyebrow": "Sempre atualizado",
+    "age_h2": "Ele avisa quando ficou desatualizado",
+    "age_lede": "O painel é um arquivo, não um servidor. O renderizador marca quando rodou, e a própria página faz a subtração — offline, sem nada a consultar.",
+    "age_1_t": "Menos de um dia",
+    "age_1_d": "Nada. Um aviso que fica sempre ligado é um aviso que ninguém lê.",
+    "age_2_t": "Depois de um dia",
+    "age_2_d": "Diz quando foi gerado pela última vez e que as sessões posteriores ainda não entraram nestes números.",
+    "age_3_t": "Depois de uma semana",
+    "age_3_d": "Diz sem rodeios que está desatualizado, com o comando de atualização em um botão de copiar.",
+    "age_note": "Dados de exemplo sempre se identificam, por mais recente que seja a geração.",
+    "why_note": "Todo valor aqui usa o preço de tabela público da API — o teto. Contratos corporativos e planos mensais custam menos.",
     "how_note": "Sem chave de API, sem proxy, sem conta, sem rede. A coleta custa zero tokens.",
 
     "why_eyebrow": "Por que é diferente",
@@ -1212,10 +1352,7 @@ STRINGS["pt-BR"] = {
     "priv_2": "Bloqueado no ponto em que o arquivo é lido — então um vazamento seria um bug, não uma questão de política.",
     "priv_3": "O painel e esta página fazem zero requisições externas. Sem CDN, sem fontes, sem analytics.",
 
-    "start_h2": "Veja antes de instalar",
-    "start_d": "A demo é o painel de verdade, gerado a partir de 60 dias de dados de exemplo pelo mesmo código que você rodaria localmente.",
     "start_cta1": "Abrir a demo",
-    "start_cta2": "Início rápido",
 
     "foot_tag": "Licença MIT · Local em primeiro lugar · Sem conta",
     "foot_docs": "Documentação",
@@ -1288,6 +1425,17 @@ STRINGS["es"] = {
     "how_2_d": "Tokens, caché, horario y coste, al precio que de verdad estaba vigente cuando se ejecutó.",
     "how_3_t": "Actuar",
     "how_3_d": "Una lista ordenada de cambios, cada uno con su evidencia y lo que vale al mes.",
+    "age_eyebrow": "Mantenerse al día",
+    "age_h2": "Te avisa cuando se ha quedado viejo",
+    "age_lede": "El panel es un archivo, no un servidor. El renderizador marca cuándo se ejecutó, y la propia página hace la resta — sin conexión y sin nada que consultar.",
+    "age_1_t": "Menos de un día",
+    "age_1_d": "Nada. Un aviso siempre encendido es un aviso que nadie lee.",
+    "age_2_t": "Pasado un día",
+    "age_2_d": "Indica cuándo se generó por última vez y que las sesiones posteriores aún no están en estas cifras.",
+    "age_3_t": "Pasada una semana",
+    "age_3_d": "Dice sin rodeos que está desactualizado, con el comando de actualización en un botón de copiar.",
+    "age_note": "Los datos de muestra siempre lo advierten, por reciente que sea la generación.",
+    "why_note": "Cada cifra aquí es precio de lista público de la API — el techo. Los contratos empresariales y los planes mensuales cuestan menos.",
     "how_note": "Sin clave de API, sin proxy, sin cuenta, sin red. Recoger los datos cuesta cero tokens.",
 
     "why_eyebrow": "Por qué es distinto",
@@ -1308,10 +1456,7 @@ STRINGS["es"] = {
     "priv_2": "Se bloquea en el punto donde se lee el archivo, así que una fuga sería un fallo, no una cuestión de política.",
     "priv_3": "El panel y esta página no hacen ninguna petición externa. Sin CDN, sin fuentes, sin analítica.",
 
-    "start_h2": "Míralo antes de instalarlo",
-    "start_d": "La demo es el panel de verdad, generado a partir de 60 días de datos de ejemplo por el mismo código que ejecutarías tú.",
     "start_cta1": "Abrir la demo",
-    "start_cta2": "Inicio rápido",
 
     "foot_tag": "Licencia MIT · Local primero · Sin cuenta",
     "foot_docs": "Documentación",
