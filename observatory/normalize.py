@@ -11,6 +11,7 @@ rewritten in place — the history is append-only.
 from __future__ import annotations
 
 import json
+import re
 from pathlib import Path
 
 from collectors.antigravity import AntigravityCollector
@@ -115,6 +116,64 @@ def write_events(data_dir: Path, events) -> int:
         for fh in handles.values():
             fh.close()
     return written
+
+
+# Fixture rows written by `observe.py demo` before the `synthetic` flag existed.
+# They are recognisable without it: the generator draws every session id as
+# "d" + five hex digits and every repo from its own fixed five, and no real
+# collector produces that pair. Kept so a store seeded by an older build can
+# still be cleaned; new fixture rows carry the flag and never reach this.
+_LEGACY_DEMO_REPOS = {"checkout-service", "growth-web", "data-platform",
+                      "infra-tooling", "scratchpad"}
+_LEGACY_DEMO_SID = re.compile(r"^d[0-9a-f]{5}$")
+
+
+def is_synthetic(ev: dict) -> bool:
+    """True for a fixture row from `observe.py demo`, flagged or legacy."""
+    if ev.get("synthetic"):
+        return True
+    return (ev.get("workspace") in _LEGACY_DEMO_REPOS
+            and bool(_LEGACY_DEMO_SID.match(ev.get("session") or "")))
+
+
+def count_synthetic(data_dir: Path) -> int:
+    """How many fixture rows are sitting in the store."""
+    return sum(1 for ev in read_events(data_dir) if is_synthetic(ev))
+
+
+def purge_synthetic(data_dir: Path) -> int:
+    """Drop every fixture row from the store, partition by partition.
+
+    Rewrites through a temp file and replaces atomically, so an interrupted
+    purge leaves the original partition intact rather than a half-file.
+    """
+    removed = 0
+    for path in sorted(data_dir.glob("events-*.ndjson")):
+        tmp = path.with_suffix(".ndjson.tmp")
+        kept = 0
+        with path.open("r", encoding="utf-8", errors="replace") as src, \
+                tmp.open("w", encoding="utf-8") as dst:
+            for line in src:
+                stripped = line.strip()
+                if not stripped:
+                    continue
+                try:
+                    ev = json.loads(stripped)
+                except (ValueError, TypeError):
+                    dst.write(line)  # unparseable: not ours to delete
+                    kept += 1
+                    continue
+                if is_synthetic(ev):
+                    removed += 1
+                    continue
+                dst.write(line)
+                kept += 1
+        if kept:
+            tmp.replace(path)
+        else:
+            tmp.unlink()
+            path.unlink()
+    return removed
 
 
 def read_events(data_dir: Path):

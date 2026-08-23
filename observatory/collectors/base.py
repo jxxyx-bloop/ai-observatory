@@ -72,4 +72,5 @@ def blank_event(provider: str) -> dict:
         "web_search": 0,
         "web_fetch": 0,
         "stop": None,           # stop_reason
+        "synthetic": False,     # True only for `observe.py demo` fixture rows
     }

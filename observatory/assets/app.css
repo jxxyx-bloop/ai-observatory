@@ -172,6 +172,7 @@ svg{display:block;width:100%;height:auto;max-width:100%}
   align-items:center;gap:2px}
 .spark .sv{font-size:19px;font-weight:650;letter-spacing:-.01em;margin-top:2px;
   font-variant-numeric:tabular-nums}
+.spark .sb{font-size:10px;color:var(--muted);margin-top:2px;letter-spacing:.02em}
 .spark svg{margin-top:6px}
 
 /* Shared hover tooltip for every chart — SVG bars and HTML hbars alike.

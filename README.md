@@ -143,6 +143,7 @@ recognise into *"your $18 plan returned 23× what you paid."*
 | `observe.py report` | Render → `dist/observatory.html` |
 | `observe.py insights` | Print the findings as text — for reading inside an agent session |
 | `observe.py demo` | 60 deterministic days of synthetic usage |
+| `observe.py demo --purge` | remove that synthetic usage from the store again |
 | `observe.py share` | Build the community payload and **print it** — never uploads |
 | `observe.py all` | sync → digest → report |
 

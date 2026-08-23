@@ -101,6 +101,12 @@ def generate(days: int = 60, anchor: str = "2026-08-19") -> list:
 
             for turn in range(1, turns + 1):
                 ev = blank_event(provider)
+                # Self-identifying, because a sentinel file next to the store is
+                # not enough: `sync` clears it the moment real events arrive, and
+                # the synthetic rows stay behind forever, indistinguishable and
+                # silently driving vendor-specific panels (peak windows, model
+                # mix) for vendors the reader has never used.
+                ev["synthetic"] = True
                 ts = ts + timedelta(minutes=rng.randint(1, 7))
                 ev["ts"] = ts.isoformat().replace("+00:00", "Z")
                 ev["session"] = sid
