@@ -159,11 +159,10 @@ STRINGS["en"] = {
                "because $412 does not mean one thing everywhere.",
 
     "priv_eyebrow": "Privacy",
-    "priv_h2": "A mechanism, not a promise",
+    "priv_h2": "Private by construction",
     "priv_lede": "Nothing leaves your machine unless you edit a file to say so.",
     "priv_1": "Never stored: prompts, replies, code, commands, file paths.",
-    "priv_2": "Blocked where the file is parsed — so a leak would be a bug, not a "
-              "policy question.",
+    "priv_2": "Dropped as each file is read, so it never reaches the dashboard.",
     "priv_3": "The dashboard and this page make zero external requests. No CDN, no "
               "fonts, no analytics.",
 
@@ -306,10 +305,10 @@ STRINGS["zh-Hans"] = {
     "why_4_d": "IDR、VND、THB、PHP、MYR 等——并对照当地日薪，因为 412 美元在各地的分量并不一样。",
 
     "priv_eyebrow": "隐私",
-    "priv_h2": "这是机制，不是承诺",
+    "priv_h2": "隐私源于结构本身",
     "priv_lede": "除非你亲手改配置文件，否则没有任何数据离开本机。",
     "priv_1": "从不存储：提示词、回复、代码、命令、文件路径。",
-    "priv_2": "在解析文件的那一层就挡掉——所以泄漏是 bug，而不是政策问题。",
+    "priv_2": "读取每个文件时即丢弃，因此从不会进入仪表板。",
     "priv_3": "看板和本页都不发起任何外部请求。无 CDN、无字体、无统计。",
 
     "start_cta1": "打开在线演示",
@@ -410,10 +409,10 @@ STRINGS["zh-Hant"] = {
     "why_4_d": "IDR、VND、THB、PHP、MYR 等——並對照當地日薪，因為 412 美元在各地的份量並不相同。",
 
     "priv_eyebrow": "隱私",
-    "priv_h2": "這是機制，不是承諾",
+    "priv_h2": "隱私源於結構本身",
     "priv_lede": "除非你親手改設定檔，否則沒有任何資料離開本機。",
     "priv_1": "從不儲存：提示詞、回覆、程式碼、指令、檔案路徑。",
-    "priv_2": "在解析檔案那一層就擋掉——所以外洩是 bug，不是政策問題。",
+    "priv_2": "讀取每個檔案時即丟棄，因此從不會進入儀表板。",
     "priv_3": "儀表板與本頁都不發出任何外部請求。無 CDN、無字型、無分析。",
 
     "start_cta1": "開啟線上示範",
@@ -514,10 +513,10 @@ STRINGS["ja"] = {
     "why_4_d": "IDR・VND・THB・PHP・MYRほか。現地の日当と並べて示します。412ドルの重みは、どこでも同じではありません。",
 
     "priv_eyebrow": "プライバシー",
-    "priv_h2": "約束ではなく、仕組みで",
+    "priv_h2": "仕組みそのものが守る",
     "priv_lede": "設定ファイルを自分で書き換えない限り、データは端末の外に出ません。",
     "priv_1": "決して保存しないもの：プロンプト、応答、コード、コマンド、ファイルパス。",
-    "priv_2": "解析の入口で遮断しています。だから漏えいは方針の問題ではなく、バグです。",
+    "priv_2": "ファイルを読むそばから捨てるので、ダッシュボードには届きません。",
     "priv_3": "ダッシュボードもこのページも外部リクエストはゼロ。CDNもフォントも解析タグもありません。",
 
     "start_cta1": "デモを開く",
@@ -618,10 +617,10 @@ STRINGS["ko"] = {
     "why_4_d": "IDR, VND, THB, PHP, MYR 등 — 현지 일당과 나란히 보여줍니다. 412달러의 무게는 어디서나 같지 않으니까요.",
 
     "priv_eyebrow": "프라이버시",
-    "priv_h2": "약속이 아니라 구조로",
+    "priv_h2": "구조가 보장하는 프라이버시",
     "priv_lede": "설정 파일을 직접 바꾸지 않는 한, 어떤 데이터도 기기를 벗어나지 않습니다.",
     "priv_1": "절대 저장하지 않는 것: 프롬프트, 응답, 코드, 명령어, 파일 경로.",
-    "priv_2": "파일을 파싱하는 지점에서 차단합니다. 그래서 유출은 정책 문제가 아니라 버그입니다.",
+    "priv_2": "파일을 읽는 즉시 버리므로 대시보드까지 오지 않습니다.",
     "priv_3": "대시보드도 이 페이지도 외부 요청이 0건입니다. CDN도, 폰트도, 애널리틱스도 없습니다.",
 
     "start_cta1": "라이브 데모 열기",
@@ -722,10 +721,10 @@ STRINGS["hi"] = {
     "why_4_d": "INR, IDR, VND, THB, PHP, MYR और भी — स्थानीय दिहाड़ी के सामने रखकर, क्योंकि $412 हर जगह एक जैसा नहीं होता।",
 
     "priv_eyebrow": "निजता",
-    "priv_h2": "वादा नहीं, बनावट",
+    "priv_h2": "निजता बनावट से आती है",
     "priv_lede": "जब तक आप ख़ुद कोई फ़ाइल बदलकर अनुमति न दें, कुछ भी आपकी मशीन से बाहर नहीं जाता।",
     "priv_1": "कभी संग्रहित नहीं: प्रॉम्प्ट, जवाब, कोड, कमांड, फ़ाइल पाथ।",
-    "priv_2": "फ़ाइल पढ़ने की जगह पर ही रोका जाता है — इसलिए रिसाव नीति का सवाल नहीं, बग है।",
+    "priv_2": "हर फ़ाइल पढ़ते ही हटा दिया जाता है, इसलिए यह डैशबोर्ड तक पहुँचता ही नहीं।",
     "priv_3": "डैशबोर्ड और यह पेज कोई बाहरी अनुरोध नहीं करते। न CDN, न फ़ॉन्ट, न एनालिटिक्स।",
 
     "start_cta1": "लाइव डेमो खोलें",
@@ -826,10 +825,10 @@ STRINGS["id"] = {
     "why_4_d": "IDR, VND, THB, PHP, MYR dan lainnya — disandingkan dengan upah harian setempat, karena $412 tidak berarti sama di mana-mana.",
 
     "priv_eyebrow": "Privasi",
-    "priv_h2": "Mekanisme, bukan janji",
+    "priv_h2": "Privasi dari cara ia dibangun",
     "priv_lede": "Tidak ada yang keluar dari perangkat Anda kecuali Anda sendiri yang mengubah berkasnya.",
     "priv_1": "Tidak pernah disimpan: prompt, jawaban, kode, perintah, jalur berkas.",
-    "priv_2": "Dihentikan di titik berkas dibaca — jadi kebocoran itu bug, bukan urusan kebijakan.",
+    "priv_2": "Dibuang saat tiap berkas dibaca, jadi tidak pernah sampai ke dasbor.",
     "priv_3": "Dasbor dan halaman ini nol permintaan eksternal. Tanpa CDN, tanpa font, tanpa analitik.",
 
     "start_cta1": "Buka demo langsung",
@@ -930,10 +929,10 @@ STRINGS["vi"] = {
     "why_4_d": "VND, IDR, THB, PHP, MYR và hơn nữa — đặt cạnh mức công nhật địa phương, vì 412 đô không mang cùng một ý nghĩa ở mọi nơi.",
 
     "priv_eyebrow": "Riêng tư",
-    "priv_h2": "Là cơ chế, không phải lời hứa",
+    "priv_h2": "Riêng tư nhờ cách được dựng nên",
     "priv_lede": "Không gì rời khỏi máy bạn, trừ khi chính bạn sửa tệp cấu hình để cho phép.",
     "priv_1": "Không bao giờ lưu: prompt, câu trả lời, mã nguồn, lệnh, đường dẫn tệp.",
-    "priv_2": "Chặn ngay tại chỗ đọc tệp — nên rò rỉ là một lỗi, không phải câu chuyện chính sách.",
+    "priv_2": "Được loại bỏ ngay khi đọc mỗi tệp, nên không bao giờ đến bảng điều khiển.",
     "priv_3": "Bảng điều khiển và trang này không gửi bất kỳ yêu cầu ra ngoài nào. Không CDN, không font, không analytics.",
 
     "start_cta1": "Mở bản demo",
@@ -1034,10 +1033,10 @@ STRINGS["th"] = {
     "why_4_d": "THB, IDR, VND, PHP, MYR และอื่น ๆ — เทียบกับค่าแรงรายวันในพื้นที่ เพราะ 412 ดอลลาร์ไม่ได้มีความหมายเท่ากันทุกที่",
 
     "priv_eyebrow": "ความเป็นส่วนตัว",
-    "priv_h2": "เป็นกลไก ไม่ใช่คำสัญญา",
+    "priv_h2": "ความเป็นส่วนตัวมาจากโครงสร้าง",
     "priv_lede": "ไม่มีอะไรออกจากเครื่องคุณ เว้นแต่คุณจะแก้ไฟล์เพื่ออนุญาตเอง",
     "priv_1": "ไม่เก็บเด็ดขาด: พรอมป์ต์ คำตอบ โค้ด คำสั่ง และพาธไฟล์",
-    "priv_2": "ปิดกั้นตั้งแต่จุดที่อ่านไฟล์ — การรั่วไหลจึงเป็นบั๊ก ไม่ใช่เรื่องนโยบาย",
+    "priv_2": "ถูกทิ้งตั้งแต่ตอนอ่านแต่ละไฟล์ จึงไม่เคยไปถึงแดชบอร์ด",
     "priv_3": "ทั้งแดชบอร์ดและหน้านี้ไม่มีการเรียกภายนอกเลย ไม่มี CDN ไม่มีฟอนต์ ไม่มี analytics",
 
     "start_cta1": "เปิดเดโม",
@@ -1138,10 +1137,10 @@ STRINGS["ms"] = {
     "why_4_d": "MYR, IDR, VND, THB, PHP dan lagi — disandingkan dengan kadar harian tempatan, kerana $412 tidak bermakna sama di mana-mana.",
 
     "priv_eyebrow": "Privasi",
-    "priv_h2": "Satu mekanisme, bukan janji",
+    "priv_h2": "Privasi daripada cara ia dibina",
     "priv_lede": "Tiada apa-apa keluar dari mesin anda melainkan anda sendiri mengubah fail untuk membenarkannya.",
     "priv_1": "Tidak pernah disimpan: prompt, jawapan, kod, arahan, laluan fail.",
-    "priv_2": "Dihalang pada titik fail dibaca — jadi kebocoran ialah pepijat, bukan soal dasar.",
+    "priv_2": "Dibuang semasa setiap fail dibaca, jadi ia tidak pernah sampai ke papan pemuka.",
     "priv_3": "Papan pemuka dan halaman ini sifar permintaan luar. Tanpa CDN, tanpa fon, tanpa analitik.",
 
     "start_cta1": "Buka demo langsung",
@@ -1242,10 +1241,10 @@ STRINGS["fil"] = {
     "why_4_d": "PHP, IDR, VND, THB, MYR at iba pa — katabi ng lokal na arawang kita, dahil hindi pare-pareho ang bigat ng $412 saanman.",
 
     "priv_eyebrow": "Privacy",
-    "priv_h2": "Mekanismo, hindi pangako",
+    "priv_h2": "Pribado dahil sa pagkakagawa",
     "priv_lede": "Walang lumalabas ng makina mo maliban kung ikaw mismo ang mag-edit ng file para payagan ito.",
     "priv_1": "Hindi kailanman iniimbak: prompt, sagot, code, command, file path.",
-    "priv_2": "Hinaharang sa mismong pagbasa ng file — kaya bug ang leak, hindi usapin ng patakaran.",
+    "priv_2": "Itinatapon habang binabasa ang bawat file, kaya hindi ito nakakarating sa dashboard.",
     "priv_3": "Zero external request ang dashboard at ang pahinang ito. Walang CDN, walang font, walang analytics.",
 
     "start_cta1": "Buksan ang live demo",
@@ -1346,10 +1345,10 @@ STRINGS["pt-BR"] = {
     "why_4_d": "BRL, IDR, VND, THB, PHP, MYR e outras — comparadas a uma diária local, porque US$ 412 não significa a mesma coisa em todo lugar.",
 
     "priv_eyebrow": "Privacidade",
-    "priv_h2": "Um mecanismo, não uma promessa",
+    "priv_h2": "Privacidade por construção",
     "priv_lede": "Nada sai da sua máquina a menos que você edite um arquivo autorizando.",
     "priv_1": "Nunca armazenado: prompts, respostas, código, comandos, caminhos de arquivo.",
-    "priv_2": "Bloqueado no ponto em que o arquivo é lido — então um vazamento seria um bug, não uma questão de política.",
+    "priv_2": "Descartado à medida que cada arquivo é lido, então nunca chega ao painel.",
     "priv_3": "O painel e esta página fazem zero requisições externas. Sem CDN, sem fontes, sem analytics.",
 
     "start_cta1": "Abrir a demo",
@@ -1450,10 +1449,10 @@ STRINGS["es"] = {
     "why_4_d": "IDR, VND, THB, PHP, MYR y más, comparadas con un jornal local, porque 412 $ no significan lo mismo en todas partes.",
 
     "priv_eyebrow": "Privacidad",
-    "priv_h2": "Un mecanismo, no una promesa",
+    "priv_h2": "Privacidad por construcción",
     "priv_lede": "Nada sale de tu máquina salvo que edites un archivo para permitirlo.",
     "priv_1": "Nunca se guarda: prompts, respuestas, código, comandos, rutas de archivo.",
-    "priv_2": "Se bloquea en el punto donde se lee el archivo, así que una fuga sería un fallo, no una cuestión de política.",
+    "priv_2": "Se descarta al leer cada archivo, así que nunca llega al panel.",
     "priv_3": "El panel y esta página no hacen ninguna petición externa. Sin CDN, sin fuentes, sin analítica.",
 
     "start_cta1": "Abrir la demo",

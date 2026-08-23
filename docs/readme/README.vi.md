@@ -69,7 +69,7 @@ python3 observe.py demo digest report
 Rồi chạy trên chính dữ liệu của bạn:
 
 ```bash
-rm -rf ../data ../dist
+python3 observe.py demo --purge
 python3 observe.py all
 ```
 
@@ -98,12 +98,12 @@ Không API key, không proxy, không tài khoản, không mạng. Việc thu th�
 | **Giá cache khác nhau theo nhà cung cấp** | Mức 0,1× là thói quen của Anthropic, không phải quy luật. Sai chỗ này là sai con số lớn nhất trên trang. |
 | **Mười ba loại tiền tệ** | VND, IDR, THB, PHP, MYR và hơn nữa — đặt cạnh mức công nhật địa phương, vì 412 đô không mang cùng một ý nghĩa ở mọi nơi. |
 
-## Là cơ chế, không phải lời hứa
+## Riêng tư nhờ cách được dựng nên
 
 **Không gì rời khỏi máy bạn, trừ khi chính bạn sửa tệp cấu hình để cho phép.**
 
 - Không bao giờ lưu: prompt, câu trả lời, mã nguồn, lệnh, đường dẫn tệp.
-- Chặn ngay tại chỗ đọc tệp — nên rò rỉ là một lỗi, không phải câu chuyện chính sách.
+- Được loại bỏ ngay khi đọc mỗi tệp, nên không bao giờ đến bảng điều khiển.
 - Bảng điều khiển và trang này không gửi bất kỳ yêu cầu ra ngoài nào. Không CDN, không font, không analytics.
 
 ## Tài liệu

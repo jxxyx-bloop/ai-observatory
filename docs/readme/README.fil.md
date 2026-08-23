@@ -69,7 +69,7 @@ python3 observe.py demo digest report
 Tapos sa sarili mong paggamit:
 
 ```bash
-rm -rf ../data ../dist
+python3 observe.py demo --purge
 python3 observe.py all
 ```
 
@@ -98,12 +98,12 @@ Walang API key, walang proxy, walang account, walang network. Zero token ang gas
 | **Iba-iba ang cache rate kada vendor** | Ugali ng Anthropic ang 0.1×, hindi batas. Mali dito, mali ang pinakamahalagang numero sa pahina. |
 | **Labintatlong pera** | PHP, IDR, VND, THB, MYR at iba pa — katabi ng lokal na arawang kita, dahil hindi pare-pareho ang bigat ng $412 saanman. |
 
-## Mekanismo, hindi pangako
+## Pribado dahil sa pagkakagawa
 
 **Walang lumalabas ng makina mo maliban kung ikaw mismo ang mag-edit ng file para payagan ito.**
 
 - Hindi kailanman iniimbak: prompt, sagot, code, command, file path.
-- Hinaharang sa mismong pagbasa ng file — kaya bug ang leak, hindi usapin ng patakaran.
+- Itinatapon habang binabasa ang bawat file, kaya hindi ito nakakarating sa dashboard.
 - Zero external request ang dashboard at ang pahinang ito. Walang CDN, walang font, walang analytics.
 
 ## Dokumentasyon

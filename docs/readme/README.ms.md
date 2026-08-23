@@ -69,7 +69,7 @@ python3 observe.py demo digest report
 Kemudian pada penggunaan anda sendiri:
 
 ```bash
-rm -rf ../data ../dist
+python3 observe.py demo --purge
 python3 observe.py all
 ```
 
@@ -98,12 +98,12 @@ Tanpa kunci API, tanpa proksi, tanpa akaun, tanpa rangkaian. Pengumpulan data me
 | **Kadar cache berbeza ikut vendor** | Diskaun 0.1× ialah kebiasaan Anthropic, bukan hukum. Silap di sini, angka terpenting di halaman ikut silap. |
 | **Tiga belas mata wang** | MYR, IDR, VND, THB, PHP dan lagi — disandingkan dengan kadar harian tempatan, kerana $412 tidak bermakna sama di mana-mana. |
 
-## Satu mekanisme, bukan janji
+## Privasi daripada cara ia dibina
 
 **Tiada apa-apa keluar dari mesin anda melainkan anda sendiri mengubah fail untuk membenarkannya.**
 
 - Tidak pernah disimpan: prompt, jawapan, kod, arahan, laluan fail.
-- Dihalang pada titik fail dibaca — jadi kebocoran ialah pepijat, bukan soal dasar.
+- Dibuang semasa setiap fail dibaca, jadi ia tidak pernah sampai ke papan pemuka.
 - Papan pemuka dan halaman ini sifar permintaan luar. Tanpa CDN, tanpa fon, tanpa analitik.
 
 ## Dokumentasi

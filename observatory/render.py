@@ -88,6 +88,20 @@ def usd(n) -> str:
     return f"${n:,.0f}" if abs(n) >= 100 else f"${n:,.2f}"
 
 
+def _action_html(action) -> str:
+    """The recommendation, as a paragraph or as numbered steps.
+
+    A detector returns a list when the advice is genuinely more than one move.
+    Numbering them is not decoration: a reader scanning for what to do next can
+    count the steps before reading them, and a step they have already taken is
+    findable again. Prose hides that structure inside a sentence.
+    """
+    if isinstance(action, (list, tuple)):
+        items = "".join(f"<li>{esc(step)}</li>" for step in action)
+        return f'<ol class="act acts">{items}</ol>'
+    return f'<p class="act">{esc(action)}</p>'
+
+
 def findings_html(d: dict) -> str:
     fs = d.get("findings") or []
     if not fs:
@@ -99,18 +113,24 @@ def findings_html(d: dict) -> str:
         save = f'<span class="save">≈{usd(saving)}/mo</span>' if saving else ""
         meta = f'<p class="meta">{esc(f["demoted"])}</p>' if f.get("demoted") else ""
         out.append(
-            f'<div class="find" style="--c:{c}">'
+            f'<div class="find" data-sev="{esc(f["severity"])}" style="--c:{c}">'
             f'<div class="top"><span class="sev">{esc(f["severity"])}</span>'
             f'<span class="ttl">{esc(f["title"])}</span>{save}</div>'
             f'<p>{esc(f["finding"])}</p>'
-            f'<p class="act">{esc(f["action"])}</p>'
+            f'{_action_html(f["action"])}'
             f'{meta}<p class="meta">Confidence: {esc(f.get("confidence", "—"))}</p></div>'
         )
-    return "".join(out)
+    # One flow, in severity order, with width carrying the priority — see the
+    # `.finds` rules. Splitting the list into a hero plus a column-flowed tail
+    # read the order out of it: three columns of mixed severity put a MEDIUM, a
+    # LOW and an INFO side by side at equal weight, and the reader lost the
+    # thread of what to do first.
+    return '<div class="finds">' + "".join(out) + "</div>"
 
 
 def render(digest: dict, home: str | None = None, refresh: str | None = None,
-           demo: bool = False, setup: str | None = None) -> str:
+           demo: bool = False, setup: str | None = None,
+           star: str | None = None) -> str:
     """Assemble the page from the templates in `engine/assets/`.
 
     `home` is where the breadcrumb points. The hosted demo passes "../" so the
@@ -160,6 +180,10 @@ def render(digest: dict, home: str | None = None, refresh: str | None = None,
                 "refresh": refresh or "python3 observatory/observe.py all",
                 "demo": bool(demo or digest.get("demo")),
                 "setup": setup,
+                # Only the hosted demo passes this. A dashboard rendered on
+                # somebody's own machine belongs to someone who already
+                # installed the thing — they are owed a tool, not another ask.
+                "star": star,
             }, separators=(",", ":")).replace("</", "<\\/"))
             .replace("/*PAYLOAD*/",
                      json.dumps(digest, separators=(",", ":")).replace("</", "<\\/"))

@@ -110,7 +110,7 @@ python3 observe.py demo digest report
 {t['rm_own']}
 
 ```bash
-rm -rf ../data ../dist
+python3 observe.py demo --purge
 python3 observe.py all
 ```
 
