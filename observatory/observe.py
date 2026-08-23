@@ -132,13 +132,23 @@ def _display_settings(digest: dict) -> dict:
     plans = price.load_plans()
     code = cfg.get("currency", "USD")
     cur = plans["currencies"].get(code) or plans["currencies"]["USD"]
-    offset = float(cfg.get("timezone_offset_hours", 8))
-    sign = "+" if offset >= 0 else "-"
-    whole = int(abs(offset))
-    minutes = int(round((abs(offset) - whole) * 60))
+    # Anchored to the newest event rather than to now, so the axis is labelled
+    # with the offset the data was actually recorded under. They differ only
+    # across a DST changeover, which is exactly when a page rendered in
+    # November would otherwise mislabel a summer heatmap.
+    last = (digest.get("window") or {}).get("last")
+    at = None
+    if last:
+        try:
+            at = datetime.fromisoformat(last).replace(tzinfo=timezone.utc)
+        except ValueError:
+            at = None
+    offset = settings.local_offset(at).total_seconds() / 3600
     out = {
         "tz_offset_hours": offset,
-        "tz_label": "UTC%s%d%s" % (sign, whole, ":%02d" % minutes if minutes else ""),
+        "tz_label": settings.timezone_label(at),
+        "tz_auto": settings.timezone_is_auto(),
+        "tz_name": settings.timezone_name() if settings.timezone_is_auto() else None,
         "currency": code,
         "symbol": cur["symbol"],
         "per_usd": cur["per_usd"],
