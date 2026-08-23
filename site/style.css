@@ -156,9 +156,36 @@ section>h2{font-size:var(--t-h2);max-width:28ch;margin:0 auto}
   border-radius:var(--r-md);padding:var(--s5);text-align:left;
   box-shadow:inset 3px 0 0 var(--sev,var(--high)),var(--shadow-sm)}
 .deck .find+.find{margin-top:var(--s3)}
-.js .deck .find{display:none}
-.js .deck .find.on{display:block;animation:rise var(--d-slow) var(--ease) both}
+/* A cross-fade, not a cut. `display:none` cannot be transitioned: the outgoing
+   card vanished in a single frame, the deck collapsed to nothing, and the next
+   card animated in against the gap — which reads as a blink rather than as
+   movement. The cards now share one grid cell, so the deck always stands at
+   the height of the tallest and nothing jumps, and the two swap by opacity.
+   The slide carries direction: going forward sends the old card left and
+   brings the new one in from the right, so the motion says which way the deck
+   turned instead of only that it changed. `visibility` rather than `display`
+   keeps the hidden cards out of the tab order and the accessibility tree while
+   staying animatable — it flips only once the fade has finished. */
+/* `start`, not the default `stretch`: the cards share one row, so stretching
+   would force a short card to the height of the tallest and render it as a
+   part-empty box. The deck still stands at the tallest card's height, which
+   is the point — nothing below it moves when the card changes. */
+.js .deck{display:grid;align-items:start}
+.js .deck .find{grid-area:1/1;opacity:0;visibility:hidden;
+  transform:translateX(var(--enter,28px));
+  transition:opacity var(--d-slow) var(--ease),transform var(--d-slow) var(--ease),
+             visibility 0s linear var(--d-slow)}
+.js .deck .find.on{opacity:1;visibility:visible;transform:none;
+  transition:opacity var(--d-slow) var(--ease),transform var(--d-slow) var(--ease),
+             visibility 0s}
+.js .deck .find.out{transform:translateX(var(--exit,-28px))}
 .js .deck .find+.find{margin-top:0}
+/* Reduced motion gets the swap without the travel. Still not a `display`
+   toggle, so the deck keeps its steady height either way. */
+@media (prefers-reduced-motion:reduce){
+  .js .deck .find,.js .deck .find.on,.js .deck .find.out{
+    transform:none;transition:visibility 0s}
+}
 @keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 
 .find .top{display:flex;flex-wrap:wrap;align-items:baseline;gap:var(--s2);

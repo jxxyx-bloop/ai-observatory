@@ -80,8 +80,8 @@ if (deck) {
     if (!reduceMotion) start();
 
     var prev = $("prev"), next = $("next");
-    if (prev) prev.addEventListener("click", function () { show(i - 1); });
-    if (next) next.addEventListener("click", function () { show(i + 1); });
+    if (prev) prev.addEventListener("click", function () { show(i - 1, -1); });
+    if (next) next.addEventListener("click", function () { show(i + 1, 1); });
 
     if (!reduceMotion) {
       // Pause over the card and its controls — and ONLY those. This used to
@@ -113,18 +113,39 @@ if (deck) {
     cards.forEach(function (c) { c.classList.add("on"); });
   }
 
-  function show(n) {
+  /* How far a card travels on its way in or out. Deliberately small: this is a
+     cue about which way the deck turned, not a slide show. The distance lives
+     here rather than in the CSS because only this function knows the
+     direction, and the two offsets have to be opposites. */
+  var SHIFT = 28;
+  var ready = false;
+
+  function show(n, dir) {
+    var from = i;
     i = (n + cards.length) % cards.length;
+    if (dir == null) {
+      // Stepping forward exactly one place is forward; everything else — a dot
+      // jumped to, the wrap from last back to first — reads as backward, which
+      // is the shorter way round and so the way a reader expects it to move.
+      dir = ((i - from + cards.length) % cards.length) === 1 ? 1 : -1;
+    }
+    deck.style.setProperty("--enter", (dir > 0 ? SHIFT : -SHIFT) + "px");
+    deck.style.setProperty("--exit", (dir > 0 ? -SHIFT : SHIFT) + "px");
     cards.forEach(function (c, k) {
       c.classList.toggle("on", k === i);
+      // Only the card actually being replaced animates out. The rest sit
+      // parked at the entry offset where nobody can see them, so they do not
+      // slide about behind the one on top.
+      c.classList.toggle("out", ready && k === from && k !== i);
       c.setAttribute("aria-hidden", k === i ? "false" : "true");
     });
+    ready = true;
     if (!dots) return;
     [].forEach.call(dots.children, function (b, k) {
       b.setAttribute("aria-selected", k === i ? "true" : "false");
     });
   }
-  function start() { if (!timer) timer = setInterval(function () { show(i + 1); }, ADVANCE_MS); }
+  function start() { if (!timer) timer = setInterval(function () { show(i + 1, 1); }, ADVANCE_MS); }
   function stop() { if (timer) { clearInterval(timer); timer = null; } }
 }
 
