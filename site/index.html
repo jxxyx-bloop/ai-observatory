@@ -43,6 +43,7 @@ document.documentElement.className+=" js";})();
       <a href="#how">{{nav_how}}</a>
       <a href="#why">{{nav_why}}</a>
       <a href="#privacy">{{nav_privacy}}</a>
+      <a href="#start" class="navcta">{{nav_setup}}</a>
     </nav>
 
     <div class="tools">
@@ -178,14 +179,60 @@ document.documentElement.className+=" js";})();
 </section>
 
 <!-- ── Start ─────────────────────────────────────────────────────────────── -->
-<section class="start">
+<!-- ── Start ─────────────────────────────────────────────────────────────
+     The demo's call to action lands here, so this is where a stranger becomes
+     a user. Three commands, each copyable in one click, then the troubleshooting
+     for the four things that actually go wrong. `observe.py doctor` prints the
+     same checks locally — one definition, two renderings. -->
+<section class="start" id="start">
   <div class="startcard glass">
     <h2>{{start_h2}}</h2>
     <p class="lede narrow">{{start_d}}</p>
+
+    <ol class="setup" role="list">
+      <li>
+        <div class="setuphead"><span class="setupn">1</span>
+          <div><h3>{{setup_1_t}}</h3><p>{{setup_1_d}}</p></div></div>
+        <div class="cmd"><code>git clone {{repo}}.git
+cd ai-observatory/observatory
+python3 observe.py demo digest report</code>
+          <button class="copybtn" type="button" data-copy
+                  data-done="{{setup_copied}}">{{setup_copy}}</button></div>
+      </li>
+      <li>
+        <div class="setuphead"><span class="setupn">2</span>
+          <div><h3>{{setup_2_t}}</h3><p>{{setup_2_d}}</p></div></div>
+        <div class="cmd"><code>python3 observe.py sync digest report</code>
+          <button class="copybtn" type="button" data-copy
+                  data-done="{{setup_copied}}">{{setup_copy}}</button></div>
+      </li>
+      <li>
+        <div class="setuphead"><span class="setupn">3</span>
+          <div><h3>{{setup_3_t}}</h3><p>{{setup_3_d}}</p></div></div>
+        <div class="cmd"><code>python3 observe.py install --dock</code>
+          <button class="copybtn" type="button" data-copy
+                  data-done="{{setup_copied}}">{{setup_copy}}</button></div>
+      </li>
+    </ol>
+
+    <p class="fine center">{{setup_req}}</p>
+
+    <details class="trouble">
+      <summary>{{tr_h}}</summary>
+      <dl>
+        <dt>{{tr_1_q}}</dt><dd>{{tr_1_a}}</dd>
+        <dt>{{tr_2_q}}</dt><dd>{{tr_2_a}}</dd>
+        <dt>{{tr_3_q}}</dt><dd>{{tr_3_a}}</dd>
+        <dt>{{tr_4_q}}</dt><dd>{{tr_4_a}}</dd>
+        <dt>{{tr_5_q}}</dt><dd>{{tr_5_a}}</dd>
+      </dl>
+      <p class="fine">{{tr_note}}</p>
+    </details>
+
     <div class="ctas center">
       <a class="cta" href="{{base}}demo/">{{start_cta1}}
         <svg viewBox="0 0 24 24" aria-hidden="true" class="arw"><path d="M5 12h13M13 6l6 6-6 6"></path></svg></a>
-      <a class="cta ghost" href="{{repo}}#quick-start" rel="noopener">{{start_cta2}}</a>
+      <a class="cta ghost" href="{{repo}}" rel="noopener">GitHub</a>
     </div>
   </div>
 </section>

@@ -72,6 +72,7 @@ STRINGS["en"] = {
     "nav_why": "Different",
     "nav_privacy": "Privacy",
     "nav_demo": "Demo",
+    "nav_setup": "Set up",
     "lang_label": "Language",
     "theme_label": "Light / dark",
 
@@ -155,11 +156,59 @@ STRINGS["en"] = {
     "priv_3": "The dashboard and this page make zero external requests. No CDN, no "
               "fonts, no analytics.",
 
-    "start_h2": "See it before you install it",
-    "start_d": "The demo is the real dashboard, built from 60 days of sample data by "
-               "the same code you would run locally.",
+    "start_h2": "Set it up in about a minute",
+    "start_d": "Three commands, in the order you actually run them. The first shows "
+               "the whole product with sample data, before you hand it anything of "
+               "your own.",
     "start_cta1": "Open the live demo",
-    "start_cta2": "Quick start",
+
+    # ── Setup walkthrough ───────────────────────────────────────────────────
+    # Three commands, in the order a person actually runs them: see it, then
+    # make it yours, then keep it. Step 1 deliberately uses sample data — the
+    # product has to be visible before anyone earns the right to ask for a
+    # real sync.
+    "setup_copy": "Copy",
+    "setup_copied": "Copied",
+    "setup_1_t": "See it working, with sample data",
+    "setup_1_d": "Fills the store with 60 days of realistic usage and opens the "
+                 "dashboard. Nothing of yours is read yet, and no tokens are spent.",
+    "setup_2_t": "Swap in your own numbers",
+    "setup_2_d": "Reads the transcripts your AI coding tools already wrote on "
+                 "this machine. Read-only, no network, no account, no API key.",
+    "setup_3_t": "Keep it one click away",
+    "setup_3_d": "Puts an icon in your Dock and schedules a 09:00 refresh, then "
+                 "opens it once so you can see what clicking it does. Undo all of "
+                 "it with the same command plus --remove.",
+    "setup_req": "Needs Python 3 and git. macOS and Linux already have both; on "
+                 "Windows, install Python from python.org first.",
+
+    # ── Troubleshooting ─────────────────────────────────────────────────────
+    # The five things that actually go wrong. `observe.py doctor` prints the
+    # same list locally, so a person who is offline is not worse off.
+    "tr_h": "Something did not work",
+    "tr_1_q": "\u201cpython3: command not found\u201d",
+    "tr_1_a": "macOS and Linux ship Python 3 already, so this is almost always "
+              "Windows. Install it from python.org and tick \u201cAdd Python to "
+              "PATH\u201d during setup, then use python instead of python3.",
+    "tr_2_q": "\u201csync: 0 new events from 0 sources\u201d",
+    "tr_2_a": "No supported tool has run on this machine yet, or its transcripts "
+              "live somewhere non-standard. This is expected on a fresh laptop \u2014 "
+              "the sample data in step 1 still shows the whole product.",
+    "tr_3_q": "The page says there is no digest yet",
+    "tr_3_a": "Collection and rendering are separate steps. Run "
+              "python3 observe.py digest report, or just python3 observe.py all, "
+              "which does every step in order.",
+    "tr_4_q": "Nothing opened in my browser",
+    "tr_4_a": "The file is still there \u2014 open dist/observatory.html from the "
+              "project folder. Scheduled runs never open a browser on purpose, "
+              "so a morning refresh cannot steal focus while you work.",
+    "tr_5_q": "macOS says the app is from an unidentified developer",
+    "tr_5_a": "That warning belongs to downloaded apps. The launcher is generated "
+              "on your own machine, so it should never appear \u2014 if it does, the "
+              "app was copied from another computer. Delete it and run "
+              "python3 observe.py install again to build a local one.",
+    "tr_note": "Still stuck? Run python3 observe.py doctor \u2014 it checks every "
+               "step and prints the exact fix for whichever one failed.",
 
     "foot_tag": "MIT licensed · Local-first · No account",
     "foot_docs": "Docs",
@@ -252,10 +301,7 @@ STRINGS["zh-Hans"] = {
     "priv_2": "在解析文件的那一层就挡掉——所以泄漏是 bug，而不是政策问题。",
     "priv_3": "看板和本页都不发起任何外部请求。无 CDN、无字体、无统计。",
 
-    "start_h2": "先看，再决定要不要装",
-    "start_d": "演示就是真实看板，由你在本地会运行的同一套代码，用 60 天示例数据生成。",
     "start_cta1": "打开在线演示",
-    "start_cta2": "快速开始",
 
     "foot_tag": "MIT 许可 · 本地优先 · 无需账号",
     "foot_docs": "文档",
@@ -348,10 +394,7 @@ STRINGS["zh-Hant"] = {
     "priv_2": "在解析檔案那一層就擋掉——所以外洩是 bug，不是政策問題。",
     "priv_3": "儀表板與本頁都不發出任何外部請求。無 CDN、無字型、無分析。",
 
-    "start_h2": "先看看，再決定要不要裝",
-    "start_d": "示範就是真實儀表板，由你在本機會執行的同一套程式，用 60 天範例資料產生。",
     "start_cta1": "開啟線上示範",
-    "start_cta2": "快速開始",
 
     "foot_tag": "MIT 授權 · 本機優先 · 免帳號",
     "foot_docs": "文件",
@@ -444,10 +487,7 @@ STRINGS["ja"] = {
     "priv_2": "解析の入口で遮断しています。だから漏えいは方針の問題ではなく、バグです。",
     "priv_3": "ダッシュボードもこのページも外部リクエストはゼロ。CDNもフォントも解析タグもありません。",
 
-    "start_h2": "入れる前に、見てください",
-    "start_d": "デモは本物のダッシュボードです。ローカルで動かすのと同じコードが、60日分のサンプルから生成しています。",
     "start_cta1": "デモを開く",
-    "start_cta2": "クイックスタート",
 
     "foot_tag": "MITライセンス · ローカルファースト · アカウント不要",
     "foot_docs": "ドキュメント",
@@ -540,10 +580,7 @@ STRINGS["ko"] = {
     "priv_2": "파일을 파싱하는 지점에서 차단합니다. 그래서 유출은 정책 문제가 아니라 버그입니다.",
     "priv_3": "대시보드도 이 페이지도 외부 요청이 0건입니다. CDN도, 폰트도, 애널리틱스도 없습니다.",
 
-    "start_h2": "설치하기 전에 먼저 보세요",
-    "start_d": "데모는 진짜 대시보드입니다. 로컬에서 돌릴 코드와 똑같은 코드가 60일치 샘플로 만들어냅니다.",
     "start_cta1": "라이브 데모 열기",
-    "start_cta2": "빠른 시작",
 
     "foot_tag": "MIT 라이선스 · 로컬 우선 · 계정 불필요",
     "foot_docs": "문서",
@@ -636,10 +673,7 @@ STRINGS["hi"] = {
     "priv_2": "फ़ाइल पढ़ने की जगह पर ही रोका जाता है — इसलिए रिसाव नीति का सवाल नहीं, बग है।",
     "priv_3": "डैशबोर्ड और यह पेज कोई बाहरी अनुरोध नहीं करते। न CDN, न फ़ॉन्ट, न एनालिटिक्स।",
 
-    "start_h2": "इंस्टॉल करने से पहले देख लीजिए",
-    "start_d": "डेमो असली डैशबोर्ड है — वही कोड जो आप लोकल चलाते, 60 दिन के नमूना डेटा से बनाकर।",
     "start_cta1": "लाइव डेमो खोलें",
-    "start_cta2": "क्विक स्टार्ट",
 
     "foot_tag": "MIT लाइसेंस · लोकल-फ़र्स्ट · बिना अकाउंट",
     "foot_docs": "दस्तावेज़",
@@ -732,10 +766,7 @@ STRINGS["id"] = {
     "priv_2": "Dihentikan di titik berkas dibaca — jadi kebocoran itu bug, bukan urusan kebijakan.",
     "priv_3": "Dasbor dan halaman ini nol permintaan eksternal. Tanpa CDN, tanpa font, tanpa analitik.",
 
-    "start_h2": "Lihat dulu sebelum memasang",
-    "start_d": "Demo ini dasbor sungguhan, dibuat dari 60 hari data contoh oleh kode yang sama persis dengan yang Anda jalankan sendiri.",
     "start_cta1": "Buka demo langsung",
-    "start_cta2": "Mulai cepat",
 
     "foot_tag": "Lisensi MIT · Lokal dulu · Tanpa akun",
     "foot_docs": "Dokumentasi",
@@ -828,10 +859,7 @@ STRINGS["vi"] = {
     "priv_2": "Chặn ngay tại chỗ đọc tệp — nên rò rỉ là một lỗi, không phải câu chuyện chính sách.",
     "priv_3": "Bảng điều khiển và trang này không gửi bất kỳ yêu cầu ra ngoài nào. Không CDN, không font, không analytics.",
 
-    "start_h2": "Xem trước khi cài",
-    "start_d": "Bản demo chính là bảng điều khiển thật, dựng từ 60 ngày dữ liệu mẫu bằng đúng đoạn mã bạn sẽ chạy ở máy mình.",
     "start_cta1": "Mở bản demo",
-    "start_cta2": "Bắt đầu nhanh",
 
     "foot_tag": "Giấy phép MIT · Ưu tiên cục bộ · Không cần tài khoản",
     "foot_docs": "Tài liệu",
@@ -924,10 +952,7 @@ STRINGS["th"] = {
     "priv_2": "ปิดกั้นตั้งแต่จุดที่อ่านไฟล์ — การรั่วไหลจึงเป็นบั๊ก ไม่ใช่เรื่องนโยบาย",
     "priv_3": "ทั้งแดชบอร์ดและหน้านี้ไม่มีการเรียกภายนอกเลย ไม่มี CDN ไม่มีฟอนต์ ไม่มี analytics",
 
-    "start_h2": "ดูก่อนค่อยติดตั้ง",
-    "start_d": "เดโมคือแดชบอร์ดจริง สร้างจากข้อมูลตัวอย่าง 60 วันด้วยโค้ดชุดเดียวกับที่คุณจะรันบนเครื่องตัวเอง",
     "start_cta1": "เปิดเดโม",
-    "start_cta2": "เริ่มต้นอย่างรวดเร็ว",
 
     "foot_tag": "สัญญาอนุญาต MIT · ทำงานบนเครื่องเป็นหลัก · ไม่ต้องมีบัญชี",
     "foot_docs": "เอกสาร",
@@ -1020,10 +1045,7 @@ STRINGS["ms"] = {
     "priv_2": "Dihalang pada titik fail dibaca — jadi kebocoran ialah pepijat, bukan soal dasar.",
     "priv_3": "Papan pemuka dan halaman ini sifar permintaan luar. Tanpa CDN, tanpa fon, tanpa analitik.",
 
-    "start_h2": "Lihat dulu sebelum pasang",
-    "start_d": "Demo ini papan pemuka sebenar, dibina daripada 60 hari data contoh oleh kod yang sama seperti yang anda jalankan sendiri.",
     "start_cta1": "Buka demo langsung",
-    "start_cta2": "Mula pantas",
 
     "foot_tag": "Lesen MIT · Tempatan dahulu · Tanpa akaun",
     "foot_docs": "Dokumentasi",
@@ -1116,10 +1138,7 @@ STRINGS["fil"] = {
     "priv_2": "Hinaharang sa mismong pagbasa ng file — kaya bug ang leak, hindi usapin ng patakaran.",
     "priv_3": "Zero external request ang dashboard at ang pahinang ito. Walang CDN, walang font, walang analytics.",
 
-    "start_h2": "Tingnan mo muna bago i-install",
-    "start_d": "Totoong dashboard ang demo, gawa mula sa 60 araw na sample data ng parehong code na patatakbuhin mo sa sarili mong makina.",
     "start_cta1": "Buksan ang live demo",
-    "start_cta2": "Mabilisang simula",
 
     "foot_tag": "MIT license · Lokal muna · Walang account",
     "foot_docs": "Dokumentasyon",
@@ -1212,10 +1231,7 @@ STRINGS["pt-BR"] = {
     "priv_2": "Bloqueado no ponto em que o arquivo é lido — então um vazamento seria um bug, não uma questão de política.",
     "priv_3": "O painel e esta página fazem zero requisições externas. Sem CDN, sem fontes, sem analytics.",
 
-    "start_h2": "Veja antes de instalar",
-    "start_d": "A demo é o painel de verdade, gerado a partir de 60 dias de dados de exemplo pelo mesmo código que você rodaria localmente.",
     "start_cta1": "Abrir a demo",
-    "start_cta2": "Início rápido",
 
     "foot_tag": "Licença MIT · Local em primeiro lugar · Sem conta",
     "foot_docs": "Documentação",
@@ -1308,10 +1324,7 @@ STRINGS["es"] = {
     "priv_2": "Se bloquea en el punto donde se lee el archivo, así que una fuga sería un fallo, no una cuestión de política.",
     "priv_3": "El panel y esta página no hacen ninguna petición externa. Sin CDN, sin fuentes, sin analítica.",
 
-    "start_h2": "Míralo antes de instalarlo",
-    "start_d": "La demo es el panel de verdad, generado a partir de 60 días de datos de ejemplo por el mismo código que ejecutarías tú.",
     "start_cta1": "Abrir la demo",
-    "start_cta2": "Inicio rápido",
 
     "foot_tag": "Licencia MIT · Local primero · Sin cuenta",
     "foot_docs": "Documentación",

@@ -250,3 +250,52 @@ section>h2{font-size:var(--t-h2);max-width:28ch;margin:0 auto}
   section{padding-top:var(--s8)}
   .find .save{margin-left:0;width:100%}
 }
+
+/* ── Setup walkthrough ──────────────────────────────────────────────────────
+   Numbered because order matters here in a way it does not in the "how it
+   works" list above: step 2 fails without step 1. The command box scrolls
+   rather than wraps, so a long clone URL cannot push the copy button off a
+   phone screen. */
+.setup{list-style:none;margin:28px 0 0;padding:0;text-align:left}
+.setup>li{padding:18px 0;border-top:1px solid var(--line)}
+.setup>li:first-child{border-top:0}
+.setuphead{display:flex;gap:14px;align-items:flex-start}
+.setupn{flex:none;width:26px;height:26px;border-radius:50%;
+  display:grid;place-items:center;font-size:13px;font-weight:700;
+  color:var(--accent-ink);background:var(--accent)}
+.setuphead h3{margin:2px 0 4px;font-size:15.5px;letter-spacing:-.01em}
+.setuphead p{margin:0;font-size:13.5px;line-height:1.55;color:var(--muted)}
+.cmd{display:flex;gap:10px;align-items:center;margin:12px 0 0 40px}
+.cmd code{flex:1 1 auto;min-width:0;overflow-x:auto;white-space:pre;
+  padding:11px 13px;border-radius:8px;border:1px solid var(--line);
+  background:var(--bg);font-size:12.5px;line-height:1.7;color:var(--ink)}
+.copybtn{flex:none;align-self:stretch;padding:0 16px;font:inherit;font-size:12.5px;
+  font-weight:650;color:var(--accent-ink);background:var(--accent);
+  border:0;border-radius:8px;cursor:pointer}
+.copybtn:hover{opacity:.9}
+.copybtn.done{background:var(--ok,#2f9e6e)}
+@media (max-width:620px){
+  .cmd{margin-left:0;flex-direction:column;align-items:stretch}
+  .copybtn{padding:10px 16px}
+}
+
+/* Troubleshooting: collapsed by default. Someone whose install worked should
+   not have to scroll past five error messages to reach the demo link. */
+.trouble{margin:26px 0 0;text-align:left;border:1px solid var(--line);
+  border-radius:10px;background:var(--bg)}
+.trouble>summary{padding:13px 16px;font-size:13.5px;font-weight:650;
+  cursor:pointer;color:var(--ink);list-style:none}
+.trouble>summary::-webkit-details-marker{display:none}
+.trouble>summary::before{content:"+";margin-right:9px;color:var(--accent);font-weight:700}
+.trouble[open]>summary::before{content:"\2013"}
+.trouble dl{margin:0;padding:0 16px 4px}
+.trouble dt{font-size:13.5px;font-weight:650;margin:14px 0 4px;color:var(--ink)}
+.trouble dd{margin:0;font-size:13.5px;line-height:1.6;color:var(--muted)}
+.trouble .fine{padding:0 16px 14px;margin:14px 0 0}
+
+/* The nav's only filled item. Everything else in the bar is a jump within the
+   page; this one is the thing we actually want clicked, so it stops looking
+   like a sibling of "Privacy". */
+.mainnav .navcta{padding:6px 13px;border-radius:999px;
+  color:var(--accent-ink);background:var(--accent);font-weight:650}
+.mainnav .navcta:hover{opacity:.9;color:var(--accent-ink)}

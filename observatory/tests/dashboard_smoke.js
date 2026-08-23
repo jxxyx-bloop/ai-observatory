@@ -14,6 +14,11 @@
 const fs = require('fs');
 const html = fs.readFileSync(process.argv[2], 'utf8');
 const digest = html.match(/<script id="digest"[^>]*>([\s\S]*?)<\/script>/)[1];
+// The freshness strip reads a second payload. OBS_META lets a caller override
+// `generated_at` so the aged and stale branches can be exercised without
+// waiting a week for the clock to catch up.
+const metaRaw = (html.match(/<script id="meta"[^>]*>([\s\S]*?)<\/script>/) || [, '{}'])[1];
+const meta = Object.assign(JSON.parse(metaRaw), JSON.parse(process.env.OBS_META || '{}'));
 
 function El(id) {
   return {
@@ -31,6 +36,7 @@ const els = {};
 global.document = {
   getElementById(id) {
     if (id === 'digest') return { textContent: digest };
+    if (id === 'meta') return { textContent: JSON.stringify(meta) };
     return (els[id] = els[id] || El(id));
   },
   createElement: (t) => El(t),
@@ -53,6 +59,22 @@ try {
   if (phase && phase._html) console.log('\nPHASE PANEL:\n  ' + phase._html.replace(/<[^>]+>/g,''));
   const kpi = els['kpis'];
   if (kpi) console.log('\nKPI markup bytes:', kpi._html.length);
+
+  // Freshness: a report rendered minutes ago must stay silent, and an aged or
+  // sample-data one must not. Both directions matter — a strip that never
+  // appears is as broken as one that never goes away.
+  // Detected from the heading rather than `.hidden`, because the stub element
+  // starts visible while the real one carries the `hidden` attribute — reading
+  // the flag would report "shown" for a page that never ran the branch.
+  const head = (els['freshHead'] || {}).textContent || '';
+  const shown = head !== '';
+  const want = process.env.OBS_EXPECT;
+  console.log('\nFRESHNESS: shown=' + !!shown + (head ? ' head="' + head + '"' : ''));
+  if (want === 'shown' && !shown) { console.error('expected the freshness strip'); process.exit(1); }
+  if (want === 'hidden' && shown) { console.error('freshness strip should be silent'); process.exit(1); }
+  if (shown && !(els['freshCmd'] || {}).textContent) {
+    console.error('freshness strip shown without a refresh command'); process.exit(1);
+  }
 } catch (e) {
   console.error('RUNTIME ERROR:', e.message, '\n', e.stack.split('\n').slice(0,4).join('\n'));
   process.exit(1);

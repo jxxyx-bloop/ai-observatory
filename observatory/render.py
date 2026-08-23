@@ -57,13 +57,22 @@ def findings_html(d: dict) -> str:
     return "".join(out)
 
 
-def render(digest: dict, home: str | None = None) -> str:
+def render(digest: dict, home: str | None = None, refresh: str | None = None,
+           demo: bool = False, setup: str | None = None) -> str:
     """Assemble the page from the templates in `engine/assets/`.
 
     `home` is where the breadcrumb points. The hosted demo passes "../" so the
     crumb leads back to the landing page; a dashboard rendered on your own
     machine passes nothing and gets a link to the repository instead, because
     there is no site next to it to return to.
+
+    `refresh` is the shell line the freshness strip offers when the report has
+    aged. It must already be safe to show a stranger — `launcher.refresh_command`
+    abbreviates `$HOME` to `~` precisely because this page is meant to be
+    e-mailable, and an absolute path would name its author. `demo` marks the
+    sample-data build so the page can say so on every visit, and `setup` is
+    where its call to action leads — the hosted demo has a guide to point at,
+    a dashboard on someone's laptop does not.
     """
     page = (ASSETS / "page.html").read_text(encoding="utf-8")
     crumb_href = home or REPO
@@ -71,6 +80,12 @@ def render(digest: dict, home: str | None = None) -> str:
     crumb_label = "Home" if home else "Repository"
     # Only the hosted copy has sibling locale directories to point at.
     crumb_attr = ' data-locale-home="1"' if home else ""
+    # A "set up" tile only means something where there is a guide to reach.
+    rail_setup = (
+        f'<a class="railcta" href="{esc(setup)}">'
+        '<svg viewBox="0 0 24 24" aria-hidden="true">'
+        '<path d="M12 4v11M7.5 10.5 12 15l4.5-4.5M5 19h14"></path></svg>'
+        '<span data-i18n="nav_setup">Set up</span></a>') if setup else ""
     # Tokens first, then layout — the same order the landing page uses, so the
     # two surfaces cannot drift apart. See docs/design/DESIGN-SYSTEM.md.
     css = ((ASSETS / "tokens.css").read_text(encoding="utf-8") + "\n"
@@ -83,10 +98,17 @@ def render(digest: dict, home: str | None = None) -> str:
             .replace("<!--HOMEKEY-->", crumb_key)
             .replace("<!--HOMELABEL-->", crumb_label)
             .replace("<!--HOME-->", crumb_href)
+            .replace("<!--RAILSETUP-->", rail_setup)
             .replace("<!--FINDINGS-->", findings_html(digest))
             .replace("<!--VERIFIED-->", esc(digest.get("pricing_verified_on") or "—"))
             .replace("<!--GENERATED-->",
                      esc((digest.get("generated_at") or "")[:16].replace("T", " ")))
+            .replace("/*META*/", json.dumps({
+                "generated_at": digest.get("generated_at"),
+                "refresh": refresh or "python3 observatory/observe.py all",
+                "demo": bool(demo or digest.get("demo")),
+                "setup": setup,
+            }, separators=(",", ":")).replace("</", "<\\/"))
             .replace("/*PAYLOAD*/",
                      json.dumps(digest, separators=(",", ":")).replace("</", "<\\/"))
     )

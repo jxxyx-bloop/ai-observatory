@@ -130,4 +130,38 @@ if (!reduce && "IntersectionObserver" in window) {
     io.observe(s);
   });
 }
+
+/* ── Copy buttons ───────────────────────────────────────────────────────────
+   Every command in the setup walkthrough is one click away from the clipboard.
+   `execCommand` first rather than as a fallback: `navigator.clipboard` is
+   undefined on insecure origins and on file://, and this same pattern is used
+   by the dashboard, which is opened that way by design. */
+(function () {
+  var btns = doc.querySelectorAll("[data-copy]");
+  [].forEach.call(btns, function (btn) {
+    btn.addEventListener("click", function () {
+      var box = btn.parentNode.querySelector("code");
+      if (!box) return;
+      var text = box.textContent;
+      var label = btn.textContent;
+      var ok = function () {
+        btn.textContent = btn.getAttribute("data-done") || "Copied";
+        btn.classList.add("done");
+        setTimeout(function () {
+          btn.textContent = label; btn.classList.remove("done");
+        }, 2000);
+      };
+      try {
+        var ta = doc.createElement("textarea");
+        ta.value = text; ta.setAttribute("readonly", "");
+        ta.style.cssText = "position:absolute;left:-9999px";
+        doc.body.appendChild(ta); ta.select();
+        doc.execCommand("copy"); doc.body.removeChild(ta); ok();
+      } catch (e) {
+        if (navigator.clipboard) navigator.clipboard.writeText(text).then(ok, function () {});
+      }
+    });
+  });
+})();
+
 })();

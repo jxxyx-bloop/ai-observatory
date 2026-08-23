@@ -64,6 +64,14 @@ var l=localStorage.getItem("observatory-lang");if(l)r.setAttribute("data-lang",l
       <span data-i18n="nav_change">To change</span></a></li>
   </ul>
 
+  <!-- The one action the rail offers that is not navigation. Present only on
+       the hosted demo: a dashboard rendered on your own laptop has nothing to
+       set up and no site next to it to point at, so render.py leaves this out
+       entirely rather than shipping a dead link. Sits above the settings so it
+       reads as the end of the list, which is where someone who has finished
+       scrolling the demo actually is. -->
+  <!--RAILSETUP-->
+
   <div class="railfoot">
     <details class="menu" id="langmenu">
       <summary class="railbtn" data-i18n-title="lang_label" title="Language"
@@ -89,6 +97,24 @@ var l=localStorage.getItem("observatory-lang");if(l)r.setAttribute("data-lang",l
 </nav>
 
 <main class="wrap">
+
+  <!-- ── Freshness ─────────────────────────────────────────────────────────
+       The page is a file, so it cannot be told that a newer one exists — but it
+       always knows its own age, because the render stamped it. That is the whole
+       mechanism: staleness is computed locally from `generated_at`, with no
+       network and no server, and the one line that fixes it is one click away.
+       Hidden entirely while the report is fresh; a permanent banner would train
+       people to ignore the place we later need them to look. -->
+  <div class="fresh" id="fresh" hidden>
+    <span class="freshdot" aria-hidden="true"></span>
+    <p class="freshtext"><strong id="freshHead"></strong> <span id="freshBody"></span></p>
+    <div class="freshact">
+      <code id="freshCmd"></code>
+      <button type="button" id="freshCopy" class="freshbtn">Copy</button>
+      <a id="freshMore" class="freshlink" href="#" hidden>Full setup guide</a>
+    </div>
+  </div>
+
   <header class="pagehead">
     <h1 data-i18n="title">Your AI coding, measured.</h1>
     <p class="sub" id="span">Loading…</p>
@@ -221,7 +247,7 @@ var l=localStorage.getItem("observatory-lang");if(l)r.setAttribute("data-lang",l
       <li id="methGen"><strong>The page is self-contained and
         reproducible.</strong> No external requests, fonts, scripts, or
         analytics. Generated <!--GENERATED--> UTC — regenerate anytime with
-        <code>python3 engine/observe.py all</code>.</li>
+        <code>python3 observatory/observe.py all</code>.</li>
     </ol>
   </footer>
 </main>
@@ -229,6 +255,7 @@ var l=localStorage.getItem("observatory-lang");if(l)r.setAttribute("data-lang",l
 
 <div id="tt" class="tt" role="tooltip" aria-hidden="true"></div>
 <script id="digest" type="application/json">/*PAYLOAD*/</script>
+<script id="meta" type="application/json">/*META*/</script>
 <script>/*I18N*/</script>
 <script>/*JS*/</script>
 </body></html>

@@ -86,18 +86,51 @@ tool that invents problems to look useful is a tool you stop believing.
 ```bash
 git clone https://github.com/jxxyx-bloop/ai-observatory
 cd ai-observatory/observatory
-python3 observe.py demo digest report      # 60 days of sample data → dist/observatory.html
+python3 observe.py demo digest report      # 60 days of sample data
 ```
 
-Then on your own usage:
+The dashboard opens in your browser when it finishes — there is no path to go
+looking for. Then swap in your own usage:
 
 ```bash
 rm -rf ../data ../dist        # sample data must not mix with yours
 python3 observe.py all        # sync → digest → report
 ```
 
+And, optionally, stop needing the terminal at all:
+
+```bash
+python3 observe.py install --dock    # a Dock icon + a 09:00 refresh
+```
+
+It finishes by opening the app, so you see the dashboard rather than a receipt.
+On macOS that writes `~/Applications/AI Observatory.app` — a 3 KB shell script
+in a bundle, not an Electron build. It is *generated on your machine rather
+than downloaded*, so Gatekeeper never prompts and nothing needs code signing.
+
+| Flag | Effect |
+|---|---|
+| `--dock` | Pin it to the Dock. Without this it is only revealed in Finder, so your Dock is never rearranged behind your back. |
+| `--no-daily` | Skip the scheduled refresh. |
+| `--no-open` | Install silently — for scripts. |
+| `--remove` | Undo all of it. |
+
+Everything it writes lives under `$HOME`, and nothing it does touches `data/`.
+
 **Python 3 standard library only.** No install, no dependencies, no build step,
 no account, no network.
+
+### When something looks wrong
+
+```bash
+python3 observe.py doctor     # checks each step, prints the fix for what failed
+```
+
+The rendered dashboard also dates itself: a report more than a day old says so
+above the title and offers the one line that refreshes it. It computes that from
+its own timestamp, so it works with no network and no server — the page can
+always know its own age, even though a file can never be told that a newer one
+exists.
 
 <details>
 <summary><b>Your first five minutes</b> — the three edits that are worth making</summary>

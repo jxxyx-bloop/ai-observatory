@@ -179,7 +179,14 @@ def build_demo() -> str:
     # `home` is what puts a breadcrumb back to the landing page on the hosted
     # copy. A locally rendered dashboard passes nothing and links to the repo
     # instead, because there is no site to go back to.
-    html_out = render.render(digest, home="../")
+    # The demo says what it is on every visit, and its call to action is the
+    # first real command rather than a link to a link. Someone who reaches the
+    # demo has already decided to look; the next click should start the install,
+    # not open another page that asks them to decide again.
+    html_out = render.render(
+        digest, home="../", demo=True, setup="../#start",
+        refresh="git clone " + REPO + ".git && cd ai-observatory/observatory "
+                "&& python3 observe.py sync digest report")
     shutil.rmtree(data)
     return html_out
 
