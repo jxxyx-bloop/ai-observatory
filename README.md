@@ -111,7 +111,7 @@ run yourself.
 python3 observe.py demo digest report   # 60 days of sample data, to look around
 python3 observe.py demo --purge         # remove it before collecting your own
 python3 observe.py all                  # read, measure, build — on your usage
-python3 observe.py install --dock       # the app, the Dock icon, a 09:00 refresh
+python3 observe.py install              # the app, the Dock icon, a daily refresh
 ```
 
 Do not skip the purge. Sample data left in the store is counted as if it were
@@ -123,8 +123,8 @@ downloaded*, so Gatekeeper never prompts and nothing needs signing.
 
 | Flag | Effect |
 |---|---|
-| `--dock` | Pin it to the Dock. Without this it is only revealed in Finder, so your Dock is never rearranged behind your back. |
-| `--no-daily` | Skip the scheduled refresh. |
+| `--no-dock` | Skip pinning to the Dock. By default `install` pins it, because an app you cannot find is an app you will not open; `--remove` unpins it again. |
+| `--no-daily` | Skip the scheduled refresh. Otherwise it runs at 09:00 and once at login, so a machine that was off at nine is still current when you sit down. |
 | `--no-open` | Install silently — for scripts. |
 | `--remove` | Undo all of it. |
 

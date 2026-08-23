@@ -90,6 +90,15 @@ its own CLI start disagreeing.
 back. `--remove` undoes everything. Nothing written leaves `$HOME`, and nothing
 touches `data/`.
 
+> **Amended 2026-08-24.** Pinning is now the default on both `install` and
+> `setup`, with `--no-dock` to opt out. The original reasoning protected a Dock
+> from a command the user had not yet decided to trust — but by the time anyone
+> runs `install` they have decided, and the launcher's whole promise is an icon
+> to click tomorrow. `install --remove` now unpins as well, so the default stays
+> reversible in both directions. The daily agent also gained `RunAtLoad`:
+> launchd replays a missed calendar interval on wake, but not on a boot that
+> happened after the scheduled time.
+
 ### 4. Failures arrive as a page, never a traceback
 
 `doctor` returns structured checks rendered three ways: the CLI, the generated

@@ -36,10 +36,12 @@ from __future__ import annotations
 
 import os
 import platform
+import plistlib
 import shutil
 import struct
 import subprocess
 import sys
+import urllib.parse
 import webbrowser
 import zlib
 from pathlib import Path
@@ -345,7 +347,7 @@ _PLIST = """<?xml version="1.0" encoding="UTF-8"?>
   </array>
   <key>StartCalendarInterval</key>
   <dict><key>Hour</key><integer>9</integer><key>Minute</key><integer>0</integer></dict>
-  <key>RunAtLoad</key><false/>
+  <key>RunAtLoad</key><true/>
   <key>StandardOutPath</key><string>{log}</string>
   <key>StandardErrorPath</key><string>{log}</string>
 </dict></plist>
@@ -420,6 +422,11 @@ def install(root: Path, daily: bool = True) -> list[str]:
     subprocess.run(["touch", str(bundle)], check=False, capture_output=True)
 
     if daily:
+        # 09:00, plus once at login. launchd already runs a *missed* calendar
+        # interval when the machine wakes, so a laptop asleep at nine refreshes
+        # when it is opened. What that does not cover is a machine that was off
+        # at nine and booted at ten: no wake, no catch-up, a dashboard a day
+        # stale. RunAtLoad closes that, and costs one incremental sync.
         pl = plist_path()
         pl.parent.mkdir(parents=True, exist_ok=True)
         pl.write_text(_PLIST.format(
@@ -459,6 +466,9 @@ def _install_generic(root: Path) -> list[str]:
 def uninstall() -> list[str]:
     """Remove everything `install` created. Never touches `data/`."""
     done = []
+    unpinned = remove_from_dock()
+    if unpinned:
+        done.append(unpinned)
     pl = plist_path()
     if pl.exists():
         _launchctl("bootout", f"gui/{os.getuid()}/{LAUNCHD_LABEL}")
@@ -534,20 +544,47 @@ def reveal() -> bool:
         return False
 
 
-def in_dock() -> bool:
+def _dock_prefs() -> dict:
+    """The whole com.apple.dock domain as a dict, or {} if it cannot be read."""
     try:
-        out = subprocess.run(["defaults", "read", "com.apple.dock", "persistent-apps"],
-                             capture_output=True, text=True, timeout=30)
-        return APP_NAME in out.stdout
-    except (OSError, subprocess.SubprocessError):
-        return False
+        blob = subprocess.run(["defaults", "export", "com.apple.dock", "-"],
+                              check=True, capture_output=True, timeout=30).stdout
+        return plistlib.loads(blob)
+    except (OSError, ValueError, subprocess.SubprocessError):
+        return {}
+
+
+def _tile_path(tile: dict) -> str:
+    """A Dock tile's target as a plain POSIX path.
+
+    The string that comes back out is never the string that went in: the Dock
+    normalises whatever `add_to_dock` wrote into a percent-encoded file:// URL,
+    so this app leaves as `AI%20Observatory.app`. Matching on the raw value
+    finds nothing, which would make the tile we pinned impossible to unpin.
+    """
+    try:
+        raw = tile["tile-data"]["file-data"]["_CFURLString"]
+    except (KeyError, TypeError):
+        return ""
+    if raw.startswith("file://"):
+        raw = urllib.parse.urlparse(raw).path
+    return urllib.parse.unquote(raw).rstrip("/")
+
+
+def in_dock() -> bool:
+    target = str(app_dir()).rstrip("/")
+    return any(_tile_path(t) == target
+               for t in _dock_prefs().get("persistent-apps") or [])
 
 
 def add_to_dock() -> str:
-    """Pin the app to the Dock. Opt-in — this edits the user's own Dock.
+    """Pin the app to the Dock. Done by default; `--no-dock` opts out.
 
-    Kept behind `--dock` rather than done by default: rearranging somebody's
-    Dock and restarting it is not a side effect anyone should discover.
+    This edits the user's own Dock and restarts it, which is not a side effect
+    to spring on anybody — but `install` is the moment they have already said
+    yes to this living on their machine, and an app they cannot find tomorrow
+    is an app they will not open tomorrow. It stays reversible in both
+    directions: `install --remove` takes the tile back out again.
     """
     if platform.system() != "Darwin":
         return "dock       (macOS only)"
@@ -566,6 +603,34 @@ def add_to_dock() -> str:
         return "dock       pinned"
     except (OSError, subprocess.SubprocessError):
         return "dock       could not be updated — drag the app there instead"
+
+
+def remove_from_dock() -> str:
+    """Take the tile back out, so `install --remove` leaves nothing behind.
+
+    A Dock icon that outlives its bundle is a permanent question mark on
+    somebody's screen. The whole domain round-trips through plistlib because
+    `defaults` has no syntax for "delete the array element that matches this",
+    only for appending one.
+    """
+    if platform.system() != "Darwin" or not in_dock():
+        return ""
+    prefs = _dock_prefs()
+    apps = prefs.get("persistent-apps") or []
+    target = str(app_dir()).rstrip("/")
+    kept = [a for a in apps if _tile_path(a) != target]
+    if not prefs or len(kept) == len(apps):
+        return ""
+    prefs["persistent-apps"] = kept
+    try:
+        subprocess.run(["defaults", "import", "com.apple.dock", "-"],
+                       input=plistlib.dumps(prefs), check=True,
+                       capture_output=True, timeout=30)
+        subprocess.run(["killall", "Dock"], check=False,
+                       capture_output=True, timeout=30)
+        return "unpinned from the Dock"
+    except (OSError, ValueError, subprocess.SubprocessError):
+        return "could not update the Dock — drag the icon out of it yourself"
 
 
 def notify(title: str, message: str) -> None:
