@@ -166,6 +166,10 @@ document.documentElement.className+=" js";})();
     <article class="card"><h3>{{why_3_t}}</h3><p>{{why_3_d}}</p></article>
     <article class="card"><h3>{{why_4_t}}</h3><p>{{why_4_d}}</p></article>
   </div>
+  <!-- What the rate card actually is. Sits under the pricing cards because
+       that is where the dollar claims are made, and a reader who takes those
+       figures for an invoice has misread the whole section. -->
+  <p class="fine center">{{why_note}}</p>
 </section>
 
 <!-- ── Privacy ───────────────────────────────────────────────────────────── -->
@@ -176,6 +180,25 @@ document.documentElement.className+=" js";})();
   <ul class="ticks" role="list">
     <li>{{priv_1}}</li><li>{{priv_2}}</li><li>{{priv_3}}</li>
   </ul>
+</section>
+
+<!-- ── Staying current ───────────────────────────────────────────────────
+     Placed last before the install, because it answers the question somebody
+     asks only once they can picture owning this: what happens when I forget
+     to run it. A `band` here also restores the alternation — #privacy and
+     #start were both plain. The strip's own strings live in the dashboard's
+     i18n (observatory/assets/i18n.js); these describe the feature, and are
+     prefixed `age_` so the two sets can never be mistaken for each other. -->
+<section id="aging" class="band">
+  <p class="eyebrow">{{age_eyebrow}}</p>
+  <h2>{{age_h2}}</h2>
+  <p class="lede narrow">{{age_lede}}</p>
+  <div class="cards">
+    <article class="card"><h3>{{age_1_t}}</h3><p>{{age_1_d}}</p></article>
+    <article class="card"><h3>{{age_2_t}}</h3><p>{{age_2_d}}</p></article>
+    <article class="card"><h3>{{age_3_t}}</h3><p>{{age_3_d}}</p></article>
+  </div>
+  <p class="fine center">{{age_note}}</p>
 </section>
 
 <!-- ── Start ─────────────────────────────────────────────────────────────── -->
