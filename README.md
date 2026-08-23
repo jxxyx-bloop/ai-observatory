@@ -56,23 +56,27 @@ the few changes worth making — each with a number attached.
 Not a number. A next move.
 
 ```text
-[HIGH]   You're paying peak rates you didn't have to              ≈ $34/mo
-         61% of your spend on time-priced models landed inside a peak window,
-         where the same tokens cost up to twice as much.
-      →  Queue the work that doesn't need watching — tests, migrations, doc
-         sweeps — for an off-peak hour.
+[HIGH]   You are buying tokens at peak rates you did not have to pay   ≈ $21/mo
+         66.9% of your time-priced spend (deepseek, zhipu) ran inside a peak
+         window, at up to twice the off-peak rate. That cost $39.39.
+      1. Queue unattended work for an off-peak hour — tests, migrations,
+         doc sweeps, bulk refactors.
+      2. Leave interactive work alone: the premium buys your attention.
+      3. Windows are narrow. DeepSeek 01:00-04:00 and 06:00-10:00 UTC.
+         GLM 14:00-18:00 UTC+8, weekdays only.
 
-[MEDIUM] Context is being rebuilt, not reused                     ≈ $61/mo
-         Cache reuse sits at 38%. Rebuilding context costs ~12× reading it.
-      →  Keep one session across related tasks instead of restarting.
-
-[LOW]    Your $18 plan returned 23× what you paid              23× return
-         Metered, the same work would have cost $412. Nothing to fix here.
+[MEDIUM] Some sessions carry a very large context per turn
+         116 sessions peaked above 300,000 tokens on one turn (worst: 942,469).
+         Every later turn re-reads all of it.
+      1. Finish the thread. Start the next piece of work in a new session.
+      2. Carry forward only what that work needs.
 ```
 
-Fifteen checks. Anything worth under **$15/month is demoted**, so the top of the
-list always means something — and **healthy usage is reported as healthy**. A
-tool that invents problems to look useful is a tool you stop believing.
+That is copied from the live demo, not written for this page.
+
+Fifteen checks. Anything worth under **$15 a month is demoted**, so the top of
+the list always means something — and **healthy usage is reported as healthy**.
+A tool that invents problems to look useful is a tool you stop believing.
 
 ## How it works
 
@@ -87,33 +91,35 @@ tool that invents problems to look useful is a tool you stop believing.
 git clone https://github.com/jxxyx-bloop/ai-observatory.git && cd ai-observatory/observatory && python3 observe.py setup
 ```
 
-One line. It checks your machine, fast-forwards to the latest version, reads the
-transcripts your coding agents already wrote on this disk, builds your
-dashboard, puts an icon in your Dock, and opens it. It narrates all five as it
-goes — a command that prints nothing for eight seconds is indistinguishable from
-one that has hung.
+One line, five steps: check your machine, update to the latest version, read the
+logs your agents already wrote on this disk, build your dashboard, put an icon
+in your Dock and open it. It prints each step as it runs — a command that stays
+silent for eight seconds looks exactly like one that has crashed.
 
 **Python 3 standard library only.** No dependencies, no build step, no account,
-no network, and nothing to `pip install` — which is why the whole install is one
-command rather than a requirements file.
+no network, nothing to `pip install` — which is why the install is one command
+and not a requirements file.
 
-Want to see it before installing anything? The
-[live demo](https://ai-observatory.workers.dev/demo/) is the real dashboard,
-rendered from 60 days of sample data by the same code you would run locally.
+Want to look first? The [live demo](https://ai-observatory.workers.dev/demo/) is
+the real dashboard, built from 60 days of sample data by the same code you would
+run yourself.
 
 <details>
 <summary>Prefer to run the steps yourself</summary>
 
 ```bash
-python3 observe.py demo digest report   # 60 days of sample data
-python3 observe.py all                  # sync → digest → report, on your own usage
-python3 observe.py install --dock       # the app, the Dock icon and a 09:00 refresh
+python3 observe.py demo digest report   # 60 days of sample data, to look around
+python3 observe.py demo --purge         # remove it before collecting your own
+python3 observe.py all                  # read, measure, build — on your usage
+python3 observe.py install --dock       # the app, the Dock icon, a 09:00 refresh
 ```
 
+Do not skip the purge. Sample data left in the store is counted as if it were
+yours, and it is built to show every problem the tool can find.
+
 `install` writes `~/Applications/AI Observatory.app` on macOS — a 3 KB shell
-script in a bundle, not an Electron build. It is *generated on your machine
-rather than downloaded*, so Gatekeeper never prompts and nothing needs code
-signing.
+script in a bundle, not an Electron build. It is *made on your machine, not
+downloaded*, so Gatekeeper never prompts and nothing needs signing.
 
 | Flag | Effect |
 |---|---|
@@ -132,11 +138,10 @@ Everything it writes lives under `$HOME`, and nothing it does touches `data/`.
 python3 observe.py doctor     # checks each step, prints the fix for what failed
 ```
 
-The rendered dashboard also dates itself: a report more than a day old says so
-above the title and offers the one line that refreshes it. It computes that from
-its own timestamp, so it works with no network and no server — the page can
-always know its own age, even though a file can never be told that a newer one
-exists.
+The dashboard also dates itself. A report more than a day old says so above the
+title and hands you the line that refreshes it. It works that out from its own
+timestamp, so it needs no network — a file can never be told that a newer one
+exists, but it can always know its own age.
 
 <details>
 <summary><b>Your first five minutes</b> — the three edits that are worth making</summary>
@@ -158,13 +163,12 @@ python3 observe.py sync --full digest report   # --full after any topology chang
 | `currency` | `IDR`, `VND`, `THB`, `PHP`, `MYR`, `SGD`, `CNY`… or leave `USD` |
 | `plan` | your subscription id from [`plans.json`](observatory/plans.json), or `none` |
 
-Your timezone is not one of them. `timezone_offset_hours` is `"auto"` and
-follows the machine you run it on, so the heatmap is already on your own clock
-whether you are in Singapore, Seoul or Berlin. Pin it to a number only if you
-want a clock other than the one you are sitting in.
+Not your timezone — `timezone_offset_hours` is `"auto"` and follows the machine,
+so the heatmap is on your clock whether you are in Singapore, Seoul or Berlin.
+Set it to a number only if you want a different one.
 
-Setting `plan` is what turns the dollar figure from a number you don't
-recognise into *"your $18 plan returned 23× what you paid."*
+Setting `plan` turns a dollar figure you do not recognise into *"your $18 plan
+returned 23× what you paid."*
 
 **3. Make it a habit.** Zero tokens, ~0.2 s:
 
@@ -229,29 +233,29 @@ Commands compose: `observe.py sync digest report` is one process.
 | Runs with no account | usually | **always** |
 
 <details>
-<summary><b>The four claims above, in detail</b></summary>
+<summary><b>Each claim, in detail</b></summary>
 
 <br>
 
-**Priced on your vendor's clock.** DeepSeek bills full rate 01:00–04:00 and
-06:00–10:00 UTC, half otherwise. GLM peaks 14:00–18:00 UTC+8 on weekdays only.
-For anyone in UTC+7 to +9, that second window *is* the working afternoon — you
-pay peak rates by accident, every day. Each turn is priced at the rate in force
-when it ran, and the premium is arithmetic on your own tokens.
-**No other open-source tracker models this.**
+**Priced on your vendor's clock.** DeepSeek charges full rate 01:00–04:00 and
+06:00–10:00 UTC, half the rest of the time. GLM charges full rate 14:00–18:00
+UTC+8, weekdays only. If you work anywhere from UTC+7 to +9, that is your
+afternoon — you pay the higher rate every day without choosing to. Every turn is
+priced at the rate that applied when it ran, so the extra is worked out from
+your own tokens, not estimated. **No other open-source tracker does this.**
 
 **Per-vendor cache economics.** The 0.1× cache-hit discount is an Anthropic
 convention, not a law — Kimi K2.6 sits near 0.074×. Cache is where the money
 is, so a wrong multiplier misprices the most important number on the page.
 
-**Plan value, not fake dollars.** On an $18/month plan, "you spent $412" is a
-shadow price, not a bill. The number that matters is **23× return** — or, when
-it goes the other way, *"you are paying for headroom you never use."*
+**Plan value, not fake dollars.** On an $18 plan, "you spent $412" is not a
+bill you will ever receive. The number worth knowing is **23× return** — or,
+when it goes the other way, *"you are paying for room you never use."*
 
-**Adding your tool is one JSON file.** A provider is a
-[declarative spec](observatory/collectors/specs/README.md) plus a fixture — no
-engine code. If you use Lingma, Qwen Code, CodeBuddy or Comate, **you are the
-only person who can add it correctly.**
+**Adding your tool is one JSON file.** Describe where its logs live and what
+the fields are called — [an example](observatory/collectors/specs/README.md) —
+plus one sample file to test against. No Python. If you use Lingma, Qwen Code,
+CodeBuddy or Comate, **you are the only person who can add it correctly.**
 
 **The community layer ranks efficiency, not consumption.** Existing leaderboards
 rank total tokens burned; the top of that board is whoever wasted the most. We
@@ -270,13 +274,14 @@ see the [protocol](docs/specs/Community-Share-Protocol.md).*
 |---|---|
 | **Never stored** | prompt text · completion text · thinking content · file contents · tool arguments · shell commands · absolute paths |
 | **What is stored** | counts, model names, tool names, and coarse derived labels like `app:checkout` |
-| **Where it's enforced** | at the parse boundary, not by a later redaction step — a leak past it is a bug, not a policy question ([ADR-006](docs/adr/ADR-006-Metadata-Only.md), [ADR-008](docs/adr/ADR-008-Derived-Path-Labels.md)) |
+| **Where it's enforced** | dropped as each file is read, not cleaned up afterwards — so anything reaching the store is a bug, not a policy call ([ADR-006](docs/adr/ADR-006-Metadata-Only.md), [ADR-008](docs/adr/ADR-008-Derived-Path-Labels.md)) |
 | **Network** | the dashboard and the site make **zero external requests**. No CDN, no fonts, no analytics. |
 
-If you ever opt into the community layer, the payload is under a kilobyte of
-bucket indices — no repository name, no session id, no identifier.
-[`observe.py share`](observatory/share.py) prints the whole thing and has no
-network code path at all.
+If you ever turn on the community layer, what it would send is under a
+kilobyte, and every number in it is a range rather than a value — no repository
+name, no session id, nothing that identifies you.
+[`observe.py share`](observatory/share.py) prints the whole thing, and contains
+no code that can send it anywhere.
 
 ## What it can read
 
@@ -305,17 +310,16 @@ Comate, Doubao, CodeGeeX, Cline, Roo Code, Aider, OpenCode, Goose, Zed.
 python3 site/build.py     # → site/dist/  (13 locales + the live demo dashboard)
 ```
 
-Thirteen languages, dark mode, and a demo built from the same code you run
-locally — not a screenshot. Design rules live in
-[`docs/design/DESIGN-SYSTEM.md`](docs/design/DESIGN-SYSTEM.md); every surface
-inlines the same [token file](observatory/assets/tokens.css).
+Thirteen languages, dark mode, and a demo that is the real dashboard rather than
+a screenshot of one. Design rules live in
+[`DESIGN-SYSTEM.md`](docs/design/DESIGN-SYSTEM.md); every surface inlines the
+same [token file](observatory/assets/tokens.css).
 
-CI only **verifies** that the site builds — it never deploys, so there are no
-secrets in GitHub and nothing to leak. Deployment is Cloudflare's own Git
-integration, and the root [`wrangler.toml`](wrangler.toml) declares the build
-command and output directory, so **there is nothing to configure in any
-dashboard**. About **$1/month at launch, ~$6/month at 100k users**
-([ADR-015](docs/adr/ADR-015-Hosting-And-Data-Residency.md),
+CI checks that the site builds. It never deploys, so **no deploy key is stored
+in GitHub and there is nothing to leak**. Cloudflare deploys from the repo
+itself, reading the build command out of [`wrangler.toml`](wrangler.toml) —
+**nothing to configure in any dashboard**. About **$1/month at launch, $6 at
+100k users** ([ADR-015](docs/adr/ADR-015-Hosting-And-Data-Residency.md),
 [DEPLOY.md](docs/setup/DEPLOY.md)).
 
 ### Self-updating visuals
@@ -353,7 +357,10 @@ match the data. A redesign updates its own documentation.
 |---|---|
 | Engine, collectors, dashboard, 15 detectors | **working, tested** |
 | Peak/off-peak pricing, plan value, currency | **working, tested** |
-| Landing page (13 locales), hosted demo, deploy | **working** |
+| One command to install, Dock icon, 09:00 refresh | **working** |
+| Dashboard says when it has gone stale | **working** |
+| Clock follows the machine you run it on | **working** |
+| Landing page (13 locales), hosted demo, setup guide | **working** |
 | Community layer — accounts, cohorts, leaderboard | **specified, not built** |
 
 See [ROADMAP.md](docs/ROADMAP.md).
