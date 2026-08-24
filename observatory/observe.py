@@ -8,6 +8,7 @@
     python3 observe.py insights  # print findings as text (for reading in a session)
     python3 observe.py demo      # fill the store with 60 days of synthetic usage
     python3 observe.py demo --purge   # remove that synthetic usage again
+    python3 observe.py dedupe    # repair a store that holds the same turn twice
     python3 observe.py share     # build the opt-in community payload (never uploads)
     python3 observe.py check-update   # fetch what is new (downloads, runs nothing)
     python3 observe.py update         # fast-forward onto what check-update fetched
@@ -86,6 +87,9 @@ def cmd_sync(argv) -> int:
     # A provider that could not be read is the one failure this tool must never
     # hide: a collector returning nothing looks exactly like a provider you do
     # not use (ADR-009), and the same is true of one that threw.
+    if summary.get("duplicates_skipped"):
+        print(f"sync: skipped {summary['duplicates_skipped']:,} turn(s) already in "
+              f"the store")
     for bad in summary.get("failed") or []:
         where = f" ({bad['source']})" if bad.get("source") else ""
         print(f"sync: warning - could not read {bad['provider']}{where}: "
@@ -451,6 +455,28 @@ def cmd_insights(argv) -> int:
     return 0
 
 
+def cmd_dedupe(argv) -> int:
+    """Rewrite the store keeping one copy of each turn.
+
+    The repair path for a store inflated before the collection fixes: an
+    interrupted sync, two syncs starting in the same second, or any
+    `sync --full` could each leave a second copy of turns already recorded.
+    Nothing downstream deduplicated, so the dashboard was quietly overstating
+    everything — turns, cost, sessions — with no way for its owner to tell.
+
+    Safe to run on a healthy store: it finds nothing and rewrites the same
+    lines back.
+    """
+    before = normalize.dedupe(DATA)
+    if not before["removed"]:
+        print(f"dedupe: {before['kept']:,} turns, no duplicates. Nothing to do.")
+        return 0
+    print(f"dedupe: removed {before['removed']:,} duplicate turn(s), "
+          f"{before['kept']:,} remain. Re-run `observe.py digest report` to "
+          f"rebuild the dashboard.")
+    return 0
+
+
 def _update_mode() -> str:
     mode = str(settings.get("updates", "auto")).lower()
     return mode if mode in ("auto", "notify", "off") else "auto"
@@ -534,6 +560,7 @@ COMMANDS = {
     "insights": cmd_insights, "all": cmd_all, "demo": cmd_demo,
     "share": cmd_share, "doctor": cmd_doctor, "install": cmd_install,
     "setup": cmd_setup, "check-update": cmd_check_update, "update": cmd_update,
+    "dedupe": cmd_dedupe,
 }
 
 

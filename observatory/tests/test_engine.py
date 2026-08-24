@@ -468,6 +468,30 @@ def test_sync_integrity():
             after = normalize.sync(data)
             check("the lock is released with the run",
                   after["events_written"], 3)
+
+            # `--full` re-reads every transcript from byte zero. Appending that
+            # to a store that already holds those turns doubled it on every
+            # run — and it is the command somebody reaches for precisely when
+            # they suspect their numbers are wrong.
+            before = len(list(normalize.read_events(data)))
+            normalize.COLLECTORS = [_FakeCollector(sources=("A", "B", "C"))]
+            refull = normalize.sync(data, full=True)
+            check("a full re-read writes nothing new",
+                  refull["events_written"], 0)
+            check("and says what it recognised",
+                  refull["duplicates_skipped"], before)
+            check("leaving the store the size it was",
+                  len(list(normalize.read_events(data))), before)
+
+            # The repair path, for a store damaged before any of this landed.
+            normalize.write_events(data, list(normalize.read_events(data))[:4])
+            check("damage is visible",
+                  len(list(normalize.read_events(data))), before + 4)
+            fixed = normalize.dedupe(data)
+            check("dedupe removes exactly the copies", fixed["removed"], 4)
+            check("and keeps every original", fixed["kept"], before)
+            check("a second pass finds nothing",
+                  normalize.dedupe(data)["removed"], 0)
     finally:
         normalize.COLLECTORS = real
 

@@ -48,6 +48,7 @@ import webbrowser
 import zlib
 from pathlib import Path
 
+import normalize
 import settings
 import updater
 
@@ -163,6 +164,24 @@ def doctor(root: Path) -> list[dict]:
         else "No provider transcript directories found.",
         "Nothing to collect yet — this is expected on a fresh machine. Use "
         "`python3 observe.py demo` to see the product with sample data.")
+
+    # Damage from before the collection fixes does not repair itself, and its
+    # only symptom is numbers that are too big — which looks exactly like a
+    # busy month. Cheap enough to check here, where somebody is already asking
+    # what is wrong.
+    try:
+        keys, rows = set(), 0
+        for ev in normalize.read_events(data):
+            rows += 1
+            keys.add(normalize.event_key(ev))
+        dupes = rows - len(keys)
+    except OSError:
+        dupes = 0
+    add(not dupes,
+        "Every turn is counted once",
+        f"{dupes:,} duplicate turn(s) in the store — every number is that much "
+        f"too big." if dupes else "No duplicate turns.",
+        "Run `python3 observe.py dedupe`, then `python3 observe.py digest report`.")
 
     # Reads refs already on disk — `check-update` is what puts them there, and
     # doctor must stay runnable on a plane. A checkout with no git, or no

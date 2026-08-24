@@ -1376,7 +1376,13 @@ function initFreshness() {
       $("starAskLink").href = meta.star;
       ask.hidden = false;
     }
-    return;                      /* nothing further to show */
+    /* The hosted demo stops here: there is no local dashboard to refresh and
+       no checkout to update, so both strips would be decoration. A dashboard
+       on somebody's own machine that happens to hold sample data is a
+       different thing — `setup` seeds it when it finds no transcripts yet —
+       and it still needs to be told that it is stale or that a new version is
+       waiting. Suppressing that left the newest installs the least informed. */
+    if (meta.setup) return;
   }
   if (hours >= 168) {
     state = { cls: "stale", head: t18("fresh_old_h", "This dashboard is out of date."),

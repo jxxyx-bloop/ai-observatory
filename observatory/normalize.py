@@ -144,6 +144,66 @@ class _Writer:
         self.handles.clear()
 
 
+def event_key(ev: dict) -> str:
+    """A natural identity for one turn, for the two places that must not double it.
+
+    The store has no event ids — ADR-001 chose append-only NDJSON and nothing
+    ever needed to ask "have I seen this before" until a re-read could happen.
+    Provider, session, timestamp, turn number and the token counts are enough:
+    two turns that agree on all of those are indistinguishable in every number
+    this tool computes, so treating them as one loses nothing even in the
+    theoretical case where they were genuinely separate.
+    """
+    return "|".join(str(ev.get(k) or "") for k in
+                    ("provider", "session", "ts", "turn", "input", "output",
+                     "cache_read", "model"))
+
+
+def existing_keys(data_dir: Path) -> set:
+    """Every turn already in the store, by natural key."""
+    return {event_key(ev) for ev in read_events(data_dir)}
+
+
+def dedupe(data_dir: Path) -> dict:
+    """Rewrite the store keeping the first copy of each turn. Returns a summary.
+
+    The repair path for a store inflated before the collection fixes landed:
+    an interrupted sync, two syncs at once, or any `sync --full` could each
+    leave a second copy of turns that were already recorded, and nothing
+    downstream deduplicated — so every number on the dashboard was quietly
+    too big, with no way for its owner to tell.
+
+    Partition by partition, through a temp file and an atomic replace, so an
+    interrupted repair leaves the original intact.
+    """
+    seen: set = set()
+    removed = kept = 0
+    for path in sorted(data_dir.glob("events-*.ndjson")):
+        tmp = path.with_suffix(".ndjson.tmp")
+        with tmp.open("w", encoding="utf-8") as out:
+            with path.open("r", encoding="utf-8", errors="replace") as fh:
+                for line in fh:
+                    line = line.strip()
+                    if not line:
+                        continue
+                    try:
+                        ev = json.loads(line)
+                    except (ValueError, TypeError):
+                        continue
+                    key = event_key(ev)
+                    if key in seen:
+                        removed += 1
+                        continue
+                    seen.add(key)
+                    out.write(line + "\n")
+                    kept += 1
+            out.flush()
+            with contextlib.suppress(OSError):
+                os.fsync(out.fileno())
+        tmp.replace(path)
+    return {"kept": kept, "removed": removed}
+
+
 def sync(data_dir: Path, full: bool = False) -> dict:
     """Collect every available provider into the store. Returns a run summary.
 
@@ -155,7 +215,7 @@ def sync(data_dir: Path, full: bool = False) -> dict:
     data_dir.mkdir(parents=True, exist_ok=True)
     summary = {"sources_scanned": 0, "events_written": 0, "partitions": [],
                "mode": "full" if full else "incremental", "failed": [],
-               "skipped": None}
+               "skipped": None, "duplicates_skipped": 0}
 
     with store_lock(data_dir) as mine:
         if not mine:
@@ -165,6 +225,13 @@ def sync(data_dir: Path, full: bool = False) -> dict:
             return summary
 
         cursors = {} if full else load_cursors(data_dir)
+        # `--full` re-reads every transcript from byte zero. Appending that to
+        # a store that already holds those turns doubled it, every single run —
+        # and `--full` is exactly what somebody reaches for when they suspect
+        # their numbers are wrong. It reconciles against what is already here
+        # instead. Incremental runs do not pay this read: their cursors are the
+        # answer to the same question.
+        seen_keys = existing_keys(data_dir) if full else None
         writer = _Writer(data_dir)
         seen_parts: set = set()
         try:
@@ -195,8 +262,17 @@ def sync(data_dir: Path, full: bool = False) -> dict:
                              "error": f"{type(exc).__name__}: {exc}"})
                         continue
 
+                    fresh = []
                     for ev in events:
+                        if seen_keys is not None:
+                            key = event_key(ev)
+                            if key in seen_keys:
+                                summary["duplicates_skipped"] += 1
+                                continue
+                            seen_keys.add(key)
                         writer.add(ev)
+                        fresh.append(ev)
+                    events = fresh
                     if events:
                         # Durable, then recorded. Never the other way round.
                         writer.flush()
