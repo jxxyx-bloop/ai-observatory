@@ -597,7 +597,7 @@ def test_doctor_install_checks():
 
             rows = []
             launcher._install_checks(root, lambda ok_, t, d, f="":
-                                     rows.append({"ok": ok_, "title": t}))
+                                     rows.append({"ok": ok_, "title": t, "detail": d}))
             ok("a machine with nothing installed is told so",
                _doctor_row(rows, "The launcher is installed")["ok"] is False)
             ok("and that nothing is scheduled",
@@ -609,28 +609,83 @@ def test_doctor_install_checks():
                               encoding="utf-8")
             rows = []
             launcher._install_checks(root, lambda ok_, t, d, f="":
-                                     rows.append({"ok": ok_, "title": t}))
+                                     rows.append({"ok": ok_, "title": t, "detail": d}))
             ok("an installed launcher is found",
                _doctor_row(rows, "The launcher is installed")["ok"])
             ok("but a moved project folder is caught",
                _doctor_row(rows, "The launcher points at")["ok"] is False)
 
             # Everything wired up, agent loaded, and it has run at least once.
-            runner.write_text('ROOT="%s"\n' % root, encoding="utf-8")
-            plist.write_text("<plist/>", encoding="utf-8")
+            # The fixtures are the real templates, rendered — a stub runner
+            # would be indistinguishable from one generated last July, which
+            # is precisely what the currency check exists to tell apart.
+            def _write_current():
+                runner.write_text(launcher._RUNNER.format(
+                    root=root, log=log, python="/usr/bin/python3"),
+                    encoding="utf-8")
+                plist.write_text(launcher._PLIST.format(
+                    label=launcher.LAUNCHD_LABEL, python="/usr/bin/python3",
+                    engine=str(root / "observatory" / "observe.py"),
+                    log=str(log)), encoding="utf-8")
+
+            _write_current()
             log.write_text("ran\n", encoding="utf-8")
             launcher._launchctl_says = lambda *a: "- 0 " + launcher.LAUNCHD_LABEL
             rows = []
             launcher._install_checks(root, lambda ok_, t, d, f="":
-                                     rows.append({"ok": ok_, "title": t}))
+                                     rows.append({"ok": ok_, "title": t, "detail": d}))
             ok("a healthy install passes every check", all(r["ok"] for r in rows))
-            check("and there are four of them", len(rows), 4)
+            check("and there are five of them", len(rows), 5)
+            ok("the path is still read back correctly from a real runner",
+               launcher.runner_root(runner.read_text(encoding="utf-8"))
+               == str(root))
+
+            # A launcher generated before `update` existed. It still opens, it
+            # still refreshes, and it silently never applies anything — this
+            # shipped, and every other check passed while it did.
+            runner.write_text(
+                launcher._RUNNER.format(root=root, log=log,
+                                        python="/usr/bin/python3")
+                .replace('observe.py" update --quiet', 'observe.py" report'),
+                encoding="utf-8")
+            rows = []
+            launcher._install_checks(root, lambda ok_, t, d, f="":
+                                     rows.append({"ok": ok_, "title": t, "detail": d}))
+            row = _doctor_row(rows, "The launcher is the one this checkout")
+            ok("a runner older than the code is caught", row["ok"] is False)
+            ok("and the missing verb is named", "update" in row["detail"])
+            ok("while the checks around it still pass",
+               _doctor_row(rows, "The launcher points at")["ok"])
+
+            # The same drift on the scheduled job rather than the icon.
+            _write_current()
+            plist.write_text(plist.read_text(encoding="utf-8")
+                             .replace("<string>check-update</string>", ""),
+                             encoding="utf-8")
+            rows = []
+            launcher._install_checks(root, lambda ok_, t, d, f="":
+                                     rows.append({"ok": ok_, "title": t, "detail": d}))
+            row = _doctor_row(rows, "The launcher is the one this checkout")
+            ok("a daily job older than the code is caught", row["ok"] is False)
+            ok("and names check-update", "check-update" in row["detail"])
+
+            # An unreadable plist must not be reported as drift.
+            _write_current()
+            plist.write_text("not a plist at all", encoding="utf-8")
+            rows = []
+            launcher._install_checks(root, lambda ok_, t, d, f="":
+                                     rows.append({"ok": ok_, "title": t, "detail": d}))
+            ok("garbage in the plist is not silently called current",
+               _doctor_row(rows, "The launcher is the one this checkout")["ok"]
+               is False)
+
+            _write_current()
 
             # Loaded, but launchd has never actually fired it.
             log.unlink()
             rows = []
             launcher._install_checks(root, lambda ok_, t, d, f="":
-                                     rows.append({"ok": ok_, "title": t}))
+                                     rows.append({"ok": ok_, "title": t, "detail": d}))
             ok("an agent that never ran is named",
                _doctor_row(rows, "The daily refresh has actually run")["ok"] is False)
     finally:
