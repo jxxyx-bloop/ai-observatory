@@ -46,6 +46,7 @@ import sys
 import urllib.parse
 import webbrowser
 import zlib
+from datetime import datetime
 from pathlib import Path
 
 import normalize
@@ -183,6 +184,8 @@ def doctor(root: Path) -> list[dict]:
         f"too big." if dupes else "No duplicate turns.",
         "Run `python3 observe.py dedupe`, then `python3 observe.py digest report`.")
 
+    _install_checks(root, add)
+
     # Reads refs already on disk — `check-update` is what puts them there, and
     # doctor must stay runnable on a plane. A checkout with no git, or no
     # upstream to compare against, is not a fault: it is somebody who installed
@@ -198,6 +201,91 @@ def doctor(root: Path) -> list[dict]:
            if waiting.get("blocked") == "local changes" else ""))
 
     return out
+
+
+def runner_root(script: str) -> str | None:
+    """The checkout an installed runner is pointed at, read back out of it.
+
+    The path is baked in at install time, which is what makes the launcher
+    independent of any shell PATH — and also what makes a moved project folder
+    silent: the icon still opens, still refreshes, and refreshes something
+    else. Parsed rather than assumed, because the whole point is to catch the
+    case where it disagrees with where we are now.
+    """
+    for line in script.splitlines():
+        line = line.strip()
+        if line.startswith("ROOT="):
+            return line[5:].strip().strip('"').strip("'") or None
+    return None
+
+
+def _launchctl_says(*args) -> str:
+    try:
+        done = subprocess.run(["launchctl", *args], check=False,
+                              capture_output=True, text=True, timeout=30)
+        return (done.stdout or "") + (done.stderr or "")
+    except (OSError, subprocess.SubprocessError):
+        return ""
+
+
+def _install_checks(root: Path, add) -> None:
+    """Is the thing they click actually installed, wired up, and running?
+
+    `doctor` could say everything about the data and nothing about the surface
+    that fetches it. Somebody whose numbers stopped moving has no way to tell
+    an empty week from an agent that never loaded, and those have opposite
+    fixes. macOS only: nothing below exists on the platforms that get a script
+    beside the project instead (ADR-018).
+    """
+    if platform.system() != "Darwin":
+        return
+
+    bundle = app_dir()
+    runner = bundle / "Contents" / "MacOS" / "run"
+    add(runner.exists(),
+        "The launcher is installed",
+        f"{tilde(bundle) or bundle}" if runner.exists()
+        else "No app bundle in ~/Applications.",
+        "Run `python3 observe.py install` to create it.")
+
+    if runner.exists():
+        try:
+            pointed = runner_root(runner.read_text(encoding="utf-8"))
+        except OSError:
+            pointed = None
+        same = bool(pointed) and Path(pointed).resolve() == root.resolve()
+        add(same,
+            "The launcher points at this checkout",
+            f"It refreshes {tilde(Path(pointed)) or pointed}."
+            if pointed else "Could not read the path out of the launcher.",
+            "The project folder was moved or renamed after install, so the "
+            "icon is refreshing somewhere else. Re-run `python3 observe.py "
+            "install` from here to repoint it.")
+
+    plist = plist_path()
+    loaded = LAUNCHD_LABEL in _launchctl_says("list")
+    add(plist.exists() and loaded,
+        "The daily refresh is scheduled",
+        "Loaded — runs at 09:00 and at login."
+        if loaded else ("The job is written but launchd has not loaded it."
+                        if plist.exists() else "No scheduled refresh."),
+        "Run `python3 observe.py install` (add `--no-daily` if you would "
+        "rather refresh by hand).")
+
+    # An agent that is loaded but has never written a line has never run, and
+    # that is the failure this whole block exists to name.
+    if loaded:
+        try:
+            when = datetime.fromtimestamp(LOG.stat().st_mtime)
+            ran = when.strftime("%Y-%m-%d %H:%M")
+        except OSError:
+            ran = None
+        add(bool(ran),
+            "The daily refresh has actually run",
+            f"Last wrote to its log at {ran}." if ran
+            else "The job is loaded but has never written to its log.",
+            f"Check {tilde(LOG) or LOG} after the next login, and run "
+            f"`python3 observe.py all` in the meantime.")
 
 
 def _has(problems: list[dict]) -> bool:

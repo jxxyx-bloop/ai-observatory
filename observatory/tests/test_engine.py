@@ -30,6 +30,7 @@ import normalize        # noqa: E402
 import paths as topo    # noqa: E402
 import pricing          # noqa: E402
 import share            # noqa: E402
+import launcher         # noqa: E402
 import updater          # noqa: E402
 
 FAILURES = []
@@ -547,10 +548,98 @@ def test_unpriced_disclosure():
        not [f for f in clean["findings"] if f["id"] == "unpriced-models"])
 
 
+# --- the launch surface ----------------------------------------------------
+
+def _doctor_row(rows, title_starts):
+    for r in rows:
+        if r["title"].startswith(title_starts):
+            return r
+    return None
+
+
+def test_doctor_install_checks():
+    """The macOS-only checks, exercised from a machine that is not a Mac.
+
+    Everything below is invisible on the platform CI runs on, which is exactly
+    why it is asserted here: a check that only executes on the maintainer's
+    laptop is a check nobody runs. The platform gate and the three filesystem
+    facts it reads are stubbed; the logic between them is the real thing.
+
+    The one worth having is the second: the launcher bakes its checkout path
+    in at install time, so a project folder moved afterwards leaves an icon
+    that still opens, still refreshes, and refreshes something else.
+    """
+    print("\nlaunch-surface checks")
+    check("a runner's path is read back out of it",
+          launcher.runner_root('#!/bin/sh\nset -u\nROOT="/Users/x/code/obs"\n'),
+          "/Users/x/code/obs")
+    ok("and a script without one says so",
+       launcher.runner_root("#!/bin/sh\necho hi\n") is None)
+
+    real = (launcher.platform.system, launcher.app_dir, launcher.plist_path,
+            launcher.LOG, launcher._launchctl_says)
+    try:
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            root, bundle = tmp / "checkout", tmp / "AI Observatory.app"
+            runner = bundle / "Contents" / "MacOS" / "run"
+            plist, log = tmp / "agent.plist", tmp / "sync.log"
+            root.mkdir()
+
+            launcher.platform.system = lambda: "Darwin"
+            launcher.app_dir = lambda: bundle
+            launcher.plist_path = lambda: plist
+            launcher.LOG = log
+            launcher._launchctl_says = lambda *a: ""
+
+            rows = []
+            launcher._install_checks(root, lambda ok_, t, d, f="":
+                                     rows.append({"ok": ok_, "title": t}))
+            ok("a machine with nothing installed is told so",
+               _doctor_row(rows, "The launcher is installed")["ok"] is False)
+            ok("and that nothing is scheduled",
+               _doctor_row(rows, "The daily refresh is scheduled")["ok"] is False)
+
+            # Installed, but pointed at a folder that has since been renamed.
+            runner.parent.mkdir(parents=True)
+            runner.write_text('ROOT="%s"\n' % (tmp / "somewhere-else"),
+                              encoding="utf-8")
+            rows = []
+            launcher._install_checks(root, lambda ok_, t, d, f="":
+                                     rows.append({"ok": ok_, "title": t}))
+            ok("an installed launcher is found",
+               _doctor_row(rows, "The launcher is installed")["ok"])
+            ok("but a moved project folder is caught",
+               _doctor_row(rows, "The launcher points at")["ok"] is False)
+
+            # Everything wired up, agent loaded, and it has run at least once.
+            runner.write_text('ROOT="%s"\n' % root, encoding="utf-8")
+            plist.write_text("<plist/>", encoding="utf-8")
+            log.write_text("ran\n", encoding="utf-8")
+            launcher._launchctl_says = lambda *a: "- 0 " + launcher.LAUNCHD_LABEL
+            rows = []
+            launcher._install_checks(root, lambda ok_, t, d, f="":
+                                     rows.append({"ok": ok_, "title": t}))
+            ok("a healthy install passes every check", all(r["ok"] for r in rows))
+            check("and there are four of them", len(rows), 4)
+
+            # Loaded, but launchd has never actually fired it.
+            log.unlink()
+            rows = []
+            launcher._install_checks(root, lambda ok_, t, d, f="":
+                                     rows.append({"ok": ok_, "title": t}))
+            ok("an agent that never ran is named",
+               _doctor_row(rows, "The daily refresh has actually run")["ok"] is False)
+    finally:
+        (launcher.platform.system, launcher.app_dir, launcher.plist_path,
+         launcher.LOG, launcher._launchctl_says) = real
+
+
 def main():
     for fn in (test_window_phase, test_cost, test_plan_value, test_paths,
                test_share_payload, test_pipeline, test_hidden_guards,
-               test_updater, test_sync_integrity, test_unpriced_disclosure):
+               test_updater, test_sync_integrity, test_unpriced_disclosure,
+               test_doctor_install_checks):
         fn()
     print()
     if FAILURES:
