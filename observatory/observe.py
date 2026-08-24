@@ -9,6 +9,8 @@
     python3 observe.py demo      # fill the store with 60 days of synthetic usage
     python3 observe.py demo --purge   # remove that synthetic usage again
     python3 observe.py share     # build the opt-in community payload (never uploads)
+    python3 observe.py check-update   # fetch what is new (downloads, runs nothing)
+    python3 observe.py update         # fast-forward onto what check-update fetched
     python3 observe.py setup      # the whole install, one command, ends in your browser
     python3 observe.py install    # create a double-clickable launcher + daily sync
     python3 observe.py doctor     # check the setup and say how to fix what is wrong
@@ -19,7 +21,12 @@ Flags: --no-open (never launch a browser or the app)  --notify (desktop notifica
        --no-daily (with `install`, skip the scheduled refresh)
        --html (with `doctor`, emit a page instead of text)
 
-Stdlib only. No network. Read-only against every provider.
+Stdlib only. Read-only against every provider.
+
+No network in `sync`, `digest`, `report` or anything they call — ADR-004's
+promise is about collection and it is untouched. `check-update` is the one
+command that reaches out, it uploads nothing, and `settings.json -> updates`
+turns it off.
 """
 
 from __future__ import annotations
@@ -41,6 +48,7 @@ import pricing as price  # noqa: E402
 import render  # noqa: E402
 import settings  # noqa: E402
 import share as share_mod  # noqa: E402
+import updater  # noqa: E402
 
 ROOT = Path(__file__).parent.parent
 DATA = ROOT / "data"
@@ -223,7 +231,8 @@ def cmd_report(argv) -> int:
     out = DIST / "observatory.html"
     _write_atomic(out, render.render(
         digest, refresh=launcher.refresh_command(ROOT),
-        demo=(DATA / ".demo").exists()))
+        demo=(DATA / ".demo").exists(),
+        update=updater.for_render(updater.read(DATA))))
     kb = out.stat().st_size / 1024
     if "--no-open" in argv:
         print(f"report: {out} ({kb:.0f} KB)")
@@ -233,10 +242,15 @@ def cmd_report(argv) -> int:
         print(f"report: {out} ({kb:.0f} KB) — open it in a browser")
     if "--notify" in argv:
         totals = digest.get("totals") or {}
+        waiting = updater.read(DATA).get("behind") or 0
+        # Notifications cannot carry a click (ADR-018 §6), so this says what
+        # happens next rather than asking for an action it cannot accept.
+        tail = (f" A new version is ready — it applies next time you open it."
+                if waiting else "")
         launcher.notify(
             "AI Observatory",
             f"Dashboard refreshed — {totals.get('turns', 0):,} turns, "
-            f"{len(digest.get('findings') or [])} findings.")
+            f"{len(digest.get('findings') or [])} findings.{tail}")
     return 0
 
 
@@ -399,7 +413,8 @@ def cmd_setup(argv) -> int:
     DIST.mkdir(parents=True, exist_ok=True)
     out = DIST / "observatory.html"
     _write_atomic(out, render.render(digest, refresh=launcher.refresh_command(ROOT),
-                                     demo=(DATA / ".demo").exists()))
+                                     demo=(DATA / ".demo").exists(),
+                                     update=updater.for_render(updater.read(DATA))))
 
     print("\nDone. Opening your dashboard now.")
     if not launcher.open_report(out):
@@ -423,6 +438,80 @@ def cmd_insights(argv) -> int:
     return 0
 
 
+def _update_mode() -> str:
+    mode = str(settings.get("updates", "auto")).lower()
+    return mode if mode in ("auto", "notify", "off") else "auto"
+
+
+def cmd_check_update(argv) -> int:
+    """Ask GitHub what exists. Downloads objects, runs none of them.
+
+    This is the half that needs no trust: `git fetch` moves remote-tracking
+    refs and writes to `.git`, and nothing in the working tree changes, so
+    nobody's code has been swapped for anybody else's by the time it returns.
+    It is also the half the page depends on — a dashboard cannot discover a
+    new version on its own, and a person who never opens a terminal has no
+    other way to find out that one exists.
+    """
+    if _update_mode() == "off":
+        if "--quiet" not in argv:
+            print("check-update: turned off in settings.json (updates: off)")
+        return 0
+    state = updater.check(ROOT, DATA)
+    if "--quiet" in argv:
+        return 0
+    if state.get("blocked") == "not a git checkout":
+        print("check-update: not a git checkout — nothing to compare against")
+    elif not state.get("reachable", True):
+        print("check-update: could not reach GitHub — using the version you have")
+    elif state.get("behind"):
+        print(f"check-update: {state['behind']} update(s) waiting. "
+              f"They apply the next time you open the app.")
+        for line in state.get("lines") or []:
+            print(f"  - {line}")
+    else:
+        print(f"check-update: up to date ({state.get('current') or 'unknown'})")
+    return 0
+
+
+def cmd_update(argv) -> int:
+    """Fast-forward onto what `check-update` already fetched. No network.
+
+    Runs before the engine on every launch, which is why it must be fast and
+    must never block: the objects are already on disk, so this is a pointer
+    move, and every reason it cannot happen is a reason to carry on with the
+    version already installed.
+
+    It runs as its own process and exits before `sync` starts. Rewriting the
+    modules of a live interpreter is a class of bug nobody should have to
+    debug from a Dock icon.
+    """
+    mode = _update_mode()
+    if mode != "auto" and "--force" not in argv:
+        if "--quiet" not in argv:
+            print(f"update: settings.json says updates: {mode} — leaving the "
+                  f"checkout alone. `update --force` overrides once.")
+        return 0
+    state = updater.apply(ROOT, DATA)
+    applied = state.get("applied") or {}
+    just_landed = applied and not state.get("behind")
+    if "--quiet" in argv:
+        return 0
+    if state.get("blocked") == "local changes":
+        print("update: you have uncommitted changes — left alone. "
+              "Commit or stash them and this applies next launch.")
+    elif just_landed:
+        print(f"update: applied {applied.get('count', 0)} change(s) "
+              f"-> {applied.get('version') or 'latest'}")
+        for line in applied.get("lines") or []:
+            print(f"  - {line}")
+    elif state.get("blocked"):
+        print(f"update: {state['blocked']} — using the version you have")
+    else:
+        print(f"update: already current ({updater.version(ROOT)})")
+    return 0
+
+
 def cmd_all(argv) -> int:
     return cmd_sync(argv) or cmd_digest(argv) or cmd_report(argv)
 
@@ -431,7 +520,7 @@ COMMANDS = {
     "sync": cmd_sync, "digest": cmd_digest, "report": cmd_report,
     "insights": cmd_insights, "all": cmd_all, "demo": cmd_demo,
     "share": cmd_share, "doctor": cmd_doctor, "install": cmd_install,
-    "setup": cmd_setup,
+    "setup": cmd_setup, "check-update": cmd_check_update, "update": cmd_update,
 }
 
 

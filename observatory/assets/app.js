@@ -1370,6 +1370,32 @@ function initFreshness() {
     state = { cls: "aging", head: fill(t18("fresh_age_h", "Last built {a}."), { a: ago(hours) }),
               body: t18("fresh_age_b", "New sessions since then are not in these numbers yet.") };
   }
+  /* Version, after freshness and never instead of it. When the report is also
+     out of date the refresh command is the more urgent thing to hand somebody,
+     and running it applies the waiting update on the way through — so the two
+     never need to compete for the strip. `meta.update` is already resolved by
+     `updater.for_render`; nothing here decides what is current. */
+  if (!state && meta.update && meta.update.state) {
+    var u = meta.update;
+    var shown = (u.lines || []).slice(0, 2);
+    var what = shown.join(" · ");
+    var more = Math.max(0, (u.count || 0) - shown.length);
+    if (more) what += fill(t18("fresh_upd_more", " · and {n} more"), { n: more });
+    if (u.state === "applied") {
+      state = { cls: "updated",
+                head: t18("fresh_upd_h", "Updated to the latest version."),
+                body: what || t18("fresh_upd_b",
+                                  "This dashboard was rebuilt with it.") };
+    } else {
+      state = { cls: "update", head: t18("fresh_new_h", "A newer version is ready."),
+                body: (u.blocked === "local changes"
+                       ? t18("fresh_new_blocked",
+                             "It cannot apply while the project folder has uncommitted changes.")
+                       : t18("fresh_new_b",
+                             "It applies the next time you open this from your Dock."))
+                      + (what ? " " + what : "") };
+    }
+  }
   if (!state) return;                       /* fresh: say nothing, show nothing */
 
   el.className = "fresh " + state.cls;

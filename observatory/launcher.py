@@ -27,9 +27,11 @@ Three jobs:
    traceback. A person who double-clicks an icon has no terminal open and no
    reason to acquire one.
 
-Nothing here runs at import time, nothing here touches the network, and every
-filesystem write is inside `$HOME` and reversible with `observe.py install
---remove`.
+Nothing here runs at import time and every filesystem write is inside `$HOME`,
+reversible with `observe.py install --remove`. The one network call is
+`update()`, which `setup` runs once and which delegates to `updater` — the
+generated launcher and the daily agent call `observe.py` directly for that,
+so nothing on the collect → analyse → render path reaches out.
 """
 
 from __future__ import annotations
@@ -45,6 +47,9 @@ import urllib.parse
 import webbrowser
 import zlib
 from pathlib import Path
+
+import settings
+import updater
 
 APP_NAME = "AI Observatory"
 LAUNCHD_LABEL = "dev.aiobservatory.sync"
@@ -158,6 +163,20 @@ def doctor(root: Path) -> list[dict]:
         else "No provider transcript directories found.",
         "Nothing to collect yet — this is expected on a fresh machine. Use "
         "`python3 observe.py demo` to see the product with sample data.")
+
+    # Reads refs already on disk — `check-update` is what puts them there, and
+    # doctor must stay runnable on a plane. A checkout with no git, or no
+    # upstream to compare against, is not a fault: it is somebody who installed
+    # from a zip, and there is nothing here for them to act on.
+    waiting = updater.pending(root)
+    add(not waiting["behind"],
+        "Running the latest version",
+        f"{waiting['behind']} update(s) downloaded and waiting."
+        if waiting["behind"] else f"Version {updater.version(root)}.",
+        "Open the app from your Dock — it applies on launch. Or run "
+        "`python3 observe.py update`."
+        + (" Commit or stash your local changes first."
+           if waiting.get("blocked") == "local changes" else ""))
 
     return out
 
@@ -322,6 +341,13 @@ if [ -z "$PY" ] || [ ! -f "$ROOT/observatory/observe.py" ]; then
   exit 0
 fi
 
+# Apply whatever last night's check already downloaded, before the engine
+# starts. Local only — the objects are on disk, so this is a pointer move and
+# never a network wait in the click path. Its own process, so nothing rewrites
+# the modules of a live interpreter. A refusal here is silent by design: the
+# dashboard it is about to open says what is waiting and why.
+"$PY" "$ROOT/observatory/observe.py" update --quiet >>"$LOGFILE" 2>&1 || true
+
 # Refresh, then open. A failed refresh still opens whatever was last rendered,
 # because a stale dashboard beats no dashboard: it can say that it is stale.
 if "$PY" "$ROOT/observatory/observe.py" sync digest report --no-open >>"$LOGFILE" 2>&1
@@ -342,6 +368,7 @@ _PLIST = """<?xml version="1.0" encoding="UTF-8"?>
   <key>ProgramArguments</key><array>
     <string>{python}</string>
     <string>{engine}</string>
+    <string>check-update</string>
     <string>sync</string><string>digest</string><string>report</string>
     <string>--no-open</string><string>--notify</string>
   </array>
@@ -482,34 +509,36 @@ def uninstall() -> list[str]:
 
 
 def update(root: Path) -> str:
-    """Bring the checkout up to date, best effort.
+    """Bring the checkout up to date for `setup`, best effort.
 
-    This project has no third-party dependencies to upgrade — it is standard
+    Setup is the one place a person has explicitly asked for the newest thing,
+    so this is the only path that fetches and applies in the same breath.
+    Everywhere else the two halves are days apart on purpose — see `updater`.
+
+    This project has no third-party dependencies to upgrade; it is standard
     library only, which is the whole reason install is one command. So the only
-    thing that can be out of date is the code itself, and that is a fast-forward
-    or nothing: never a merge, never a rebase, never anything that could leave
+    thing that can be out of date is the code, and that is a fast-forward or
+    nothing: never a merge, never a rebase, never anything that could leave
     somebody staring at a conflict they did not ask for. A dirty tree, a
     detached head, no remote or no network all mean "skip", not "fail".
     """
-    git = shutil.which("git")
-    if not git or not (root / ".git").exists():
+    if str(settings.get("updates", "auto")).lower() == "off":
+        return "updates are off in settings.json — skipped"
+    if not updater.is_checkout(root):
         return "not a git checkout — skipped"
-    try:
-        dirty = subprocess.run([git, "-C", str(root), "status", "--porcelain"],
-                               capture_output=True, text=True, timeout=30)
-        if dirty.stdout.strip():
-            return "local changes present — left alone"
-        before = subprocess.run([git, "-C", str(root), "rev-parse", "HEAD"],
-                                capture_output=True, text=True, timeout=30).stdout.strip()
-        pull = subprocess.run([git, "-C", str(root), "pull", "--ff-only", "--quiet"],
-                              capture_output=True, text=True, timeout=120)
-        if pull.returncode != 0:
-            return "could not reach GitHub — using the version you have"
-        after = subprocess.run([git, "-C", str(root), "rev-parse", "HEAD"],
-                               capture_output=True, text=True, timeout=30).stdout.strip()
-        return "already up to date" if before == after else "updated to the latest version"
-    except (OSError, subprocess.SubprocessError):
-        return "could not check — using the version you have"
+    data = root / "data"
+    state = updater.check(root, data)
+    if not state.get("reachable", True):
+        return "could not reach GitHub — using the version you have"
+    if state.get("blocked") and not state.get("behind"):
+        return f"{state['blocked']} — using the version you have"
+    if not state.get("behind"):
+        return f"already up to date ({updater.version(root)})"
+    waiting = state["behind"]
+    applied = updater.apply(root, data)
+    if applied.get("blocked") == "local changes":
+        return f"{waiting} update(s) waiting — local changes present, left alone"
+    return f"updated to the latest version ({updater.version(root)})"
 
 
 def launch() -> bool:

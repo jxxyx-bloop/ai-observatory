@@ -90,6 +90,20 @@ try {
   if (want === 'hidden' && chip) {
     console.error('real data must not be flagged as a sample'); process.exit(1);
   }
+
+  // The version strip. Same element as freshness, so the assertion is the same
+  // shape: a build told an update is waiting must say so, and the class has to
+  // change with it — the border colour is the only thing separating "your
+  // numbers are old" from "your copy of the tool is old".
+  if (want === 'update') {
+    const cls = (els['fresh'] || {}).className || '';
+    if (!head) { console.error('a waiting update was not announced'); process.exit(1); }
+    if (!/\bupdate|updated\b/.test(cls)) {
+      console.error('update strip did not take its own class, got: ' + cls);
+      process.exit(1);
+    }
+    console.log('UPDATE STRIP: head="' + head + '" class="' + cls + '"');
+  }
 } catch (e) {
   console.error('RUNTIME ERROR:', e.message, '\n', e.stack.split('\n').slice(0,4).join('\n'));
   process.exit(1);

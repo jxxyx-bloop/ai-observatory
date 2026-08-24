@@ -14,8 +14,11 @@ from __future__ import annotations
 
 import json
 import re
+import shutil
+import subprocess
 import sys
 import tempfile
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
@@ -27,6 +30,7 @@ import normalize        # noqa: E402
 import paths as topo    # noqa: E402
 import pricing          # noqa: E402
 import share            # noqa: E402
+import updater          # noqa: E402
 
 FAILURES = []
 
@@ -286,9 +290,103 @@ def test_hidden_guards():
                % (name, name))
 
 
+# --- updates ---------------------------------------------------------------
+
+def _git(cwd, *args):
+    return subprocess.run(
+        ["git", "-c", "user.email=t@example.com", "-c", "user.name=T",
+         "-c", "commit.gpgsign=false", "-C", str(cwd), *args],
+        capture_output=True, text=True, timeout=60)
+
+
+def _commit(repo, name, body, subject):
+    (repo / name).write_text(body, encoding="utf-8")
+    _git(repo, "add", name)
+    _git(repo, "commit", "-m", subject)
+
+
+def test_updater():
+    """Fetch/apply against two real repositories on disk — no network.
+
+    A clone from a local path gets a real upstream, so every branch below is
+    the one that runs on somebody's laptop rather than a mock of it. The point
+    of the split is that `check` never changes the working tree and `apply`
+    never touches the network; both halves are asserted here because a bug in
+    either one is invisible until the day somebody's checkout stops updating.
+    """
+    print("\nupdates")
+    if not shutil.which("git"):
+        print("  ok   (skipped — git not installed)")
+        return
+    with tempfile.TemporaryDirectory() as tmp:
+        tmp = Path(tmp)
+        origin, work, data = tmp / "origin", tmp / "work", tmp / "work" / "data"
+        origin.mkdir()
+        _git(origin, "init", "--quiet")
+        _commit(origin, "a.txt", "one\n", "First commit")
+        subprocess.run(["git", "clone", "--quiet", str(origin), str(work)],
+                       capture_output=True, timeout=60)
+
+        ok("a fresh clone is not behind", updater.pending(work)["behind"] == 0)
+        ok("a clone has a version", updater.version(work) != "unknown")
+        ok("a directory that is not a checkout says so",
+           updater.pending(tmp)["blocked"] == "not a git checkout")
+
+        _commit(origin, "b.txt", "two\n", "Second commit")
+        _commit(origin, "c.txt", "three\n", "Third commit")
+        # Nothing has been fetched yet, so the clone cannot know.
+        check("blind to unfetched commits", updater.pending(work)["behind"], 0)
+
+        state = updater.check(work, data)
+        check("check finds both commits", state["behind"], 2)
+        check("check reads their subjects", state["lines"],
+              ["Second commit", "Third commit"])
+        ok("check reached the remote", state.get("reachable"))
+        ok("check leaves the working tree alone", not (work / "b.txt").exists())
+        ok("check writes its state", (data / updater.STATE_NAME).exists())
+
+        ready = updater.for_render(state)
+        check("a waiting update renders as ready", ready["state"], "ready")
+        check("and carries the count", ready["count"], 2)
+
+        after = updater.apply(work, data)
+        check("apply fast-forwards", after["behind"], 0)
+        ok("apply brings the files", (work / "c.txt").exists())
+        check("apply records what arrived", after["applied"]["count"], 2)
+
+        receipt = updater.for_render(after)
+        check("the receipt shows straight after", receipt["state"], "applied")
+        check("and names the changes", receipt["lines"],
+              ["Second commit", "Third commit"])
+        stale = dict(after)
+        stale["applied"] = dict(after["applied"],
+                                at="2020-01-01T00:00:00Z")
+        ok("but not a day later", updater.for_render(stale) is None)
+        ok("and a waiting update outranks a fresh receipt",
+           updater.for_render(dict(after, behind=1))["state"] == "ready")
+        ok("and nothing is said when there is nothing to say",
+           updater.for_render({"behind": 0}) is None)
+
+        # A tracked edit is the one thing that must never be fast-forwarded
+        # over. git refuses per-file; this asserts we surface that rather than
+        # swallowing it.
+        _commit(origin, "a.txt", "one, changed\n", "Fourth commit")
+        (work / "a.txt").write_text("mine\n", encoding="utf-8")
+        blocked = updater.check(work, data)
+        check("a dirty tree is reported, not hidden", blocked["blocked"],
+              "local changes")
+        held = updater.apply(work, data)
+        check("and the update is held", held["behind"], 1)
+        check("with the local edit intact",
+              (work / "a.txt").read_text(encoding="utf-8"), "mine\n")
+        check("the page is told why", updater.for_render(held)["blocked"],
+              "local changes")
+
+
 def main():
     for fn in (test_window_phase, test_cost, test_plan_value, test_paths,
-               test_share_payload, test_pipeline, test_hidden_guards):
+               test_share_payload, test_pipeline, test_hidden_guards,
+               test_updater):
         fn()
     print()
     if FAILURES:

@@ -17,6 +17,7 @@ Index of Architectural Decision Records. Full record for each in `adr/`. Status:
 | [016](adr/ADR-016-Design-System-And-Localisation.md) | One token file for every surface; a static page per locale; every README figure generated | Two stylesheets had already copied the same palette by hand, the regional wedge shipped in English only, and the README's counts were restated in four places | accepted |
 | [017](adr/ADR-017-Dashboard-Shell-And-The-Meter.md) | A side rail, one weekday×hour grid with peak windows drawn on it, a calendar heatmap — and no 3D | The page had no landmarks, two charts answered the same question in different panels, and the daily bars structurally cannot show a year | accepted |
 | [018](adr/ADR-018-Launch-Surface-And-First-Run.md) | One command installs everything; the launcher is a locally *generated* app, not a downloaded one; the page dates itself | Setup was three pastes and a printed file path, there was no way back to the dashboard tomorrow, and a `file://` page could not say it was a week old | accepted |
+| [019](adr/ADR-019-Staying-Current.md) | Fetch daily and unattended; fast-forward at the next launch; show what arrived | An install from July was still running July's code, and a stale rate card does not degrade the product, it makes it confidently wrong | accepted |
 
 ## Deferred decisions
 

@@ -449,6 +449,11 @@ code{font:12.5px ui-monospace,SFMono-Regular,Menlo,monospace;background:var(--tr
 .fresh[hidden]{display:none}
 .fresh.aging{border-left-color:var(--med)}
 .fresh.stale{border-left-color:var(--high)}
+/* Version, not data. Accent for something waiting to happen, muted for
+   something that already did — an update that landed overnight is a receipt,
+   and a receipt should not shout. */
+.fresh.update{border-left-color:var(--accent)}
+.fresh.updated{border-left-color:var(--low)}
 /* Pinned to the first line rather than centred: once the text wraps to three
    lines on a phone, a vertically centred dot floats beside the middle of the
    paragraph and reads as a bullet for the wrong sentence. */

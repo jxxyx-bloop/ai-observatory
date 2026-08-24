@@ -36,6 +36,15 @@ d["settings"] = {"tz_label": "UTC+8", "symbol": "$", "per_usd": 1, "decimals": 2
 (data / "report.html").write_text(render.render(d), encoding="utf-8")
 PY
   node tests/dashboard_smoke.js "$tmp/report.html" assets/app.js
+
+  # The same page, told a version is waiting. The strip is shared with
+  # freshness, so the only way to know the update branch still reaches it is to
+  # render one — a payload that stops arriving would fail silently otherwise.
+  echo "-- version strip"
+  OBS_EXPECT=update \
+  OBS_META='{"demo":false,"update":{"state":"ready","count":2,"lines":["First change","Second change"],"blocked":null}}' \
+    node tests/dashboard_smoke.js "$tmp/report.html" assets/app.js \
+    | grep -E "UPDATE STRIP|FRESHNESS"
   rm -rf "$tmp"
 else
   echo "  (skipped — node not installed)"
