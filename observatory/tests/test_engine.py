@@ -13,6 +13,7 @@ these on a fresh machine with nothing installed.
 from __future__ import annotations
 
 import json
+import re
 import sys
 import tempfile
 from pathlib import Path
@@ -245,9 +246,49 @@ def test_pipeline():
                   key=lambda s: {"high": 0, "medium": 1, "low": 2, "info": 3}.get(s, 9)))
 
 
+# --- shipped page ----------------------------------------------------------
+
+def test_hidden_guards():
+    """Every element that ships `hidden` must actually stay hidden.
+
+    An author `display` rule beats the browser's own `[hidden]{display:none}`,
+    so a class that sets `display` turns the attribute into decoration and the
+    element renders on every page. That is how the sample-data chip came to sit
+    on dashboards built from real numbers. The dashboard smoke test stands up a
+    stub DOM with no CSS at all and cannot see it, so the check is here: read
+    the markup, read the stylesheet, and fail on the combination.
+    """
+    print("\nhidden-attribute guards")
+    assets = Path(__file__).resolve().parent.parent / "assets"
+    html = (assets / "page.html").read_text(encoding="utf-8")
+    css = "\n".join((assets / f).read_text(encoding="utf-8")
+                    for f in ("tokens.css", "app.css"))
+    # Selectors and bodies. A body cannot contain a brace, so this walks past
+    # @media wrappers on its own rather than needing a real parser.
+    rules = re.findall(r"([^{}]+)\{([^{}]*)\}", css)
+
+    hidden = re.findall(r"<\w+([^>]*\shidden(?:\s[^>]*)?)>", html)
+    ok("markup still ships hidden elements", len(hidden) > 0)
+    for attrs in hidden:
+        classes = re.search(r'class="([^"]*)"', attrs)
+        eid = re.search(r'id="([^"]*)"', attrs)
+        who = eid.group(1) if eid else (classes.group(1) if classes else "?")
+        for name in ["." + c for c in (classes.group(1).split() if classes else [])]:
+            sets_display = any(
+                re.search(re.escape(name) + r"(?![\w-])", sel) and "display:" in body
+                and "[hidden]" not in sel
+                for sel, body in rules)
+            guarded = any(
+                name + "[hidden]" in sel and "display:none" in body.replace(" ", "")
+                for sel, body in rules)
+            ok("%s (%s) stays hidden" % (who, name), guarded or not sets_display,
+               "%s sets display, so [hidden] needs a %s[hidden]{display:none} guard"
+               % (name, name))
+
+
 def main():
     for fn in (test_window_phase, test_cost, test_plan_value, test_paths,
-               test_share_payload, test_pipeline):
+               test_share_payload, test_pipeline, test_hidden_guards):
         fn()
     print()
     if FAILURES:
