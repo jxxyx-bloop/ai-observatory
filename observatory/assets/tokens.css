@@ -85,7 +85,7 @@
   /* The dashboard's side rail. Solid and dark in BOTH themes on purpose: it is
      the one fixed thing on a page you scroll a long way, and an anchor that
      changes weight with the theme stops being an anchor. */
-  --rail:#16161d;
+  --rail:#141b2e;
   --rail-ink:rgba(255,255,255,.62);
   --rail-ink-on:#ffffff;
   --rail-hover:rgba(255,255,255,.09);
@@ -138,7 +138,7 @@
     --accent:#9b93ff;
     --accent-ink:#101018;
     --accent-soft:rgba(155,147,255,.14);
-    --rail:#08080c;
+    --rail:#080d18;
 
     --high:#e8836b; --med:#dcaa57; --low:#93b4c8; --info:#9b93ff;
     --ok:#63c194;
@@ -167,7 +167,7 @@
   --muted:#a2a2b4; --faint:#74748a; --line:rgba(255,255,255,.10);
   --line-strong:rgba(255,255,255,.20); --track:#1d1d26; --sel:#242240;
   --accent:#9b93ff; --accent-ink:#101018; --accent-soft:rgba(155,147,255,.14);
-  --rail:#08080c;
+  --rail:#080d18;
   --high:#e8836b; --med:#dcaa57; --low:#93b4c8; --info:#9b93ff; --ok:#63c194;
   --grad:linear-gradient(100deg,#7aa6ff 0%,#a48cff 34%,#e08ad6 64%,#ffb86b 100%);
   --grad-soft:linear-gradient(100deg,rgba(122,166,255,.20),rgba(164,140,255,.17),
