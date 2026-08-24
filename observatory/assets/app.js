@@ -104,11 +104,19 @@ function medianMinutes(sessions) {
 
 /* ---- dates: everything is a plain YYYY-MM-DD string in UTC ---- */
 function parse(iso) { return new Date(iso + "T00:00:00Z"); }
+/* Guards every entry point that reaches `parse`. The filters are the only
+   place a string arrives from outside the digest, and the only place one can
+   be blank. */
+function validDay(s) {
+  return typeof s === "string" && /^\d{4}-\d{2}-\d{2}$/.test(s)
+    && !isNaN(parse(s).getTime());
+}
 function iso(d) { return d.toISOString().slice(0, 10); }
 function shift(isoStr, days) {
   var d = parse(isoStr); d.setUTCDate(d.getUTCDate() + days); return iso(d);
 }
 function span(from, to) {
+  if (!validDay(from) || !validDay(to)) return [];
   var out = [], cur = from;
   while (cur <= to && out.length < 800) { out.push(cur); cur = shift(cur, 1); }
   return out;
@@ -854,6 +862,14 @@ var drawn = false;
 function draw() {
   drawn = true;
   var F = state();
+  /* A date input can be emptied — backspace in the field, or the clear control
+     the browser draws — and an empty string walks straight into `parse("")`,
+     whose Invalid Date throws out of `iso()` and takes every later handler on
+     the page with it. The dashboard stayed dead until a reload. Anything that
+     is not a real day falls back to the edge of what was collected, which is
+     also the answer somebody clearing the field probably wanted. */
+  if (!validDay(F.from)) { F.from = FIRST; $("from").value = FIRST; }
+  if (!validDay(F.to)) { F.to = LAST; $("to").value = LAST; }
   if (F.from > F.to) { F.from = F.to; $("from").value = F.to; }
   if (F.day && (F.day < F.from || F.day > F.to)) { F.day = selectedDay = null; }
   var DF = dayFilter(F);

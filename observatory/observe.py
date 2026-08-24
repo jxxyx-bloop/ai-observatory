@@ -77,6 +77,19 @@ def _write_atomic(path, text: str) -> None:
 
 def cmd_sync(argv) -> int:
     summary = normalize.sync(DATA, full="--full" in argv)
+    if summary.get("skipped"):
+        # Not an error, and not something to retry: whoever holds the store is
+        # collecting exactly these events. Exit 0 so `digest report` still runs
+        # and the person gets the dashboard they asked for.
+        print(f"sync: {summary['skipped']} — leaving the store to it")
+        return 0
+    # A provider that could not be read is the one failure this tool must never
+    # hide: a collector returning nothing looks exactly like a provider you do
+    # not use (ADR-009), and the same is true of one that threw.
+    for bad in summary.get("failed") or []:
+        where = f" ({bad['source']})" if bad.get("source") else ""
+        print(f"sync: warning - could not read {bad['provider']}{where}: "
+              f"{bad['error']}")
     # The sentinel tracks whether the STORE holds fixture rows, not what the
     # last run happened to find. Clearing it on the first sync that collected
     # anything is how a seeded store ends up looking genuine: the synthetic

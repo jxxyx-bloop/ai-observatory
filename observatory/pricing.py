@@ -62,6 +62,18 @@ def canonical_model(model):
     return load_pricing().get("aliases", {}).get(name, name)
 
 
+def is_priced(model, pricing: dict) -> bool:
+    """True when the rate card names this model, rather than guessing at it.
+
+    `rates_for` falls back to a generic rate for anything it does not know,
+    which is the right behaviour — a missing model should not silently cost
+    nothing — but it makes an estimate that is a guess look exactly like one
+    that is not. Everything downstream that wants to disclose the difference
+    asks here.
+    """
+    return canonical_model(model) in (pricing.get("models") or {})
+
+
 def rates_for(model, pricing: dict, speed=None) -> dict:
     """The rate card entry for a model, before any window adjustment."""
     name = canonical_model(model) or ""

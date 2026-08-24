@@ -383,10 +383,150 @@ def test_updater():
               "local changes")
 
 
+# --- collection integrity --------------------------------------------------
+
+class _FakeCollector:
+    """A byte-offset collector, in miniature: it respects the cursor it is given.
+
+    That is the whole point of the test. A collector that ignores its cursor
+    duplicates under any sync, and one that respects it duplicates only when
+    the sync forgets to record what it consumed — which is the bug this
+    guards.
+    """
+
+    provider = "fake"
+
+    def __init__(self, boom=None, sources=("A", "B")):
+        self.boom = boom
+        self._sources = list(sources)
+
+    def available(self):
+        return True
+
+    def sources(self):
+        return list(self._sources)
+
+    def collect(self, source, cursor):
+        if source == self.boom:
+            raise RuntimeError("transcript format changed under us")
+        if cursor.get("offset"):
+            return [], cursor                      # already consumed
+        events = [{"ts": "2026-08-0%dT10:00:00Z" % (i + 1), "provider": "fake",
+                   "model": "claude-opus-5", "session": "%s%d" % (source, i),
+                   "input": 10, "output": 5} for i in range(3)]
+        return events, {"offset": 99}
+
+
+def test_sync_integrity():
+    """One failing collector, an interrupted run, and two syncs at once.
+
+    Every assertion here is a bug that shipped: an exception in one provider
+    aborted collection for all of them, an interrupted run left events on disk
+    with no cursor to say they had been read, and two syncs starting in the
+    same second both appended the same turns. None of the three announced
+    itself — they arrive as numbers that are quietly too big.
+    """
+    print("\ncollection integrity")
+    real = normalize.COLLECTORS
+    try:
+        with tempfile.TemporaryDirectory() as tmp:
+            data = Path(tmp) / "data"
+
+            # One source raises; the other still gets collected and committed.
+            normalize.COLLECTORS = [_FakeCollector(boom="B")]
+            first = normalize.sync(data)
+            check("a failing source does not abort the run",
+                  first["events_written"], 3)
+            check("and is reported rather than swallowed",
+                  [f["source"] for f in first["failed"]], ["B"])
+            ok("the run still succeeded", first["skipped"] is None)
+
+            # The interrupted source is retried; the committed one is not.
+            normalize.COLLECTORS = [_FakeCollector()]
+            second = normalize.sync(data)
+            check("the failed source is picked up next run",
+                  second["events_written"], 3)
+            rows = list(normalize.read_events(data))
+            check("and nothing is counted twice", len(rows), 6)
+            check("with every event distinct",
+                  len({r["session"] for r in rows}), 6)
+
+            # A third run has nothing left to do — the cursors were recorded.
+            third = normalize.sync(data)
+            check("a settled store writes nothing", third["events_written"], 0)
+            check("and stays the size it was",
+                  len(list(normalize.read_events(data))), 6)
+
+            # Two syncs at once: the second stands down rather than duplicating.
+            normalize.COLLECTORS = [_FakeCollector(sources=("C",))]
+            with normalize.store_lock(data) as held:
+                ok("the first holder gets the store", held)
+                blocked = normalize.sync(data)
+                check("the second stands down", blocked["skipped"],
+                      "another sync is already running")
+                check("and writes nothing at all", blocked["events_written"], 0)
+            after = normalize.sync(data)
+            check("the lock is released with the run",
+                  after["events_written"], 3)
+    finally:
+        normalize.COLLECTORS = real
+
+
+# --- honest pricing --------------------------------------------------------
+
+def test_unpriced_disclosure():
+    """A model with no published rate must be visible as a guess.
+
+    The fallback rate is the right default — a model missing from a JSON file
+    should not silently cost nothing — but before this the guess and the
+    published rate rendered identically, and 300 turns of an unknown model
+    produced a confident three-figure total nobody could question.
+    """
+    print("\nunpriced models")
+    p = pricing.load_pricing()
+    ok("a known model is priced", pricing.is_priced("claude-opus-5", p))
+    ok("a dated snapshot is priced", pricing.is_priced("claude-haiku-4-5-20251001", p))
+    ok("an invented one is not", not pricing.is_priced("brand-new-model-9", p))
+
+    events = [dict(e, model="brand-new-model-9") if i % 2 else e
+              for i, e in enumerate(demo.generate()[:400])]
+    d = analyze.build_digest(iter(events), p)
+    d["findings"] = insights.generate(d, p)
+    check("unpriced turns are counted", d["unpriced"]["turns"], 200)
+    check("and their models named", d["unpriced"]["models"], ["brand-new-model-9"])
+    ok("their cost is non-zero", d["unpriced"]["cost"] > 0)
+    found = [f for f in d["findings"] if f["id"] == "unpriced-models"]
+    check("the page is told", len(found), 1)
+    ok("with no saving attached — it is an error bar, not a lever",
+       "est_monthly_saving_usd" not in found[0])
+    ok("and the share quoted",
+       0 < found[0]["evidence"]["share_of_spend_pct"] <= 100)
+
+    # The placeholder Claude Code writes on internal turns is not a model
+    # anyone chose, and a turn with no tokens costs nothing at any rate. Both
+    # reached the finding on a real store and produced a disclosure about
+    # 0.0% of the spend.
+    noise = [dict(e, model="<synthetic>", input=0, output=0, cache_create=0,
+                  cache_read=0, cache_1h=0, cache_5m=0)
+             for e in demo.generate()[:50]]
+    quiet = analyze.build_digest(iter(noise), p)
+    quiet["findings"] = insights.generate(quiet, p)
+    check("the internal placeholder is not an unpriced model",
+          quiet["unpriced"]["turns"], 0)
+    ok("so no disclosure is raised for it",
+       not [f for f in quiet["findings"] if f["id"] == "unpriced-models"])
+
+    clean = analyze.build_digest(iter(demo.generate()[:400]), p)
+    clean["findings"] = insights.generate(clean, p)
+    check("a fully priced store says nothing", clean["unpriced"]["turns"], 0)
+    ok("and raises no finding",
+       not [f for f in clean["findings"] if f["id"] == "unpriced-models"])
+
+
 def main():
     for fn in (test_window_phase, test_cost, test_plan_value, test_paths,
                test_share_payload, test_pipeline, test_hidden_guards,
-               test_updater):
+               test_updater, test_sync_integrity, test_unpriced_disclosure):
         fn()
     print()
     if FAILURES:

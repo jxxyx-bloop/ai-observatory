@@ -574,6 +574,45 @@ def local_currency_context(digest, pricing):
     )]
 
 
+def unpriced_estimate(digest, pricing):
+    """Say which part of the dollar figure rests on a rate nobody published.
+
+    `rates_for` falls back to a generic rate for a model the card does not
+    name, which is the right call — a model missing from a JSON file should not
+    silently cost nothing — but the number it produces is rendered in the same
+    typeface as one that came from a vendor's published page. New models ship
+    every few weeks; this is the ordinary case, not an exotic one.
+
+    No saving is attached. This is not a lever, it is the error bar.
+    """
+    u = digest.get("unpriced") or {}
+    turns = u.get("turns") or 0
+    if not turns:
+        return []
+    cost = u.get("cost") or 0.0
+    total = (digest.get("totals") or {}).get("cost") or 0.0
+    share = _pct(cost, total)
+    models = u.get("models") or []
+    named = ", ".join(models[:3]) + (" and others" if len(models) > 3 else "")
+    fb = pricing.get("fallback") or {}
+    return [_f(
+        "unpriced-models", "medium" if share >= 10 else "info",
+        "Part of this estimate is a guess",
+        f"{share}% of the estimated spend (${cost:,.2f} across {turns:,} turns) came from "
+        f"models the rate card does not name: {named}. Those turns are priced at the "
+        f"generic fallback of ${fb.get('input', 0):g}/M in and ${fb.get('output', 0):g}/M "
+        f"out, which is a placeholder, not that vendor's published rate. The rest of the "
+        f"page cannot tell you which way the error runs.",
+        [f"Add the model to observatory/pricing.json with the vendor's published rate and "
+         f"move `_verified_on` to today — CONTRIBUTING.md calls this the five-minute PR.",
+         f"Until then, read the {share}% as unmeasured rather than as spend."],
+        {"unpriced_turns": turns, "unpriced_cost_usd": round(cost, 2),
+         "share_of_spend_pct": share, "models": models,
+         "fallback_rate": {"input": fb.get("input"), "output": fb.get("output")}},
+        "high",
+    )]
+
+
 DETECTORS = [
     cache_efficiency,
     cold_cache_sessions,
@@ -590,4 +629,5 @@ DETECTORS = [
     plan_value_realised,
     vendor_concentration,
     local_currency_context,
+    unpriced_estimate,
 ]
