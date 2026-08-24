@@ -12,6 +12,8 @@ these on a fresh machine with nothing installed.
 
 from __future__ import annotations
 
+import contextlib
+import io
 import json
 import re
 import shutil
@@ -31,6 +33,7 @@ import paths as topo    # noqa: E402
 import pricing          # noqa: E402
 import share            # noqa: E402
 import launcher         # noqa: E402
+import observe          # noqa: E402
 import updater          # noqa: E402
 
 FAILURES = []
@@ -635,11 +638,70 @@ def test_doctor_install_checks():
          launcher.LOG, launcher._launchctl_says) = real
 
 
+# --- the command line ------------------------------------------------------
+
+def test_cli_dispatch():
+    """Flags are not commands.
+
+    `observe.py --help` used to fall through to `all`: sync, digest, report and
+    a browser window — the one answer nobody typing `--help` is asking for. An
+    unknown *command* had always printed the usage and stopped; an unknown
+    *flag* did the opposite of stopping.
+
+    The dispatch table is stubbed so the old behaviour would be *recorded*
+    rather than executed — a run that reaches `all` names itself in `called`,
+    and that is what these assertions are against. Removing the guard in
+    `main()` turns the first two checks red without touching anyone's store.
+    """
+    print("\ncommand line")
+    called = []
+    real = observe.COMMANDS
+    try:
+        observe.COMMANDS = {name: (lambda argv, n=name: called.append(n) or 0)
+                            for name in real}
+
+        for flag in ("--help", "-h"):
+            called.clear()
+            out = io.StringIO()
+            with contextlib.redirect_stdout(out):
+                rc = observe.main(["observe.py", flag])
+            check("%s exits clean" % flag, rc, 0)
+            check("and runs nothing", called, [])
+            ok("printing the usage", "single entrypoint" in out.getvalue())
+
+        # A flag with no command is a typo, not an instruction to do everything.
+        called.clear()
+        with contextlib.redirect_stdout(io.StringIO()):
+            rc = observe.main(["observe.py", "--no-open"])
+        check("a bare flag is refused", rc, 2)
+        check("and runs nothing", called, [])
+
+        # What must keep working.
+        called.clear()
+        with contextlib.redirect_stdout(io.StringIO()):
+            rc = observe.main(["observe.py", "sync", "digest", "--no-open"])
+        check("a named chain still runs, in order", called, ["sync", "digest"])
+        check("and reports success", rc, 0)
+
+        called.clear()
+        with contextlib.redirect_stdout(io.StringIO()):
+            observe.main(["observe.py"])
+        check("no arguments at all still means `all`", called, ["all"])
+
+        called.clear()
+        with contextlib.redirect_stdout(io.StringIO()):
+            rc = observe.main(["observe.py", "bogus"])
+        check("an unknown command still stops", rc, 2)
+        check("and runs nothing", called, [])
+    finally:
+        observe.COMMANDS = real
+
+
 def main():
     for fn in (test_window_phase, test_cost, test_plan_value, test_paths,
                test_share_payload, test_pipeline, test_hidden_guards,
                test_updater, test_sync_integrity, test_unpriced_disclosure,
-               test_doctor_install_checks):
+               test_doctor_install_checks, test_cli_dispatch):
         fn()
     print()
     if FAILURES:

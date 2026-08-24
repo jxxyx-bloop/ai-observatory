@@ -21,6 +21,7 @@ Flags: --no-open (never launch a browser or the app)  --notify (desktop notifica
        --no-dock (with `install`/`setup`, do not pin to the Dock)
        --no-daily (with `install`, skip the scheduled refresh)
        --html (with `doctor`, emit a page instead of text)
+       -h, --help (print this and stop)
 
 Stdlib only. Read-only against every provider.
 
@@ -582,7 +583,25 @@ def main(argv) -> int:
     code is the last command's, so a bare `demo` still reports the refusal to a
     script while `demo digest report` exits 0 on the dashboard it built.
     """
-    names = [a for a in argv[1:] if not a.startswith("-")] or ["all"]
+    flags = [a for a in argv[1:] if a.startswith("-")]
+    names = [a for a in argv[1:] if not a.startswith("-")]
+
+    # A line of nothing but flags used to fall through to `all`, so `--help`
+    # synced, rebuilt the digest and opened a browser — the one answer nobody
+    # typing `--help` is asking for. An unknown *command* has always printed
+    # this and stopped; an unknown *flag* has to do the same, or the tool is
+    # quietly doing something other than what it was asked.
+    if {"-h", "--help"} & set(flags):
+        print(__doc__)
+        return 0
+    if flags and not names:
+        print(__doc__)
+        print(f"no command named — {', '.join(flags)} "
+              f"{'is a flag' if len(flags) == 1 else 'are flags'}, and flags "
+              f"only modify a command. Add one of: {', '.join(COMMANDS)}.")
+        return 2
+
+    names = names or ["all"]
     rc = 0
     for i, name in enumerate(names):
         fn = COMMANDS.get(name)
