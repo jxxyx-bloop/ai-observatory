@@ -574,6 +574,43 @@ def local_currency_context(digest, pricing):
     )]
 
 
+def duplicated_turns(digest, pricing):
+    """Say when the page's own totals are too big, and name the fix.
+
+    Three shipped bugs could each write the same turn twice — an interrupted
+    sync, two syncs at once, and `sync --full`. All three are fixed, but a
+    store damaged before the fix stays damaged: its only symptom is numbers
+    that look like a busy month, which is indistinguishable from a busy month.
+
+    `doctor` counts these too, and a person who already suspects their
+    dashboard runs `doctor`. This is for the person who does not suspect it.
+    No saving is attached — the spend is not real, so neither is a saving.
+    """
+    d = digest.get("duplicates") or {}
+    dupes = d.get("turns") or 0
+    if not dupes:
+        return []
+    distinct = d.get("distinct") or 0
+    total = dupes + distinct
+    share = _pct(dupes, total)
+    return [_f(
+        "duplicated-turns", "high" if share >= 5 else "medium",
+        "Some turns are counted more than once",
+        f"{dupes:,} of {total:,} turns in the store ({share}%) are repeats of a turn "
+        f"already there, so every total on this page — turns, tokens and spend — is "
+        f"that much too high. This is a damaged store, not usage: an interrupted sync, "
+        f"two syncs at once, or a `sync --full` run before the repair landed. The "
+        f"duplicates are identical in provider, session, timestamp, turn and token "
+        f"counts, which is why they can be identified at all.",
+        ["Run `python3 observe.py dedupe`, then `python3 observe.py digest report`. "
+         "It keeps the first copy of each turn and is safe on a healthy store.",
+         f"Re-read this page afterwards — expect roughly {share}% off every total."],
+        {"duplicate_turns": dupes, "distinct_turns": distinct,
+         "share_of_store_pct": share},
+        "high",
+    )]
+
+
 def unpriced_estimate(digest, pricing):
     """Say which part of the dollar figure rests on a rate nobody published.
 
@@ -630,4 +667,5 @@ DETECTORS = [
     vendor_concentration,
     local_currency_context,
     unpriced_estimate,
+    duplicated_turns,
 ]

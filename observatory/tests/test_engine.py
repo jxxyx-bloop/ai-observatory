@@ -697,11 +697,61 @@ def test_cli_dispatch():
         observe.COMMANDS = real
 
 
+def test_duplicate_disclosure():
+    """A store that holds the same turn twice must say so on the page.
+
+    Three shipped bugs could each write a turn twice, and all three are fixed.
+    A store damaged *before* the fix is not, and its only symptom is numbers
+    that look like a busy month. `doctor` counts duplicates, but only somebody
+    who already suspects their dashboard runs `doctor` — this is the surface
+    for everybody else.
+    """
+    print("\nduplicate disclosure")
+    p_ = pricing.load_pricing()
+    events = demo.generate()[:200]
+
+    clean = analyze.build_digest(iter(events), p_)
+    clean["findings"] = insights.generate(clean, p_)
+    check("a healthy store counts no duplicates",
+          clean["duplicates"]["turns"], 0)
+    check("and every turn is distinct",
+          clean["duplicates"]["distinct"], len(events))
+    ok("so the page stays silent",
+       not [f for f in clean["findings"] if f["id"] == "duplicated-turns"])
+
+    # The damage: the same events a second time, exactly as a re-read wrote it.
+    doubled = analyze.build_digest(iter(events + [dict(e) for e in events]), p_)
+    doubled["findings"] = insights.generate(doubled, p_)
+    check("every repeat is counted", doubled["duplicates"]["turns"], len(events))
+    check("and the distinct count holds",
+          doubled["duplicates"]["distinct"], len(events))
+    check("the totals really are inflated — that is the point",
+          doubled["totals"]["turns"], 2 * len(events))
+    found = [f for f in doubled["findings"] if f["id"] == "duplicated-turns"]
+    check("the page is told", len(found), 1)
+    check("at the severity of a wrong number", found[0]["severity"], "high")
+    ok("with no saving attached — the spend is not real",
+       "est_monthly_saving_usd" not in found[0])
+    ok("and dedupe named as the fix",
+       "dedupe" in " ".join(found[0]["action"]))
+    check("the share quoted is the half that is fake",
+          found[0]["evidence"]["share_of_store_pct"], 50.0)
+
+    # A turn that merely resembles another is not a duplicate: the natural key
+    # includes the token counts, so real repeated work still counts twice.
+    similar = [dict(e) for e in events[:2]]
+    similar[1]["output"] = (similar[1].get("output") or 0) + 1
+    near = analyze.build_digest(iter(similar), p_)
+    check("a turn differing by one token is its own turn",
+          near["duplicates"]["turns"], 0)
+
+
 def main():
     for fn in (test_window_phase, test_cost, test_plan_value, test_paths,
                test_share_payload, test_pipeline, test_hidden_guards,
                test_updater, test_sync_integrity, test_unpriced_disclosure,
-               test_doctor_install_checks, test_cli_dispatch):
+               test_doctor_install_checks, test_cli_dispatch,
+               test_duplicate_disclosure):
         fn()
     print()
     if FAILURES:

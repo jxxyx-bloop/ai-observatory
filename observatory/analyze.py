@@ -13,6 +13,7 @@ import json
 from collections import defaultdict
 from datetime import datetime, timedelta, timezone
 
+import normalize
 import paths as topo
 import pricing as price
 import settings
@@ -229,6 +230,12 @@ def build_digest(events, pricing: dict) -> dict:
     unpriced_turns = 0
     unpriced_cost = 0.0
     unpriced_models: dict = defaultdict(int)
+    # Turns the store holds more than once. `sync` and `dedupe` both defend
+    # against this, but only a person who already suspects their numbers runs
+    # `doctor`. A duplicate that reaches the digest inflates every figure on
+    # the page, so the page is where it has to be answerable.
+    seen_keys: set = set()
+    duplicate_turns = 0
 
     cube = Cube(CUBE_DIMS, CUBE_METRICS)
     hours = Cube(("date", "provider", "lane", "repo", "hour"), ("turns",))
@@ -238,6 +245,15 @@ def build_digest(events, pricing: dict) -> dict:
     for ev in events:
         if ev.get("synthetic"):
             synthetic_events += 1
+        # Counted, never dropped. Silently aggregating past a duplicate would
+        # make the page right and the store still wrong, and nothing would ever
+        # send anyone to `dedupe`. The digest reports what the store holds,
+        # plus what is wrong with it.
+        key = normalize.event_key(ev)
+        if key in seen_keys:
+            duplicate_turns += 1
+        else:
+            seen_keys.add(key)
         cost = cost_of(ev, pricing)
         # A turn with no tokens costs nothing at any rate, and the placeholder
         # above is not a model the user picked. Neither is something the rate
@@ -298,6 +314,9 @@ def build_digest(events, pricing: dict) -> dict:
         "synthetic_events": synthetic_events,
         # Carried so the page and the findings can say which part of the
         # estimate rests on a published rate and which part does not.
+        # Carried so the page can say that its own totals are too big, and
+        # name the one command that fixes it.
+        "duplicates": {"turns": duplicate_turns, "distinct": len(seen_keys)},
         "unpriced": {
             "turns": unpriced_turns,
             "cost": round(unpriced_cost, 4),
