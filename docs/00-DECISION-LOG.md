@@ -31,6 +31,7 @@ Recorded so they are not silently re-litigated. Each has a named trigger for rev
 | Merging personal claude.ai chat usage | A local token record for browser/desktop-chat conversations exists. None does today, so this is not deferred — it is unreachable |
 | Packaging for other people | The tool has demonstrably changed the owner's own behaviour at least once (see `00-VISION.md` → Audience) |
 | Real-time / streaming ingest | A daily cadence proves insufficient in practice, not in theory |
+| Cutting the session tail out of the digest | **Already triggered.** ADR-005 set the threshold at ~250 KB; the digest measures 265 KB, of which the per-session rollup is 71 KB (27%) and the only block that grows without bound. Needs its own change with before/after numbers — see `context/Known-Limitations.md` |
 | Per-outcome value attribution (ROI) | A trustworthy signal for "this session produced value" exists. Writes/reads is a proxy, not the thing |
 
 ## How to add an ADR
