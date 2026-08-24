@@ -6,11 +6,31 @@
 Incremental by construction: a re-run seeks each transcript to its recorded
 byte offset, so a daily sync reads only what changed. Nothing here is ever
 rewritten in place — the history is append-only.
+
+Two rules keep an append-only store honest when a sync does not finish, which
+is the common case rather than the rare one — laptops sleep, people quit the
+app, and the launchd agent and a double-clicked icon can start in the same
+second:
+
+1. **Durable before recorded.** Events are flushed and fsynced, and only then
+   is the cursor that consumed them written. The reverse order loses events;
+   doing both at the end of the run duplicates every event already written
+   when anything interrupts it, permanently and invisibly, because nothing
+   downstream deduplicates.
+
+2. **One writer.** A whole-store lock, held for the run. Two syncs reading the
+   same cursor collect the same turns and both append them.
+
+A collector that raises takes itself out of the run and nothing else. One
+vendor changing their transcript format must never stop collection for the
+other three.
 """
 
 from __future__ import annotations
 
+import contextlib
 import json
+import os
 import re
 from pathlib import Path
 
@@ -54,44 +74,222 @@ def _partition(ts) -> str:
     return "unknown"
 
 
-def sync(data_dir: Path, full: bool = False) -> dict:
-    """Collect every available provider into the store. Returns a run summary."""
-    data_dir.mkdir(parents=True, exist_ok=True)
-    cursors = {} if full else load_cursors(data_dir)
-    handles: dict = {}
-    written = 0
-    scanned = 0
+@contextlib.contextmanager
+def store_lock(data_dir: Path):
+    """Hold the store for one run, or yield False and let the caller stand down.
 
+    `flock` is released by the kernel when the process dies, so an interrupted
+    sync leaves nothing to clean up and no stale lock to time out. Where it is
+    unavailable — Windows, an exotic filesystem — this yields True and the tool
+    behaves exactly as it did before rather than refusing to run. A lock that
+    can stop somebody collecting their own data is worse than the race it
+    prevents.
+    """
     try:
-        for collector in COLLECTORS:
-            if not collector.available():
-                continue
-            for source in collector.sources():
-                scanned += 1
-                key = f"{collector.provider}:{source}"
-                events, cursor = collector.collect(source, cursors.get(key, {}))
-                cursors[key] = cursor
-                for ev in events:
-                    part = _partition(ev.get("ts"))
-                    fh = handles.get(part)
-                    if fh is None:
-                        fh = (data_dir / f"events-{part}.ndjson").open(
-                            "a", encoding="utf-8"
-                        )
-                        handles[part] = fh
-                    fh.write(json.dumps(ev, separators=(",", ":")) + "\n")
-                    written += 1
+        import fcntl
+    except ImportError:
+        yield True
+        return
+    data_dir.mkdir(parents=True, exist_ok=True)
+    fh = open(data_dir / ".sync.lock", "w", encoding="utf-8")
+    try:
+        try:
+            fcntl.flock(fh.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except OSError:
+            yield False
+            return
+        fh.write(str(os.getpid()))
+        fh.flush()
+        yield True
     finally:
-        for fh in handles.values():
-            fh.close()
+        fh.close()
 
-    save_cursors(data_dir, cursors)
-    return {
-        "sources_scanned": scanned,
-        "events_written": written,
-        "partitions": sorted(handles.keys()),
-        "mode": "full" if full else "incremental",
-    }
+
+class _Writer:
+    """Append events, and know how to make what was written durable.
+
+    Kept as a class only so `sync` can flush every open partition at a commit
+    point without tracking which ones a given source touched.
+    """
+
+    def __init__(self, data_dir: Path):
+        self.data_dir = data_dir
+        self.handles: dict = {}
+        self.written = 0
+
+    def add(self, ev: dict) -> None:
+        part = _partition(ev.get("ts"))
+        fh = self.handles.get(part)
+        if fh is None:
+            fh = (self.data_dir / f"events-{part}.ndjson").open("a", encoding="utf-8")
+            self.handles[part] = fh
+        fh.write(json.dumps(ev, separators=(",", ":")) + "\n")
+        self.written += 1
+
+    def flush(self) -> None:
+        """Get the bytes onto the disk, not just out of Python's buffer.
+
+        Without the fsync a power cut can leave a cursor pointing past events
+        that never landed — the same double-count in the other direction.
+        """
+        for fh in self.handles.values():
+            fh.flush()
+            with contextlib.suppress(OSError):
+                os.fsync(fh.fileno())
+
+    def close(self) -> None:
+        for fh in self.handles.values():
+            with contextlib.suppress(OSError):
+                fh.close()
+        self.handles.clear()
+
+
+def event_key(ev: dict) -> str:
+    """A natural identity for one turn, for the two places that must not double it.
+
+    The store has no event ids — ADR-001 chose append-only NDJSON and nothing
+    ever needed to ask "have I seen this before" until a re-read could happen.
+    Provider, session, timestamp, turn number and the token counts are enough:
+    two turns that agree on all of those are indistinguishable in every number
+    this tool computes, so treating them as one loses nothing even in the
+    theoretical case where they were genuinely separate.
+    """
+    return "|".join(str(ev.get(k) or "") for k in
+                    ("provider", "session", "ts", "turn", "input", "output",
+                     "cache_read", "model"))
+
+
+def existing_keys(data_dir: Path) -> set:
+    """Every turn already in the store, by natural key."""
+    return {event_key(ev) for ev in read_events(data_dir)}
+
+
+def dedupe(data_dir: Path) -> dict:
+    """Rewrite the store keeping the first copy of each turn. Returns a summary.
+
+    The repair path for a store inflated before the collection fixes landed:
+    an interrupted sync, two syncs at once, or any `sync --full` could each
+    leave a second copy of turns that were already recorded, and nothing
+    downstream deduplicated — so every number on the dashboard was quietly
+    too big, with no way for its owner to tell.
+
+    Partition by partition, through a temp file and an atomic replace, so an
+    interrupted repair leaves the original intact.
+    """
+    seen: set = set()
+    removed = kept = 0
+    for path in sorted(data_dir.glob("events-*.ndjson")):
+        tmp = path.with_suffix(".ndjson.tmp")
+        with tmp.open("w", encoding="utf-8") as out:
+            with path.open("r", encoding="utf-8", errors="replace") as fh:
+                for line in fh:
+                    line = line.strip()
+                    if not line:
+                        continue
+                    try:
+                        ev = json.loads(line)
+                    except (ValueError, TypeError):
+                        continue
+                    key = event_key(ev)
+                    if key in seen:
+                        removed += 1
+                        continue
+                    seen.add(key)
+                    out.write(line + "\n")
+                    kept += 1
+            out.flush()
+            with contextlib.suppress(OSError):
+                os.fsync(out.fileno())
+        tmp.replace(path)
+    return {"kept": kept, "removed": removed}
+
+
+def sync(data_dir: Path, full: bool = False) -> dict:
+    """Collect every available provider into the store. Returns a run summary.
+
+    Commits after each source that produced anything: events flushed and
+    fsynced first, then the cursor that consumed them. An interruption can
+    therefore cost at most one source's worth of re-reading, and a re-read is
+    only ever wasted work — never a second copy of yesterday.
+    """
+    data_dir.mkdir(parents=True, exist_ok=True)
+    summary = {"sources_scanned": 0, "events_written": 0, "partitions": [],
+               "mode": "full" if full else "incremental", "failed": [],
+               "skipped": None, "duplicates_skipped": 0}
+
+    with store_lock(data_dir) as mine:
+        if not mine:
+            # The 09:00 agent and a double-clicked icon at login. Whoever holds
+            # the lock is already collecting exactly these events.
+            summary["skipped"] = "another sync is already running"
+            return summary
+
+        cursors = {} if full else load_cursors(data_dir)
+        # `--full` re-reads every transcript from byte zero. Appending that to
+        # a store that already holds those turns doubled it, every single run —
+        # and `--full` is exactly what somebody reaches for when they suspect
+        # their numbers are wrong. It reconciles against what is already here
+        # instead. Incremental runs do not pay this read: their cursors are the
+        # answer to the same question.
+        seen_keys = existing_keys(data_dir) if full else None
+        writer = _Writer(data_dir)
+        seen_parts: set = set()
+        try:
+            for collector in COLLECTORS:
+                provider = getattr(collector, "provider", "unknown")
+                try:
+                    if not collector.available():
+                        continue
+                    sources = list(collector.sources())
+                except Exception as exc:               # noqa: BLE001
+                    summary["failed"].append(
+                        {"provider": provider, "source": None,
+                         "error": f"{type(exc).__name__}: {exc}"})
+                    continue
+
+                for source in sources:
+                    summary["sources_scanned"] += 1
+                    key = f"{provider}:{source}"
+                    try:
+                        events, cursor = collector.collect(source, cursors.get(key, {}))
+                    except Exception as exc:           # noqa: BLE001
+                        # One unreadable transcript, or one vendor's format
+                        # changing under us, must not cost the other providers
+                        # their run. The cursor is left alone, so the next sync
+                        # tries this source again from where it was.
+                        summary["failed"].append(
+                            {"provider": provider, "source": str(source),
+                             "error": f"{type(exc).__name__}: {exc}"})
+                        continue
+
+                    fresh = []
+                    for ev in events:
+                        if seen_keys is not None:
+                            key = event_key(ev)
+                            if key in seen_keys:
+                                summary["duplicates_skipped"] += 1
+                                continue
+                            seen_keys.add(key)
+                        writer.add(ev)
+                        fresh.append(ev)
+                    events = fresh
+                    if events:
+                        # Durable, then recorded. Never the other way round.
+                        writer.flush()
+                        cursors[key] = cursor
+                        save_cursors(data_dir, cursors)
+                        seen_parts.update(writer.handles)
+                    else:
+                        cursors[key] = cursor
+        finally:
+            writer.close()
+            # Whatever was flushed above is already recorded; this catches the
+            # sources that read to the end and produced nothing.
+            save_cursors(data_dir, cursors)
+
+        summary["events_written"] = writer.written
+        summary["partitions"] = sorted(seen_parts)
+    return summary
 
 
 def write_events(data_dir: Path, events) -> int:

@@ -195,8 +195,14 @@ returned 23× what you paid."*
 | `observe.py demo --purge` | remove that synthetic usage from the store again |
 | `observe.py share` | Build the community payload and **print it** — never uploads |
 | `observe.py all` | sync → digest → report |
+| `observe.py dedupe` | Repair a store that holds the same turn twice — keeps the first copy |
+| `observe.py check-update` | Fetch what is new. Downloads objects, runs none of them |
+| `observe.py update` | Fast-forward onto whatever `check-update` already fetched |
+| `observe.py install` | Create the double-clickable launcher and the daily refresh |
 
-Commands compose: `observe.py sync digest report` is one process.
+Commands compose: `observe.py sync digest report` is one process. Flags modify a
+command and never stand alone — `observe.py --help` prints this list rather than
+running anything.
 
 </details>
 

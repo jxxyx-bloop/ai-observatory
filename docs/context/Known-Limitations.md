@@ -133,7 +133,7 @@ Every finding that touches value — `read-heavy-no-change` above all — inheri
 - **Undocumented source format.** A provider change can break parsing (ADR-004, accepted). Defensive parsing limits the damage to new data, never history.
 - **Thresholds tuned on one person's 56 days.** Starting points, not norms — recalibrate in Phase 2.
 - **Transcript deletion is unrecoverable before a first sync.** After sync, the store holds the history independently — one of the reasons the store exists.
-- **No automated tests yet.** Verification so far is manual: full rebuild, incremental no-op, and browser render at two widths in two colour schemes. A regression suite belongs in Phase 2.
+- **Test coverage is uneven, not absent.** `observatory/tests/run.sh` runs the engine suite, the collector fixtures and a headless dashboard render, and CI runs it on every push. What it does not cover is anything requiring a real provider directory or a real launchd, both of which are stubbed.
 
 ## Added on open-sourcing (2026-08-19)
 
@@ -185,3 +185,26 @@ and [Auth](../specs/Auth.md) describes a design. `observe.py share` builds and
 audits a payload locally and has no network code path at all. Nothing has been
 deployed, nothing has been reviewed by a second person, and no cohort statistics
 exist. Treat those documents as intent.
+
+### The digest has outgrown its own revisit trigger
+
+[ADR-005](../adr/ADR-005-Digest-Tier.md) designed the digest at ~60 KB and set
+its own threshold for reopening the decision: *"the digest exceeds ~250 KB (then
+cut the session tail)"*. That threshold has been crossed. Measured on a 47-active-day
+store of 34,189 turns across 144 sessions, `data/digest.json` is **265 KB**, and
+the rendered `dist/observatory.html` that embeds it is **384 KB**.
+
+The largest single block is the per-session rollup at **71 KB (27%)**, which is
+the one part that grows with usage without bound — the cube, tools and hours
+blocks are bounded by their dimensions, the session list is one row per session
+forever. So ADR-005's prescribed remedy, cutting the session tail, is aimed at
+the right block.
+
+The whole digest is embedded in the HTML and parsed on every open, so this is a
+page-load cost, not only a disk cost. It is not urgent at this size and it is
+not yet fixed: it needs its own change with before/after numbers, and a decision
+about what the session tail is *for* before it is truncated.
+
+Note for anyone reading the numbers quoted elsewhere: a 93%-of-2.9 MB figure has
+been cited for the session block. That is a 24× projection, not a measurement.
+The measured share today is 27%, and the two imply quite different fixes.

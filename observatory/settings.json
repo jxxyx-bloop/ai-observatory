@@ -10,6 +10,9 @@
   "_plan_doc": "What you actually pay each month, if anything. Set this and the dashboard stops pretending your token estimate is a bill and starts telling you what your plan returned. Ids come from plans.json. Use \"none\" for metered API.",
   "plan": "none",
 
+  "_updates_doc": "How this checkout stays current. \"auto\" (the default) fetches once a day in the background and fast-forwards the next time you open the app — never a merge, never a rebase, and never while you have uncommitted changes. \"notify\" fetches and tells you on the dashboard but never moves your checkout. \"off\" never looks. Copy this file to settings.local.json to change it without leaving a modified file in your checkout.",
+  "updates": "auto",
+
   "_community_doc": "The opt-in community layer. Nothing is uploaded while `share` is false, which is the default — see docs/specs/Community-Share-Protocol.md for exactly what a share payload contains, and docs/adr/ADR-012-Opt-In-By-Default-Off.md for why the default is off rather than on.",
   "community": {
     "share": false,

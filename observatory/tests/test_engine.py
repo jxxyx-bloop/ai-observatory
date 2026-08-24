@@ -12,9 +12,15 @@ these on a fresh machine with nothing installed.
 
 from __future__ import annotations
 
+import contextlib
+import io
 import json
+import re
+import shutil
+import subprocess
 import sys
 import tempfile
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
@@ -26,6 +32,9 @@ import normalize        # noqa: E402
 import paths as topo    # noqa: E402
 import pricing          # noqa: E402
 import share            # noqa: E402
+import launcher         # noqa: E402
+import observe          # noqa: E402
+import updater          # noqa: E402
 
 FAILURES = []
 
@@ -245,9 +254,559 @@ def test_pipeline():
                   key=lambda s: {"high": 0, "medium": 1, "low": 2, "info": 3}.get(s, 9)))
 
 
+# --- shipped page ----------------------------------------------------------
+
+def test_hidden_guards():
+    """Every element that ships `hidden` must actually stay hidden.
+
+    An author `display` rule beats the browser's own `[hidden]{display:none}`,
+    so a class that sets `display` turns the attribute into decoration and the
+    element renders on every page. That is how the sample-data chip came to sit
+    on dashboards built from real numbers. The dashboard smoke test stands up a
+    stub DOM with no CSS at all and cannot see it, so the check is here: read
+    the markup, read the stylesheet, and fail on the combination.
+    """
+    print("\nhidden-attribute guards")
+    assets = Path(__file__).resolve().parent.parent / "assets"
+    html = (assets / "page.html").read_text(encoding="utf-8")
+    css = "\n".join((assets / f).read_text(encoding="utf-8")
+                    for f in ("tokens.css", "app.css"))
+    # Selectors and bodies. A body cannot contain a brace, so this walks past
+    # @media wrappers on its own rather than needing a real parser.
+    rules = re.findall(r"([^{}]+)\{([^{}]*)\}", css)
+
+    hidden = re.findall(r"<\w+([^>]*\shidden(?:\s[^>]*)?)>", html)
+    ok("markup still ships hidden elements", len(hidden) > 0)
+    for attrs in hidden:
+        classes = re.search(r'class="([^"]*)"', attrs)
+        eid = re.search(r'id="([^"]*)"', attrs)
+        who = eid.group(1) if eid else (classes.group(1) if classes else "?")
+        for name in ["." + c for c in (classes.group(1).split() if classes else [])]:
+            sets_display = any(
+                re.search(re.escape(name) + r"(?![\w-])", sel) and "display:" in body
+                and "[hidden]" not in sel
+                for sel, body in rules)
+            guarded = any(
+                name + "[hidden]" in sel and "display:none" in body.replace(" ", "")
+                for sel, body in rules)
+            ok("%s (%s) stays hidden" % (who, name), guarded or not sets_display,
+               "%s sets display, so [hidden] needs a %s[hidden]{display:none} guard"
+               % (name, name))
+
+
+# --- updates ---------------------------------------------------------------
+
+def _git(cwd, *args):
+    return subprocess.run(
+        ["git", "-c", "user.email=t@example.com", "-c", "user.name=T",
+         "-c", "commit.gpgsign=false", "-C", str(cwd), *args],
+        capture_output=True, text=True, timeout=60)
+
+
+def _commit(repo, name, body, subject):
+    (repo / name).write_text(body, encoding="utf-8")
+    _git(repo, "add", name)
+    _git(repo, "commit", "-m", subject)
+
+
+def test_updater():
+    """Fetch/apply against two real repositories on disk — no network.
+
+    A clone from a local path gets a real upstream, so every branch below is
+    the one that runs on somebody's laptop rather than a mock of it. The point
+    of the split is that `check` never changes the working tree and `apply`
+    never touches the network; both halves are asserted here because a bug in
+    either one is invisible until the day somebody's checkout stops updating.
+    """
+    print("\nupdates")
+    if not shutil.which("git"):
+        print("  ok   (skipped — git not installed)")
+        return
+    with tempfile.TemporaryDirectory() as tmp:
+        tmp = Path(tmp)
+        origin, work, data = tmp / "origin", tmp / "work", tmp / "work" / "data"
+        origin.mkdir()
+        _git(origin, "init", "--quiet")
+        _commit(origin, "a.txt", "one\n", "First commit")
+        subprocess.run(["git", "clone", "--quiet", str(origin), str(work)],
+                       capture_output=True, timeout=60)
+
+        ok("a fresh clone is not behind", updater.pending(work)["behind"] == 0)
+        ok("a clone has a version", updater.version(work) != "unknown")
+        ok("a directory that is not a checkout says so",
+           updater.pending(tmp)["blocked"] == "not a git checkout")
+
+        _commit(origin, "b.txt", "two\n", "Second commit")
+        _commit(origin, "c.txt", "three\n", "Third commit")
+        # Nothing has been fetched yet, so the clone cannot know.
+        check("blind to unfetched commits", updater.pending(work)["behind"], 0)
+
+        state = updater.check(work, data)
+        check("check finds both commits", state["behind"], 2)
+        check("check reads their subjects", state["lines"],
+              ["Second commit", "Third commit"])
+        ok("check reached the remote", state.get("reachable"))
+        ok("check leaves the working tree alone", not (work / "b.txt").exists())
+        ok("check writes its state", (data / updater.STATE_NAME).exists())
+
+        ready = updater.for_render(state)
+        check("a waiting update renders as ready", ready["state"], "ready")
+        check("and carries the count", ready["count"], 2)
+
+        after = updater.apply(work, data)
+        check("apply fast-forwards", after["behind"], 0)
+        ok("apply brings the files", (work / "c.txt").exists())
+        check("apply records what arrived", after["applied"]["count"], 2)
+
+        receipt = updater.for_render(after)
+        check("the receipt shows straight after", receipt["state"], "applied")
+        check("and names the changes", receipt["lines"],
+              ["Second commit", "Third commit"])
+        stale = dict(after)
+        stale["applied"] = dict(after["applied"],
+                                at="2020-01-01T00:00:00Z")
+        ok("but not a day later", updater.for_render(stale) is None)
+        ok("and a waiting update outranks a fresh receipt",
+           updater.for_render(dict(after, behind=1))["state"] == "ready")
+        ok("and nothing is said when there is nothing to say",
+           updater.for_render({"behind": 0}) is None)
+
+        # A tracked edit is the one thing that must never be fast-forwarded
+        # over. git refuses per-file; this asserts we surface that rather than
+        # swallowing it.
+        _commit(origin, "a.txt", "one, changed\n", "Fourth commit")
+        (work / "a.txt").write_text("mine\n", encoding="utf-8")
+        blocked = updater.check(work, data)
+        check("a dirty tree is reported, not hidden", blocked["blocked"],
+              "local changes")
+        held = updater.apply(work, data)
+        check("and the update is held", held["behind"], 1)
+        check("with the local edit intact",
+              (work / "a.txt").read_text(encoding="utf-8"), "mine\n")
+        check("the page is told why", updater.for_render(held)["blocked"],
+              "local changes")
+
+
+# --- collection integrity --------------------------------------------------
+
+class _FakeCollector:
+    """A byte-offset collector, in miniature: it respects the cursor it is given.
+
+    That is the whole point of the test. A collector that ignores its cursor
+    duplicates under any sync, and one that respects it duplicates only when
+    the sync forgets to record what it consumed — which is the bug this
+    guards.
+    """
+
+    provider = "fake"
+
+    def __init__(self, boom=None, sources=("A", "B")):
+        self.boom = boom
+        self._sources = list(sources)
+
+    def available(self):
+        return True
+
+    def sources(self):
+        return list(self._sources)
+
+    def collect(self, source, cursor):
+        if source == self.boom:
+            raise RuntimeError("transcript format changed under us")
+        if cursor.get("offset"):
+            return [], cursor                      # already consumed
+        events = [{"ts": "2026-08-0%dT10:00:00Z" % (i + 1), "provider": "fake",
+                   "model": "claude-opus-5", "session": "%s%d" % (source, i),
+                   "input": 10, "output": 5} for i in range(3)]
+        return events, {"offset": 99}
+
+
+def test_sync_integrity():
+    """One failing collector, an interrupted run, and two syncs at once.
+
+    Every assertion here is a bug that shipped: an exception in one provider
+    aborted collection for all of them, an interrupted run left events on disk
+    with no cursor to say they had been read, and two syncs starting in the
+    same second both appended the same turns. None of the three announced
+    itself — they arrive as numbers that are quietly too big.
+    """
+    print("\ncollection integrity")
+    real = normalize.COLLECTORS
+    try:
+        with tempfile.TemporaryDirectory() as tmp:
+            data = Path(tmp) / "data"
+
+            # One source raises; the other still gets collected and committed.
+            normalize.COLLECTORS = [_FakeCollector(boom="B")]
+            first = normalize.sync(data)
+            check("a failing source does not abort the run",
+                  first["events_written"], 3)
+            check("and is reported rather than swallowed",
+                  [f["source"] for f in first["failed"]], ["B"])
+            ok("the run still succeeded", first["skipped"] is None)
+
+            # The interrupted source is retried; the committed one is not.
+            normalize.COLLECTORS = [_FakeCollector()]
+            second = normalize.sync(data)
+            check("the failed source is picked up next run",
+                  second["events_written"], 3)
+            rows = list(normalize.read_events(data))
+            check("and nothing is counted twice", len(rows), 6)
+            check("with every event distinct",
+                  len({r["session"] for r in rows}), 6)
+
+            # A third run has nothing left to do — the cursors were recorded.
+            third = normalize.sync(data)
+            check("a settled store writes nothing", third["events_written"], 0)
+            check("and stays the size it was",
+                  len(list(normalize.read_events(data))), 6)
+
+            # Two syncs at once: the second stands down rather than duplicating.
+            normalize.COLLECTORS = [_FakeCollector(sources=("C",))]
+            with normalize.store_lock(data) as held:
+                ok("the first holder gets the store", held)
+                blocked = normalize.sync(data)
+                check("the second stands down", blocked["skipped"],
+                      "another sync is already running")
+                check("and writes nothing at all", blocked["events_written"], 0)
+            after = normalize.sync(data)
+            check("the lock is released with the run",
+                  after["events_written"], 3)
+
+            # `--full` re-reads every transcript from byte zero. Appending that
+            # to a store that already holds those turns doubled it on every
+            # run — and it is the command somebody reaches for precisely when
+            # they suspect their numbers are wrong.
+            before = len(list(normalize.read_events(data)))
+            normalize.COLLECTORS = [_FakeCollector(sources=("A", "B", "C"))]
+            refull = normalize.sync(data, full=True)
+            check("a full re-read writes nothing new",
+                  refull["events_written"], 0)
+            check("and says what it recognised",
+                  refull["duplicates_skipped"], before)
+            check("leaving the store the size it was",
+                  len(list(normalize.read_events(data))), before)
+
+            # The repair path, for a store damaged before any of this landed.
+            normalize.write_events(data, list(normalize.read_events(data))[:4])
+            check("damage is visible",
+                  len(list(normalize.read_events(data))), before + 4)
+            fixed = normalize.dedupe(data)
+            check("dedupe removes exactly the copies", fixed["removed"], 4)
+            check("and keeps every original", fixed["kept"], before)
+            check("a second pass finds nothing",
+                  normalize.dedupe(data)["removed"], 0)
+    finally:
+        normalize.COLLECTORS = real
+
+
+# --- honest pricing --------------------------------------------------------
+
+def test_unpriced_disclosure():
+    """A model with no published rate must be visible as a guess.
+
+    The fallback rate is the right default — a model missing from a JSON file
+    should not silently cost nothing — but before this the guess and the
+    published rate rendered identically, and 300 turns of an unknown model
+    produced a confident three-figure total nobody could question.
+    """
+    print("\nunpriced models")
+    p = pricing.load_pricing()
+    ok("a known model is priced", pricing.is_priced("claude-opus-5", p))
+    ok("a dated snapshot is priced", pricing.is_priced("claude-haiku-4-5-20251001", p))
+    ok("an invented one is not", not pricing.is_priced("brand-new-model-9", p))
+
+    events = [dict(e, model="brand-new-model-9") if i % 2 else e
+              for i, e in enumerate(demo.generate()[:400])]
+    d = analyze.build_digest(iter(events), p)
+    d["findings"] = insights.generate(d, p)
+    check("unpriced turns are counted", d["unpriced"]["turns"], 200)
+    check("and their models named", d["unpriced"]["models"], ["brand-new-model-9"])
+    ok("their cost is non-zero", d["unpriced"]["cost"] > 0)
+    found = [f for f in d["findings"] if f["id"] == "unpriced-models"]
+    check("the page is told", len(found), 1)
+    ok("with no saving attached — it is an error bar, not a lever",
+       "est_monthly_saving_usd" not in found[0])
+    ok("and the share quoted",
+       0 < found[0]["evidence"]["share_of_spend_pct"] <= 100)
+
+    # The placeholder Claude Code writes on internal turns is not a model
+    # anyone chose, and a turn with no tokens costs nothing at any rate. Both
+    # reached the finding on a real store and produced a disclosure about
+    # 0.0% of the spend.
+    noise = [dict(e, model="<synthetic>", input=0, output=0, cache_create=0,
+                  cache_read=0, cache_1h=0, cache_5m=0)
+             for e in demo.generate()[:50]]
+    quiet = analyze.build_digest(iter(noise), p)
+    quiet["findings"] = insights.generate(quiet, p)
+    check("the internal placeholder is not an unpriced model",
+          quiet["unpriced"]["turns"], 0)
+    ok("so no disclosure is raised for it",
+       not [f for f in quiet["findings"] if f["id"] == "unpriced-models"])
+
+    clean = analyze.build_digest(iter(demo.generate()[:400]), p)
+    clean["findings"] = insights.generate(clean, p)
+    check("a fully priced store says nothing", clean["unpriced"]["turns"], 0)
+    ok("and raises no finding",
+       not [f for f in clean["findings"] if f["id"] == "unpriced-models"])
+
+
+# --- the launch surface ----------------------------------------------------
+
+def _doctor_row(rows, title_starts):
+    for r in rows:
+        if r["title"].startswith(title_starts):
+            return r
+    return None
+
+
+def test_doctor_install_checks():
+    """The macOS-only checks, exercised from a machine that is not a Mac.
+
+    Everything below is invisible on the platform CI runs on, which is exactly
+    why it is asserted here: a check that only executes on the maintainer's
+    laptop is a check nobody runs. The platform gate and the three filesystem
+    facts it reads are stubbed; the logic between them is the real thing.
+
+    The one worth having is the second: the launcher bakes its checkout path
+    in at install time, so a project folder moved afterwards leaves an icon
+    that still opens, still refreshes, and refreshes something else.
+    """
+    print("\nlaunch-surface checks")
+    check("a runner's path is read back out of it",
+          launcher.runner_root('#!/bin/sh\nset -u\nROOT="/Users/x/code/obs"\n'),
+          "/Users/x/code/obs")
+    ok("and a script without one says so",
+       launcher.runner_root("#!/bin/sh\necho hi\n") is None)
+
+    real = (launcher.platform.system, launcher.app_dir, launcher.plist_path,
+            launcher.LOG, launcher._launchctl_says)
+    try:
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            root, bundle = tmp / "checkout", tmp / "AI Observatory.app"
+            runner = bundle / "Contents" / "MacOS" / "run"
+            plist, log = tmp / "agent.plist", tmp / "sync.log"
+            root.mkdir()
+
+            launcher.platform.system = lambda: "Darwin"
+            launcher.app_dir = lambda: bundle
+            launcher.plist_path = lambda: plist
+            launcher.LOG = log
+            launcher._launchctl_says = lambda *a: ""
+
+            rows = []
+            launcher._install_checks(root, lambda ok_, t, d, f="":
+                                     rows.append({"ok": ok_, "title": t, "detail": d}))
+            ok("a machine with nothing installed is told so",
+               _doctor_row(rows, "The launcher is installed")["ok"] is False)
+            ok("and that nothing is scheduled",
+               _doctor_row(rows, "The daily refresh is scheduled")["ok"] is False)
+
+            # Installed, but pointed at a folder that has since been renamed.
+            runner.parent.mkdir(parents=True)
+            runner.write_text('ROOT="%s"\n' % (tmp / "somewhere-else"),
+                              encoding="utf-8")
+            rows = []
+            launcher._install_checks(root, lambda ok_, t, d, f="":
+                                     rows.append({"ok": ok_, "title": t, "detail": d}))
+            ok("an installed launcher is found",
+               _doctor_row(rows, "The launcher is installed")["ok"])
+            ok("but a moved project folder is caught",
+               _doctor_row(rows, "The launcher points at")["ok"] is False)
+
+            # Everything wired up, agent loaded, and it has run at least once.
+            # The fixtures are the real templates, rendered — a stub runner
+            # would be indistinguishable from one generated last July, which
+            # is precisely what the currency check exists to tell apart.
+            def _write_current():
+                runner.write_text(launcher._RUNNER.format(
+                    root=root, log=log, python="/usr/bin/python3"),
+                    encoding="utf-8")
+                plist.write_text(launcher._PLIST.format(
+                    label=launcher.LAUNCHD_LABEL, python="/usr/bin/python3",
+                    engine=str(root / "observatory" / "observe.py"),
+                    log=str(log)), encoding="utf-8")
+
+            _write_current()
+            log.write_text("ran\n", encoding="utf-8")
+            launcher._launchctl_says = lambda *a: "- 0 " + launcher.LAUNCHD_LABEL
+            rows = []
+            launcher._install_checks(root, lambda ok_, t, d, f="":
+                                     rows.append({"ok": ok_, "title": t, "detail": d}))
+            ok("a healthy install passes every check", all(r["ok"] for r in rows))
+            check("and there are five of them", len(rows), 5)
+            ok("the path is still read back correctly from a real runner",
+               launcher.runner_root(runner.read_text(encoding="utf-8"))
+               == str(root))
+
+            # A launcher generated before `update` existed. It still opens, it
+            # still refreshes, and it silently never applies anything — this
+            # shipped, and every other check passed while it did.
+            runner.write_text(
+                launcher._RUNNER.format(root=root, log=log,
+                                        python="/usr/bin/python3")
+                .replace('observe.py" update --quiet', 'observe.py" report'),
+                encoding="utf-8")
+            rows = []
+            launcher._install_checks(root, lambda ok_, t, d, f="":
+                                     rows.append({"ok": ok_, "title": t, "detail": d}))
+            row = _doctor_row(rows, "The launcher is the one this checkout")
+            ok("a runner older than the code is caught", row["ok"] is False)
+            ok("and the missing verb is named", "update" in row["detail"])
+            ok("while the checks around it still pass",
+               _doctor_row(rows, "The launcher points at")["ok"])
+
+            # The same drift on the scheduled job rather than the icon.
+            _write_current()
+            plist.write_text(plist.read_text(encoding="utf-8")
+                             .replace("<string>check-update</string>", ""),
+                             encoding="utf-8")
+            rows = []
+            launcher._install_checks(root, lambda ok_, t, d, f="":
+                                     rows.append({"ok": ok_, "title": t, "detail": d}))
+            row = _doctor_row(rows, "The launcher is the one this checkout")
+            ok("a daily job older than the code is caught", row["ok"] is False)
+            ok("and names check-update", "check-update" in row["detail"])
+
+            # An unreadable plist must not be reported as drift.
+            _write_current()
+            plist.write_text("not a plist at all", encoding="utf-8")
+            rows = []
+            launcher._install_checks(root, lambda ok_, t, d, f="":
+                                     rows.append({"ok": ok_, "title": t, "detail": d}))
+            ok("garbage in the plist is not silently called current",
+               _doctor_row(rows, "The launcher is the one this checkout")["ok"]
+               is False)
+
+            _write_current()
+
+            # Loaded, but launchd has never actually fired it.
+            log.unlink()
+            rows = []
+            launcher._install_checks(root, lambda ok_, t, d, f="":
+                                     rows.append({"ok": ok_, "title": t, "detail": d}))
+            ok("an agent that never ran is named",
+               _doctor_row(rows, "The daily refresh has actually run")["ok"] is False)
+    finally:
+        (launcher.platform.system, launcher.app_dir, launcher.plist_path,
+         launcher.LOG, launcher._launchctl_says) = real
+
+
+# --- the command line ------------------------------------------------------
+
+def test_cli_dispatch():
+    """Flags are not commands.
+
+    `observe.py --help` used to fall through to `all`: sync, digest, report and
+    a browser window — the one answer nobody typing `--help` is asking for. An
+    unknown *command* had always printed the usage and stopped; an unknown
+    *flag* did the opposite of stopping.
+
+    The dispatch table is stubbed so the old behaviour would be *recorded*
+    rather than executed — a run that reaches `all` names itself in `called`,
+    and that is what these assertions are against. Removing the guard in
+    `main()` turns the first two checks red without touching anyone's store.
+    """
+    print("\ncommand line")
+    called = []
+    real = observe.COMMANDS
+    try:
+        observe.COMMANDS = {name: (lambda argv, n=name: called.append(n) or 0)
+                            for name in real}
+
+        for flag in ("--help", "-h"):
+            called.clear()
+            out = io.StringIO()
+            with contextlib.redirect_stdout(out):
+                rc = observe.main(["observe.py", flag])
+            check("%s exits clean" % flag, rc, 0)
+            check("and runs nothing", called, [])
+            ok("printing the usage", "single entrypoint" in out.getvalue())
+
+        # A flag with no command is a typo, not an instruction to do everything.
+        called.clear()
+        with contextlib.redirect_stdout(io.StringIO()):
+            rc = observe.main(["observe.py", "--no-open"])
+        check("a bare flag is refused", rc, 2)
+        check("and runs nothing", called, [])
+
+        # What must keep working.
+        called.clear()
+        with contextlib.redirect_stdout(io.StringIO()):
+            rc = observe.main(["observe.py", "sync", "digest", "--no-open"])
+        check("a named chain still runs, in order", called, ["sync", "digest"])
+        check("and reports success", rc, 0)
+
+        called.clear()
+        with contextlib.redirect_stdout(io.StringIO()):
+            observe.main(["observe.py"])
+        check("no arguments at all still means `all`", called, ["all"])
+
+        called.clear()
+        with contextlib.redirect_stdout(io.StringIO()):
+            rc = observe.main(["observe.py", "bogus"])
+        check("an unknown command still stops", rc, 2)
+        check("and runs nothing", called, [])
+    finally:
+        observe.COMMANDS = real
+
+
+def test_duplicate_disclosure():
+    """A store that holds the same turn twice must say so on the page.
+
+    Three shipped bugs could each write a turn twice, and all three are fixed.
+    A store damaged *before* the fix is not, and its only symptom is numbers
+    that look like a busy month. `doctor` counts duplicates, but only somebody
+    who already suspects their dashboard runs `doctor` — this is the surface
+    for everybody else.
+    """
+    print("\nduplicate disclosure")
+    p_ = pricing.load_pricing()
+    events = demo.generate()[:200]
+
+    clean = analyze.build_digest(iter(events), p_)
+    clean["findings"] = insights.generate(clean, p_)
+    check("a healthy store counts no duplicates",
+          clean["duplicates"]["turns"], 0)
+    check("and every turn is distinct",
+          clean["duplicates"]["distinct"], len(events))
+    ok("so the page stays silent",
+       not [f for f in clean["findings"] if f["id"] == "duplicated-turns"])
+
+    # The damage: the same events a second time, exactly as a re-read wrote it.
+    doubled = analyze.build_digest(iter(events + [dict(e) for e in events]), p_)
+    doubled["findings"] = insights.generate(doubled, p_)
+    check("every repeat is counted", doubled["duplicates"]["turns"], len(events))
+    check("and the distinct count holds",
+          doubled["duplicates"]["distinct"], len(events))
+    check("the totals really are inflated — that is the point",
+          doubled["totals"]["turns"], 2 * len(events))
+    found = [f for f in doubled["findings"] if f["id"] == "duplicated-turns"]
+    check("the page is told", len(found), 1)
+    check("at the severity of a wrong number", found[0]["severity"], "high")
+    ok("with no saving attached — the spend is not real",
+       "est_monthly_saving_usd" not in found[0])
+    ok("and dedupe named as the fix",
+       "dedupe" in " ".join(found[0]["action"]))
+    check("the share quoted is the half that is fake",
+          found[0]["evidence"]["share_of_store_pct"], 50.0)
+
+    # A turn that merely resembles another is not a duplicate: the natural key
+    # includes the token counts, so real repeated work still counts twice.
+    similar = [dict(e) for e in events[:2]]
+    similar[1]["output"] = (similar[1].get("output") or 0) + 1
+    near = analyze.build_digest(iter(similar), p_)
+    check("a turn differing by one token is its own turn",
+          near["duplicates"]["turns"], 0)
+
+
 def main():
     for fn in (test_window_phase, test_cost, test_plan_value, test_paths,
-               test_share_payload, test_pipeline):
+               test_share_payload, test_pipeline, test_hidden_guards,
+               test_updater, test_sync_integrity, test_unpriced_disclosure,
+               test_doctor_install_checks, test_cli_dispatch,
+               test_duplicate_disclosure):
         fn()
     print()
     if FAILURES:

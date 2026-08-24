@@ -27,9 +27,11 @@ Three jobs:
    traceback. A person who double-clicks an icon has no terminal open and no
    reason to acquire one.
 
-Nothing here runs at import time, nothing here touches the network, and every
-filesystem write is inside `$HOME` and reversible with `observe.py install
---remove`.
+Nothing here runs at import time and every filesystem write is inside `$HOME`,
+reversible with `observe.py install --remove`. The one network call is
+`update()`, which `setup` runs once and which delegates to `updater` — the
+generated launcher and the daily agent call `observe.py` directly for that,
+so nothing on the collect → analyse → render path reaches out.
 """
 
 from __future__ import annotations
@@ -44,7 +46,12 @@ import sys
 import urllib.parse
 import webbrowser
 import zlib
+from datetime import datetime
 from pathlib import Path
+
+import normalize
+import settings
+import updater
 
 APP_NAME = "AI Observatory"
 LAUNCHD_LABEL = "dev.aiobservatory.sync"
@@ -159,7 +166,197 @@ def doctor(root: Path) -> list[dict]:
         "Nothing to collect yet — this is expected on a fresh machine. Use "
         "`python3 observe.py demo` to see the product with sample data.")
 
+    # Damage from before the collection fixes does not repair itself, and its
+    # only symptom is numbers that are too big — which looks exactly like a
+    # busy month. Cheap enough to check here, where somebody is already asking
+    # what is wrong.
+    try:
+        keys, rows = set(), 0
+        for ev in normalize.read_events(data):
+            rows += 1
+            keys.add(normalize.event_key(ev))
+        dupes = rows - len(keys)
+    except OSError:
+        dupes = 0
+    add(not dupes,
+        "Every turn is counted once",
+        f"{dupes:,} duplicate turn(s) in the store — every number is that much "
+        f"too big." if dupes else "No duplicate turns.",
+        "Run `python3 observe.py dedupe`, then `python3 observe.py digest report`.")
+
+    _install_checks(root, add)
+
+    # Reads refs already on disk — `check-update` is what puts them there, and
+    # doctor must stay runnable on a plane. A checkout with no git, or no
+    # upstream to compare against, is not a fault: it is somebody who installed
+    # from a zip, and there is nothing here for them to act on.
+    waiting = updater.pending(root)
+    add(not waiting["behind"],
+        "Running the latest version",
+        f"{waiting['behind']} update(s) downloaded and waiting."
+        if waiting["behind"] else f"Version {updater.version(root)}.",
+        "Open the app from your Dock — it applies on launch. Or run "
+        "`python3 observe.py update`."
+        + (" Commit or stash your local changes first."
+           if waiting.get("blocked") == "local changes" else ""))
+
     return out
+
+
+def runner_root(script: str) -> str | None:
+    """The checkout an installed runner is pointed at, read back out of it.
+
+    The path is baked in at install time, which is what makes the launcher
+    independent of any shell PATH — and also what makes a moved project folder
+    silent: the icon still opens, still refreshes, and refreshes something
+    else. Parsed rather than assumed, because the whole point is to catch the
+    case where it disagrees with where we are now.
+    """
+    for line in script.splitlines():
+        line = line.strip()
+        if line.startswith("ROOT="):
+            return line[5:].strip().strip('"').strip("'") or None
+    return None
+
+
+def _runner_verbs(script: str) -> set:
+    """The engine subcommands an installed runner actually invokes.
+
+    Compared instead of the file, because two things in a generated launcher
+    are baked in at install time and legitimately differ from whatever is
+    running `doctor`: the interpreter path and the project path. What must not
+    differ is the work. A runner generated before `update` existed still
+    opens the dashboard and still refreshes it — it just never applies
+    anything — and every other check in this block passes while it does.
+    """
+    verbs = set()
+    for line in script.splitlines():
+        if line.strip().startswith("#"):
+            continue
+        _, sep, tail = line.partition("observe.py")
+        if not sep:
+            continue
+        for token in tail.lstrip('"').lstrip("'").split():
+            if not token[:1].isalpha():
+                break
+            verbs.add(token)
+    return verbs
+
+
+def _plist_verbs(text: str) -> set:
+    """The same question for the scheduled job, whose args are a plist array."""
+    try:
+        args = plistlib.loads(text.encode("utf-8")).get("ProgramArguments") or []
+    except Exception:
+        return set()
+    verbs, past_engine = set(), False
+    for arg in (str(a) for a in args):
+        if not past_engine:
+            past_engine = arg.endswith("observe.py")
+            continue
+        if arg[:1].isalpha():
+            verbs.add(arg)
+    return verbs
+
+
+def _launchctl_says(*args) -> str:
+    try:
+        done = subprocess.run(["launchctl", *args], check=False,
+                              capture_output=True, text=True, timeout=30)
+        return (done.stdout or "") + (done.stderr or "")
+    except (OSError, subprocess.SubprocessError):
+        return ""
+
+
+def _install_checks(root: Path, add) -> None:
+    """Is the thing they click actually installed, wired up, and running?
+
+    `doctor` could say everything about the data and nothing about the surface
+    that fetches it. Somebody whose numbers stopped moving has no way to tell
+    an empty week from an agent that never loaded, and those have opposite
+    fixes. macOS only: nothing below exists on the platforms that get a script
+    beside the project instead (ADR-018).
+    """
+    if platform.system() != "Darwin":
+        return
+
+    bundle = app_dir()
+    runner = bundle / "Contents" / "MacOS" / "run"
+    add(runner.exists(),
+        "The launcher is installed",
+        f"{tilde(bundle) or bundle}" if runner.exists()
+        else "No app bundle in ~/Applications.",
+        "Run `python3 observe.py install` to create it.")
+
+    if runner.exists():
+        try:
+            pointed = runner_root(runner.read_text(encoding="utf-8"))
+        except OSError:
+            pointed = None
+        same = bool(pointed) and Path(pointed).resolve() == root.resolve()
+        add(same,
+            "The launcher points at this checkout",
+            f"It refreshes {tilde(Path(pointed)) or pointed}."
+            if pointed else "Could not read the path out of the launcher.",
+            "The project folder was moved or renamed after install, so the "
+            "icon is refreshing somewhere else. Re-run `python3 observe.py "
+            "install` from here to repoint it.")
+
+    # A launcher generated by an older checkout keeps working, and that is what
+    # makes it quiet: it opens, it refreshes, and it silently does not do
+    # whatever `install` learned to do since. Every check around this one
+    # passes while it happens — which is how an install kept its own updates
+    # switched off for a month without a single failing check.
+    stale = []
+    try:
+        if runner.exists():
+            gap = _runner_verbs(_RUNNER) - _runner_verbs(
+                runner.read_text(encoding="utf-8", errors="replace"))
+            if gap:
+                stale.append("the icon never runs `%s`" % "`, `".join(sorted(gap)))
+        if plist_path().exists():
+            want = _plist_verbs(_PLIST.format(
+                label=LAUNCHD_LABEL, python=sys.executable,
+                engine="observe.py", log=str(LOG)))
+            gap = want - _plist_verbs(
+                plist_path().read_text(encoding="utf-8", errors="replace"))
+            if gap:
+                stale.append("the daily job never runs `%s`"
+                             % "`, `".join(sorted(gap)))
+    except OSError:
+        stale = []
+    if runner.exists() or plist_path().exists():
+        add(not stale,
+            "The launcher is the one this checkout generates",
+            "Both surfaces run what `install` writes today." if not stale
+            else "Generated by an older checkout — %s." % "; and ".join(stale),
+            "Run `python3 observe.py install` to regenerate both from the "
+            "current templates. Safe to re-run, and it repoints nothing else.")
+
+    plist = plist_path()
+    loaded = LAUNCHD_LABEL in _launchctl_says("list")
+    add(plist.exists() and loaded,
+        "The daily refresh is scheduled",
+        "Loaded — runs at 09:00 and at login."
+        if loaded else ("The job is written but launchd has not loaded it."
+                        if plist.exists() else "No scheduled refresh."),
+        "Run `python3 observe.py install` (add `--no-daily` if you would "
+        "rather refresh by hand).")
+
+    # An agent that is loaded but has never written a line has never run, and
+    # that is the failure this whole block exists to name.
+    if loaded:
+        try:
+            when = datetime.fromtimestamp(LOG.stat().st_mtime)
+            ran = when.strftime("%Y-%m-%d %H:%M")
+        except OSError:
+            ran = None
+        add(bool(ran),
+            "The daily refresh has actually run",
+            f"Last wrote to its log at {ran}." if ran
+            else "The job is loaded but has never written to its log.",
+            f"Check {tilde(LOG) or LOG} after the next login, and run "
+            f"`python3 observe.py all` in the meantime.")
 
 
 def _has(problems: list[dict]) -> bool:
@@ -322,6 +519,13 @@ if [ -z "$PY" ] || [ ! -f "$ROOT/observatory/observe.py" ]; then
   exit 0
 fi
 
+# Apply whatever last night's check already downloaded, before the engine
+# starts. Local only — the objects are on disk, so this is a pointer move and
+# never a network wait in the click path. Its own process, so nothing rewrites
+# the modules of a live interpreter. A refusal here is silent by design: the
+# dashboard it is about to open says what is waiting and why.
+"$PY" "$ROOT/observatory/observe.py" update --quiet >>"$LOGFILE" 2>&1 || true
+
 # Refresh, then open. A failed refresh still opens whatever was last rendered,
 # because a stale dashboard beats no dashboard: it can say that it is stale.
 if "$PY" "$ROOT/observatory/observe.py" sync digest report --no-open >>"$LOGFILE" 2>&1
@@ -342,6 +546,7 @@ _PLIST = """<?xml version="1.0" encoding="UTF-8"?>
   <key>ProgramArguments</key><array>
     <string>{python}</string>
     <string>{engine}</string>
+    <string>check-update</string>
     <string>sync</string><string>digest</string><string>report</string>
     <string>--no-open</string><string>--notify</string>
   </array>
@@ -482,34 +687,36 @@ def uninstall() -> list[str]:
 
 
 def update(root: Path) -> str:
-    """Bring the checkout up to date, best effort.
+    """Bring the checkout up to date for `setup`, best effort.
 
-    This project has no third-party dependencies to upgrade — it is standard
+    Setup is the one place a person has explicitly asked for the newest thing,
+    so this is the only path that fetches and applies in the same breath.
+    Everywhere else the two halves are days apart on purpose — see `updater`.
+
+    This project has no third-party dependencies to upgrade; it is standard
     library only, which is the whole reason install is one command. So the only
-    thing that can be out of date is the code itself, and that is a fast-forward
-    or nothing: never a merge, never a rebase, never anything that could leave
+    thing that can be out of date is the code, and that is a fast-forward or
+    nothing: never a merge, never a rebase, never anything that could leave
     somebody staring at a conflict they did not ask for. A dirty tree, a
     detached head, no remote or no network all mean "skip", not "fail".
     """
-    git = shutil.which("git")
-    if not git or not (root / ".git").exists():
+    if str(settings.get("updates", "auto")).lower() == "off":
+        return "updates are off in settings.json — skipped"
+    if not updater.is_checkout(root):
         return "not a git checkout — skipped"
-    try:
-        dirty = subprocess.run([git, "-C", str(root), "status", "--porcelain"],
-                               capture_output=True, text=True, timeout=30)
-        if dirty.stdout.strip():
-            return "local changes present — left alone"
-        before = subprocess.run([git, "-C", str(root), "rev-parse", "HEAD"],
-                                capture_output=True, text=True, timeout=30).stdout.strip()
-        pull = subprocess.run([git, "-C", str(root), "pull", "--ff-only", "--quiet"],
-                              capture_output=True, text=True, timeout=120)
-        if pull.returncode != 0:
-            return "could not reach GitHub — using the version you have"
-        after = subprocess.run([git, "-C", str(root), "rev-parse", "HEAD"],
-                               capture_output=True, text=True, timeout=30).stdout.strip()
-        return "already up to date" if before == after else "updated to the latest version"
-    except (OSError, subprocess.SubprocessError):
-        return "could not check — using the version you have"
+    data = root / "data"
+    state = updater.check(root, data)
+    if not state.get("reachable", True):
+        return "could not reach GitHub — using the version you have"
+    if state.get("blocked") and not state.get("behind"):
+        return f"{state['blocked']} — using the version you have"
+    if not state.get("behind"):
+        return f"already up to date ({updater.version(root)})"
+    waiting = state["behind"]
+    applied = updater.apply(root, data)
+    if applied.get("blocked") == "local changes":
+        return f"{waiting} update(s) waiting — local changes present, left alone"
+    return f"updated to the latest version ({updater.version(root)})"
 
 
 def launch() -> bool:

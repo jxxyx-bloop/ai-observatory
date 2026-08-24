@@ -574,6 +574,82 @@ def local_currency_context(digest, pricing):
     )]
 
 
+def duplicated_turns(digest, pricing):
+    """Say when the page's own totals are too big, and name the fix.
+
+    Three shipped bugs could each write the same turn twice — an interrupted
+    sync, two syncs at once, and `sync --full`. All three are fixed, but a
+    store damaged before the fix stays damaged: its only symptom is numbers
+    that look like a busy month, which is indistinguishable from a busy month.
+
+    `doctor` counts these too, and a person who already suspects their
+    dashboard runs `doctor`. This is for the person who does not suspect it.
+    No saving is attached — the spend is not real, so neither is a saving.
+    """
+    d = digest.get("duplicates") or {}
+    dupes = d.get("turns") or 0
+    if not dupes:
+        return []
+    distinct = d.get("distinct") or 0
+    total = dupes + distinct
+    share = _pct(dupes, total)
+    return [_f(
+        "duplicated-turns", "high" if share >= 5 else "medium",
+        "Some turns are counted more than once",
+        f"{dupes:,} of {total:,} turns in the store ({share}%) are repeats of a turn "
+        f"already there, so every total on this page — turns, tokens and spend — is "
+        f"that much too high. This is a damaged store, not usage: an interrupted sync, "
+        f"two syncs at once, or a `sync --full` run before the repair landed. The "
+        f"duplicates are identical in provider, session, timestamp, turn and token "
+        f"counts, which is why they can be identified at all.",
+        ["Run `python3 observe.py dedupe`, then `python3 observe.py digest report`. "
+         "It keeps the first copy of each turn and is safe on a healthy store.",
+         f"Re-read this page afterwards — expect roughly {share}% off every total."],
+        {"duplicate_turns": dupes, "distinct_turns": distinct,
+         "share_of_store_pct": share},
+        "high",
+    )]
+
+
+def unpriced_estimate(digest, pricing):
+    """Say which part of the dollar figure rests on a rate nobody published.
+
+    `rates_for` falls back to a generic rate for a model the card does not
+    name, which is the right call — a model missing from a JSON file should not
+    silently cost nothing — but the number it produces is rendered in the same
+    typeface as one that came from a vendor's published page. New models ship
+    every few weeks; this is the ordinary case, not an exotic one.
+
+    No saving is attached. This is not a lever, it is the error bar.
+    """
+    u = digest.get("unpriced") or {}
+    turns = u.get("turns") or 0
+    if not turns:
+        return []
+    cost = u.get("cost") or 0.0
+    total = (digest.get("totals") or {}).get("cost") or 0.0
+    share = _pct(cost, total)
+    models = u.get("models") or []
+    named = ", ".join(models[:3]) + (" and others" if len(models) > 3 else "")
+    fb = pricing.get("fallback") or {}
+    return [_f(
+        "unpriced-models", "medium" if share >= 10 else "info",
+        "Part of this estimate is a guess",
+        f"{share}% of the estimated spend (${cost:,.2f} across {turns:,} turns) came from "
+        f"models the rate card does not name: {named}. Those turns are priced at the "
+        f"generic fallback of ${fb.get('input', 0):g}/M in and ${fb.get('output', 0):g}/M "
+        f"out, which is a placeholder, not that vendor's published rate. The rest of the "
+        f"page cannot tell you which way the error runs.",
+        [f"Add the model to observatory/pricing.json with the vendor's published rate and "
+         f"move `_verified_on` to today — CONTRIBUTING.md calls this the five-minute PR.",
+         f"Until then, read the {share}% as unmeasured rather than as spend."],
+        {"unpriced_turns": turns, "unpriced_cost_usd": round(cost, 2),
+         "share_of_spend_pct": share, "models": models,
+         "fallback_rate": {"input": fb.get("input"), "output": fb.get("output")}},
+        "high",
+    )]
+
+
 DETECTORS = [
     cache_efficiency,
     cold_cache_sessions,
@@ -590,4 +666,6 @@ DETECTORS = [
     plan_value_realised,
     vendor_concentration,
     local_currency_context,
+    unpriced_estimate,
+    duplicated_turns,
 ]

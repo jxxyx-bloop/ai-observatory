@@ -13,9 +13,13 @@ import json
 from collections import defaultdict
 from datetime import datetime, timedelta, timezone
 
+import normalize
 import paths as topo
 import pricing as price
 import settings
+
+# Claude Code writes this in place of a model name on internal turns.
+PLACEHOLDER_MODEL = "<synthetic>"
 
 # Tool names that mean "produced a change" vs "looked at something".
 WRITE_TOOLS = {"Edit", "Write", "NotebookEdit", "MultiEdit", "apply_patch",
@@ -221,6 +225,17 @@ def build_digest(events, pricing: dict) -> dict:
     sidechain = _blank_bucket()
     first_ts = last_ts = None
     synthetic_events = 0
+    # Turns whose model the rate card does not name. Their cost is the
+    # fallback rate, which is a guess wearing the same typeface as a fact.
+    unpriced_turns = 0
+    unpriced_cost = 0.0
+    unpriced_models: dict = defaultdict(int)
+    # Turns the store holds more than once. `sync` and `dedupe` both defend
+    # against this, but only a person who already suspects their numbers runs
+    # `doctor`. A duplicate that reaches the digest inflates every figure on
+    # the page, so the page is where it has to be answerable.
+    seen_keys: set = set()
+    duplicate_turns = 0
 
     cube = Cube(CUBE_DIMS, CUBE_METRICS)
     hours = Cube(("date", "provider", "lane", "repo", "hour"), ("turns",))
@@ -230,7 +245,25 @@ def build_digest(events, pricing: dict) -> dict:
     for ev in events:
         if ev.get("synthetic"):
             synthetic_events += 1
+        # Counted, never dropped. Silently aggregating past a duplicate would
+        # make the page right and the store still wrong, and nothing would ever
+        # send anyone to `dedupe`. The digest reports what the store holds,
+        # plus what is wrong with it.
+        key = normalize.event_key(ev)
+        if key in seen_keys:
+            duplicate_turns += 1
+        else:
+            seen_keys.add(key)
         cost = cost_of(ev, pricing)
+        # A turn with no tokens costs nothing at any rate, and the placeholder
+        # above is not a model the user picked. Neither is something the rate
+        # card is missing, and reporting them as such produced a "part of this
+        # estimate is a guess" finding about 0.0% of the spend.
+        if (not price.is_priced(ev.get("model"), pricing)
+                and ev.get("model") != PLACEHOLDER_MODEL and cost > 0):
+            unpriced_turns += 1
+            unpriced_cost += cost
+            unpriced_models[price.canonical_model(ev.get("model")) or "unknown"] += 1
         ev["phase"] = price.window_phase(ev.get("model"), ev.get("ts"), pricing)
         if ev["phase"] == "peak":
             peak_premium += cost - price.counterfactual_cost(ev, pricing, "off-peak")
@@ -279,6 +312,16 @@ def build_digest(events, pricing: dict) -> dict:
         # have only a sentinel file that `sync` is free to delete.
         "demo": synthetic_events > 0,
         "synthetic_events": synthetic_events,
+        # Carried so the page and the findings can say which part of the
+        # estimate rests on a published rate and which part does not.
+        # Carried so the page can say that its own totals are too big, and
+        # name the one command that fixes it.
+        "duplicates": {"turns": duplicate_turns, "distinct": len(seen_keys)},
+        "unpriced": {
+            "turns": unpriced_turns,
+            "cost": round(unpriced_cost, 4),
+            "models": sorted(unpriced_models, key=lambda m: -unpriced_models[m])[:8],
+        },
         # The peak schedules travel with the digest so the dashboard can draw
         # them over the reader's own hours. A few hundred bytes, and without
         # them the page can say *when* you work but not *what that hour costs*
@@ -389,7 +432,7 @@ def _session_roll(sessions: dict, ev: dict, cost: float, ts_local: str) -> None:
     # not a model anyone chose. Counting it as one made every session that
     # contained a compaction look like a session that switched models, which is
     # the single input to model-switch share.
-    if ev.get("model") and ev["model"] != "<synthetic>":
+    if ev.get("model") and ev["model"] != PLACEHOLDER_MODEL:
         s["models"].add(ev["model"])
     if ev.get("sidechain"):
         s["sidechain_turns"] += 1

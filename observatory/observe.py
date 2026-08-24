@@ -8,7 +8,10 @@
     python3 observe.py insights  # print findings as text (for reading in a session)
     python3 observe.py demo      # fill the store with 60 days of synthetic usage
     python3 observe.py demo --purge   # remove that synthetic usage again
+    python3 observe.py dedupe    # repair a store that holds the same turn twice
     python3 observe.py share     # build the opt-in community payload (never uploads)
+    python3 observe.py check-update   # fetch what is new (downloads, runs nothing)
+    python3 observe.py update         # fast-forward onto what check-update fetched
     python3 observe.py setup      # the whole install, one command, ends in your browser
     python3 observe.py install    # create a double-clickable launcher + daily sync
     python3 observe.py doctor     # check the setup and say how to fix what is wrong
@@ -18,8 +21,14 @@ Flags: --no-open (never launch a browser or the app)  --notify (desktop notifica
        --no-dock (with `install`/`setup`, do not pin to the Dock)
        --no-daily (with `install`, skip the scheduled refresh)
        --html (with `doctor`, emit a page instead of text)
+       -h, --help (print this and stop)
 
-Stdlib only. No network. Read-only against every provider.
+Stdlib only. Read-only against every provider.
+
+No network in `sync`, `digest`, `report` or anything they call — ADR-004's
+promise is about collection and it is untouched. `check-update` is the one
+command that reaches out, it uploads nothing, and `settings.json -> updates`
+turns it off.
 """
 
 from __future__ import annotations
@@ -41,6 +50,7 @@ import pricing as price  # noqa: E402
 import render  # noqa: E402
 import settings  # noqa: E402
 import share as share_mod  # noqa: E402
+import updater  # noqa: E402
 
 ROOT = Path(__file__).parent.parent
 DATA = ROOT / "data"
@@ -69,6 +79,22 @@ def _write_atomic(path, text: str) -> None:
 
 def cmd_sync(argv) -> int:
     summary = normalize.sync(DATA, full="--full" in argv)
+    if summary.get("skipped"):
+        # Not an error, and not something to retry: whoever holds the store is
+        # collecting exactly these events. Exit 0 so `digest report` still runs
+        # and the person gets the dashboard they asked for.
+        print(f"sync: {summary['skipped']} — leaving the store to it")
+        return 0
+    # A provider that could not be read is the one failure this tool must never
+    # hide: a collector returning nothing looks exactly like a provider you do
+    # not use (ADR-009), and the same is true of one that threw.
+    if summary.get("duplicates_skipped"):
+        print(f"sync: skipped {summary['duplicates_skipped']:,} turn(s) already in "
+              f"the store")
+    for bad in summary.get("failed") or []:
+        where = f" ({bad['source']})" if bad.get("source") else ""
+        print(f"sync: warning - could not read {bad['provider']}{where}: "
+              f"{bad['error']}")
     # The sentinel tracks whether the STORE holds fixture rows, not what the
     # last run happened to find. Clearing it on the first sync that collected
     # anything is how a seeded store ends up looking genuine: the synthetic
@@ -223,7 +249,8 @@ def cmd_report(argv) -> int:
     out = DIST / "observatory.html"
     _write_atomic(out, render.render(
         digest, refresh=launcher.refresh_command(ROOT),
-        demo=(DATA / ".demo").exists()))
+        demo=(DATA / ".demo").exists(),
+        update=updater.for_render(updater.read(DATA))))
     kb = out.stat().st_size / 1024
     if "--no-open" in argv:
         print(f"report: {out} ({kb:.0f} KB)")
@@ -233,10 +260,15 @@ def cmd_report(argv) -> int:
         print(f"report: {out} ({kb:.0f} KB) — open it in a browser")
     if "--notify" in argv:
         totals = digest.get("totals") or {}
+        waiting = updater.read(DATA).get("behind") or 0
+        # Notifications cannot carry a click (ADR-018 §6), so this says what
+        # happens next rather than asking for an action it cannot accept.
+        tail = (f" A new version is ready — it applies next time you open it."
+                if waiting else "")
         launcher.notify(
             "AI Observatory",
             f"Dashboard refreshed — {totals.get('turns', 0):,} turns, "
-            f"{len(digest.get('findings') or [])} findings.")
+            f"{len(digest.get('findings') or [])} findings.{tail}")
     return 0
 
 
@@ -399,7 +431,8 @@ def cmd_setup(argv) -> int:
     DIST.mkdir(parents=True, exist_ok=True)
     out = DIST / "observatory.html"
     _write_atomic(out, render.render(digest, refresh=launcher.refresh_command(ROOT),
-                                     demo=(DATA / ".demo").exists()))
+                                     demo=(DATA / ".demo").exists(),
+                                     update=updater.for_render(updater.read(DATA))))
 
     print("\nDone. Opening your dashboard now.")
     if not launcher.open_report(out):
@@ -423,6 +456,102 @@ def cmd_insights(argv) -> int:
     return 0
 
 
+def cmd_dedupe(argv) -> int:
+    """Rewrite the store keeping one copy of each turn.
+
+    The repair path for a store inflated before the collection fixes: an
+    interrupted sync, two syncs starting in the same second, or any
+    `sync --full` could each leave a second copy of turns already recorded.
+    Nothing downstream deduplicated, so the dashboard was quietly overstating
+    everything — turns, cost, sessions — with no way for its owner to tell.
+
+    Safe to run on a healthy store: it finds nothing and rewrites the same
+    lines back.
+    """
+    before = normalize.dedupe(DATA)
+    if not before["removed"]:
+        print(f"dedupe: {before['kept']:,} turns, no duplicates. Nothing to do.")
+        return 0
+    print(f"dedupe: removed {before['removed']:,} duplicate turn(s), "
+          f"{before['kept']:,} remain. Re-run `observe.py digest report` to "
+          f"rebuild the dashboard.")
+    return 0
+
+
+def _update_mode() -> str:
+    mode = str(settings.get("updates", "auto")).lower()
+    return mode if mode in ("auto", "notify", "off") else "auto"
+
+
+def cmd_check_update(argv) -> int:
+    """Ask GitHub what exists. Downloads objects, runs none of them.
+
+    This is the half that needs no trust: `git fetch` moves remote-tracking
+    refs and writes to `.git`, and nothing in the working tree changes, so
+    nobody's code has been swapped for anybody else's by the time it returns.
+    It is also the half the page depends on — a dashboard cannot discover a
+    new version on its own, and a person who never opens a terminal has no
+    other way to find out that one exists.
+    """
+    if _update_mode() == "off":
+        if "--quiet" not in argv:
+            print("check-update: turned off in settings.json (updates: off)")
+        return 0
+    state = updater.check(ROOT, DATA)
+    if "--quiet" in argv:
+        return 0
+    if state.get("blocked") == "not a git checkout":
+        print("check-update: not a git checkout — nothing to compare against")
+    elif not state.get("reachable", True):
+        print("check-update: could not reach GitHub — using the version you have")
+    elif state.get("behind"):
+        print(f"check-update: {state['behind']} update(s) waiting. "
+              f"They apply the next time you open the app.")
+        for line in state.get("lines") or []:
+            print(f"  - {line}")
+    else:
+        print(f"check-update: up to date ({state.get('current') or 'unknown'})")
+    return 0
+
+
+def cmd_update(argv) -> int:
+    """Fast-forward onto what `check-update` already fetched. No network.
+
+    Runs before the engine on every launch, which is why it must be fast and
+    must never block: the objects are already on disk, so this is a pointer
+    move, and every reason it cannot happen is a reason to carry on with the
+    version already installed.
+
+    It runs as its own process and exits before `sync` starts. Rewriting the
+    modules of a live interpreter is a class of bug nobody should have to
+    debug from a Dock icon.
+    """
+    mode = _update_mode()
+    if mode != "auto" and "--force" not in argv:
+        if "--quiet" not in argv:
+            print(f"update: settings.json says updates: {mode} — leaving the "
+                  f"checkout alone. `update --force` overrides once.")
+        return 0
+    state = updater.apply(ROOT, DATA)
+    applied = state.get("applied") or {}
+    just_landed = applied and not state.get("behind")
+    if "--quiet" in argv:
+        return 0
+    if state.get("blocked") == "local changes":
+        print("update: you have uncommitted changes — left alone. "
+              "Commit or stash them and this applies next launch.")
+    elif just_landed:
+        print(f"update: applied {applied.get('count', 0)} change(s) "
+              f"-> {applied.get('version') or 'latest'}")
+        for line in applied.get("lines") or []:
+            print(f"  - {line}")
+    elif state.get("blocked"):
+        print(f"update: {state['blocked']} — using the version you have")
+    else:
+        print(f"update: already current ({updater.version(ROOT)})")
+    return 0
+
+
 def cmd_all(argv) -> int:
     return cmd_sync(argv) or cmd_digest(argv) or cmd_report(argv)
 
@@ -431,7 +560,8 @@ COMMANDS = {
     "sync": cmd_sync, "digest": cmd_digest, "report": cmd_report,
     "insights": cmd_insights, "all": cmd_all, "demo": cmd_demo,
     "share": cmd_share, "doctor": cmd_doctor, "install": cmd_install,
-    "setup": cmd_setup,
+    "setup": cmd_setup, "check-update": cmd_check_update, "update": cmd_update,
+    "dedupe": cmd_dedupe,
 }
 
 
@@ -453,7 +583,25 @@ def main(argv) -> int:
     code is the last command's, so a bare `demo` still reports the refusal to a
     script while `demo digest report` exits 0 on the dashboard it built.
     """
-    names = [a for a in argv[1:] if not a.startswith("-")] or ["all"]
+    flags = [a for a in argv[1:] if a.startswith("-")]
+    names = [a for a in argv[1:] if not a.startswith("-")]
+
+    # A line of nothing but flags used to fall through to `all`, so `--help`
+    # synced, rebuilt the digest and opened a browser — the one answer nobody
+    # typing `--help` is asking for. An unknown *command* has always printed
+    # this and stopped; an unknown *flag* has to do the same, or the tool is
+    # quietly doing something other than what it was asked.
+    if {"-h", "--help"} & set(flags):
+        print(__doc__)
+        return 0
+    if flags and not names:
+        print(__doc__)
+        print(f"no command named — {', '.join(flags)} "
+              f"{'is a flag' if len(flags) == 1 else 'are flags'}, and flags "
+              f"only modify a command. Add one of: {', '.join(COMMANDS)}.")
+        return 2
+
+    names = names or ["all"]
     rc = 0
     for i, name in enumerate(names):
         fn = COMMANDS.get(name)

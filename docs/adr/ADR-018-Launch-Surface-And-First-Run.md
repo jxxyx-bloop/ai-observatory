@@ -41,6 +41,11 @@ Neither pretends to do the other's job. This is [ADR-002](ADR-002-Local-First.md
 restated, not revisited: *"a local server with a web UI — a process to run and
 keep patched, for no gain over a static file."*
 
+> **Amended 2026-08-24 by [ADR-019](ADR-019-Staying-Current.md).** The second
+> row was only half built: `setup` answered it once, at install time, and
+> nothing ever asked again. The launcher now fetches daily and fast-forwards at
+> the next launch, and the page reports the answer it was handed.
+
 ### 2. `observe.py setup` — the whole install as one command
 
 Anyone reaching the setup page has already seen the demo; that is what the demo

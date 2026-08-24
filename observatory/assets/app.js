@@ -104,11 +104,19 @@ function medianMinutes(sessions) {
 
 /* ---- dates: everything is a plain YYYY-MM-DD string in UTC ---- */
 function parse(iso) { return new Date(iso + "T00:00:00Z"); }
+/* Guards every entry point that reaches `parse`. The filters are the only
+   place a string arrives from outside the digest, and the only place one can
+   be blank. */
+function validDay(s) {
+  return typeof s === "string" && /^\d{4}-\d{2}-\d{2}$/.test(s)
+    && !isNaN(parse(s).getTime());
+}
 function iso(d) { return d.toISOString().slice(0, 10); }
 function shift(isoStr, days) {
   var d = parse(isoStr); d.setUTCDate(d.getUTCDate() + days); return iso(d);
 }
 function span(from, to) {
+  if (!validDay(from) || !validDay(to)) return [];
   var out = [], cur = from;
   while (cur <= to && out.length < 800) { out.push(cur); cur = shift(cur, 1); }
   return out;
@@ -854,6 +862,14 @@ var drawn = false;
 function draw() {
   drawn = true;
   var F = state();
+  /* A date input can be emptied — backspace in the field, or the clear control
+     the browser draws — and an empty string walks straight into `parse("")`,
+     whose Invalid Date throws out of `iso()` and takes every later handler on
+     the page with it. The dashboard stayed dead until a reload. Anything that
+     is not a real day falls back to the edge of what was collected, which is
+     also the answer somebody clearing the field probably wanted. */
+  if (!validDay(F.from)) { F.from = FIRST; $("from").value = FIRST; }
+  if (!validDay(F.to)) { F.to = LAST; $("to").value = LAST; }
   if (F.from > F.to) { F.from = F.to; $("from").value = F.to; }
   if (F.day && (F.day < F.from || F.day > F.to)) { F.day = selectedDay = null; }
   var DF = dayFilter(F);
@@ -1360,7 +1376,13 @@ function initFreshness() {
       $("starAskLink").href = meta.star;
       ask.hidden = false;
     }
-    return;                      /* nothing further to show */
+    /* The hosted demo stops here: there is no local dashboard to refresh and
+       no checkout to update, so both strips would be decoration. A dashboard
+       on somebody's own machine that happens to hold sample data is a
+       different thing — `setup` seeds it when it finds no transcripts yet —
+       and it still needs to be told that it is stale or that a new version is
+       waiting. Suppressing that left the newest installs the least informed. */
+    if (meta.setup) return;
   }
   if (hours >= 168) {
     state = { cls: "stale", head: t18("fresh_old_h", "This dashboard is out of date."),
@@ -1369,6 +1391,32 @@ function initFreshness() {
   } else if (hours >= 24) {
     state = { cls: "aging", head: fill(t18("fresh_age_h", "Last built {a}."), { a: ago(hours) }),
               body: t18("fresh_age_b", "New sessions since then are not in these numbers yet.") };
+  }
+  /* Version, after freshness and never instead of it. When the report is also
+     out of date the refresh command is the more urgent thing to hand somebody,
+     and running it applies the waiting update on the way through — so the two
+     never need to compete for the strip. `meta.update` is already resolved by
+     `updater.for_render`; nothing here decides what is current. */
+  if (!state && meta.update && meta.update.state) {
+    var u = meta.update;
+    var shown = (u.lines || []).slice(0, 2);
+    var what = shown.join(" · ");
+    var more = Math.max(0, (u.count || 0) - shown.length);
+    if (more) what += fill(t18("fresh_upd_more", " · and {n} more"), { n: more });
+    if (u.state === "applied") {
+      state = { cls: "updated",
+                head: t18("fresh_upd_h", "Updated to the latest version."),
+                body: what || t18("fresh_upd_b",
+                                  "This dashboard was rebuilt with it.") };
+    } else {
+      state = { cls: "update", head: t18("fresh_new_h", "A newer version is ready."),
+                body: (u.blocked === "local changes"
+                       ? t18("fresh_new_blocked",
+                             "It cannot apply while the project folder has uncommitted changes.")
+                       : t18("fresh_new_b",
+                             "It applies the next time you open this from your Dock."))
+                      + (what ? " " + what : "") };
+    }
   }
   if (!state) return;                       /* fresh: say nothing, show nothing */
 

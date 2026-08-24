@@ -130,7 +130,7 @@ def findings_html(d: dict) -> str:
 
 def render(digest: dict, home: str | None = None, refresh: str | None = None,
            demo: bool = False, setup: str | None = None,
-           star: str | None = None) -> str:
+           star: str | None = None, update: dict | None = None) -> str:
     """Assemble the page from the templates in `engine/assets/`.
 
     `home` is where the breadcrumb points. The hosted demo passes "../" so the
@@ -145,6 +145,12 @@ def render(digest: dict, home: str | None = None, refresh: str | None = None,
     sample-data build so the page can say so on every visit, and `setup` is
     where its call to action leads — the hosted demo has a guide to point at,
     a dashboard on someone's laptop does not.
+
+    `update` is what `updater.for_render` decided the reader should be told
+    about their version, already reduced to "a newer one is waiting" or "here
+    is what last night's brought". The page renders what it is handed and
+    resolves nothing itself: a file opened from `file://` cannot check a clock
+    against a repository, and should not try.
     """
     page = (ASSETS / "page.html").read_text(encoding="utf-8")
     crumb_href = home or REPO
@@ -184,6 +190,7 @@ def render(digest: dict, home: str | None = None, refresh: str | None = None,
                 # somebody's own machine belongs to someone who already
                 # installed the thing — they are owed a tool, not another ask.
                 "star": star,
+                "update": update or None,
             }, separators=(",", ":")).replace("</", "<\\/"))
             .replace("/*PAYLOAD*/",
                      json.dumps(digest, separators=(",", ":")).replace("</", "<\\/"))
