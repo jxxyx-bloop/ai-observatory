@@ -439,8 +439,6 @@ code{font:12.5px ui-monospace,SFMono-Regular,Menlo,monospace;background:var(--tr
 .sheet a[aria-current="true"]{color:var(--accent);font-weight:600}
 
 .pagehead{padding:var(--s5) 0 0}
-/* Not the reader's language: says so once, where the English begins. */
-.lang-note{color:var(--faint);font-style:italic}
 
 /* On a phone the rail becomes a scrolling strip above the content: same
    controls, same order, nothing hidden behind a menu. */

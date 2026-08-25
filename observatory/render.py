@@ -105,20 +105,30 @@ def _action_html(action) -> str:
 def findings_html(d: dict) -> str:
     fs = d.get("findings") or []
     if not fs:
-        return "<div class='panel'><p class='sub'>No findings yet — collect more days of usage.</p></div>"
+        return ('<div class=\'panel\'><p class=\'sub\' data-i18n="finds_empty">'
+                 'No findings yet — collect more days of usage.</p></div>')
     out = []
     for f in fs:
         c = SEV_COLOR.get(f["severity"], "var(--low)")
         saving = f.get("est_monthly_saving_usd")
         save = f'<span class="save">≈{usd(saving)}/mo</span>' if saving else ""
-        meta = f'<p class="meta">{esc(f["demoted"])}</p>' if f.get("demoted") else ""
+        meta = f'<p class="meta demoted">{esc(f["demoted"])}</p>' if f.get("demoted") else ""
+        # `data-fid` is the hook the client-side translator keys off: every
+        # locale but English rewrites this card's text after paint, reading
+        # `i18n_params` back out of the same digest already inlined on the
+        # page (assets/app.js -> translateFindings()). English never round-
+        # trips through that path — what is written here *is* the English
+        # copy, not a rendering of it, so a JS failure still leaves a
+        # complete sentence rather than a template with the seams showing.
         out.append(
-            f'<div class="find" data-sev="{esc(f["severity"])}" style="--c:{c}">'
+            f'<div class="find" data-fid="{esc(f["id"])}" '
+            f'data-sev="{esc(f["severity"])}" data-conf="{esc(f.get("confidence", ""))}" '
+            f'style="--c:{c}">'
             f'<div class="top"><span class="sev">{esc(f["severity"])}</span>'
             f'<span class="ttl">{esc(f["title"])}</span>{save}</div>'
-            f'<p>{esc(f["finding"])}</p>'
+            f'<p class="body">{esc(f["finding"])}</p>'
             f'{_action_html(f["action"])}'
-            f'{meta}<p class="meta">Confidence: {esc(f.get("confidence", "—"))}</p></div>'
+            f'{meta}<p class="meta conf">Confidence: {esc(f.get("confidence", "—"))}</p></div>'
         )
     # One flow, in severity order, with width carrying the priority — see the
     # `.finds` rules. Splitting the list into a hero plus a column-flowed tail

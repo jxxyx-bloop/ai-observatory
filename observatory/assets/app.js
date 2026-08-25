@@ -82,6 +82,145 @@ function info(key) {
     + esc(t) + '">i</span>';
 }
 
+/* ---- findings, in whatever language is selected --------------------------
+   render.py bakes the findings panel once, in English, from insights.py's own
+   sentences — the same sentences a downstream reader of the raw digest still
+   gets. Every other locale rewrites that panel's text after paint rather than
+   asking Python to compose 13 versions of 25 detectors: the numbers already
+   travel in `D.findings[i].i18n_params`, put there by the same locals each
+   detector built its English sentence from, so translating is substitution
+   into assets/i18n.js's f_<id>_* templates rather than re-deriving anything.
+   A JS failure (I18N missing, a key absent) leaves the English that render.py
+   already wrote — this only ever overwrites, it never blanks a card. */
+
+// One shared vocabulary of param names across all 25 detectors, and one
+// formatter per name, rather than a bespoke mapping per finding. Two
+// exceptions (marked below) carry a shape `tf()`'s plain substitution can't
+// express — a conditional sentence and a conditional word — and are composed
+// by hand instead of through this table.
+function findPct(v) { return String(v) + "%"; }
+function findMult(v) { return String(v) + "x"; }
+function findNum(v, dec) {
+  var n = Number(v) || 0;
+  return n.toLocaleString(undefined,
+    {minimumFractionDigits: dec || 0, maximumFractionDigits: dec || 0});
+}
+function findPad2(v) { return String(v).padStart(2, "0"); }
+var FIND_FMT = {
+  "cache-healthy": {pct: findPct},
+  "cache-cold": {pct: findPct, floor: function (v) { return findNum(v, 0); }},
+  "cache-write-never-read": {
+    n: function (v) { return findNum(v, 0); }, wasted: function (v) { return findNum(v, 0); }},
+  "premium-tier-light-turns": {
+    turns: function (v) { return findNum(v, 0); }, avg: function (v) { return findNum(v, 0); },
+    threshold: function (v) { return findNum(v, 0); }},
+  // `cost` here stays a bare number (the English reads "12.34 USD", not
+  // "$12.34") — the one detector that named its own currency instead of
+  // using the page's, so it is the one param that skips usd().
+  "read-heavy-no-change": {
+    n: function (v) { return findNum(v, 0); }, reads: function (v) { return findNum(v, 0); },
+    cost: function (v) { return findNum(v, 2); }},
+  "context-bloat": {
+    n: function (v) { return findNum(v, 0); }, threshold: function (v) { return findNum(v, 0); },
+    worst: function (v) { return findNum(v, 0); }},
+  "session-churn": {
+    short: function (v) { return findNum(v, 0); }, total: function (v) { return findNum(v, 0); },
+    pct: findPct, turns: function (v) { return findNum(v, 0); }},
+  "no-delegation": {},
+  "subagent-fanout": {pct: findPct},
+  "delegation-balanced": {pct: findPct},
+  "cache-1h-justified": {pct: findPct, ratio: function (v) { return findNum(v, 1); }},
+  "cache-1h-underused": {pct: findPct, ratio: function (v) { return findNum(v, 1); }},
+  "tool-concentration": {
+    tool: String, calls: function (v) { return findNum(v, 0); }, pct: findPct,
+    total: function (v) { return findNum(v, 0); }},
+  "where-the-time-goes": {
+    ws: String, pct: findPct, n: function (v) { return findNum(v, 0); }, pct3: findPct},
+  "working-rhythm": {
+    peak: findPad2, turns: function (v) { return findNum(v, 0); }, pct: findPct},
+  "peak-window-healthy": {pct: findPct, vendors: String, premium: usd},
+  "peak-window-immaterial": {pct: findPct, vendors: String, monthly: usd},
+  "peak-window-arbitrage": {pct: findPct, vendors: String, premium: usd},
+  "plan-under-used": {
+    label: String, days: function (v) { return findNum(v, 0); }, api: usd, paid: usd},
+  "plan-value-realised": {
+    label: String, mult: findMult, days: function (v) { return findNum(v, 0); },
+    api: usd, paid: usd},
+  "vendor-mix-healthy": {top: String, pct: findPct, n: function (v) { return findNum(v, 0); }},
+  "vendor-concentration": {top: String, pct: findPct},
+  // `days` (dev-day equivalent) is conditional — composed by hand below.
+  "local-currency": {usd: usd},
+  "duplicated-turns": {
+    dupes: function (v) { return findNum(v, 0); }, total: function (v) { return findNum(v, 0); },
+    share: findPct},
+  // `named`/`more` are composed by hand below.
+  "unpriced-models": {
+    share: findPct, cost: usd, turns: function (v) { return findNum(v, 0); },
+    fb_in: usd, fb_out: usd}
+};
+
+function translateFindings() {
+  var findings = D.findings || [];
+  if (!findings.length) return;
+  findings.forEach(function (f) {
+    var el = document.querySelector('.find[data-fid="' + f.id + '"]');
+    if (!el) return;
+    var key = "f_" + f.id.replace(/-/g, "_");
+    var raw = f.i18n_params || {}, fmt = FIND_FMT[f.id] || {}, vals = {};
+    for (var k in raw) {
+      if (raw[k] == null) continue;
+      var fn = fmt[k];
+      vals[k.toUpperCase()] = fn ? fn(raw[k]) : String(raw[k]);
+    }
+    // The two shapes plain %TOKEN% substitution cannot express: a sentence
+    // that only sometimes exists, and a word that only sometimes appears.
+    // Both are handed a fully-formed value under a token like any other —
+    // the templates below never see the conditional, only its result.
+    if (f.id === "local-currency") {
+      vals.TAIL = (raw.days != null)
+        ? " " + tf("f_local_currency_tail", "That is roughly %D% days of a median local "
+            + "contract rate — the comparison that decides whether this is cheap.",
+            {D: findNum(raw.days, 1)})
+        : "";
+    }
+    if (f.id === "unpriced-models") {
+      vals.NAMED = (raw.named || "") + (raw.more
+        ? " " + t18("f_and_others", "and others") : "");
+    }
+    var ttl = el.querySelector(".ttl");
+    if (ttl) ttl.textContent = tf(key + "_title", f.title, vals);
+    var body = el.querySelector(".body");
+    if (body) body.textContent = tf(key + "_body", f.finding, vals);
+    var actP = el.querySelector(".act:not(.acts)");
+    if (actP) actP.textContent = tf(key + "_action", f.action, vals);
+    var items = el.querySelectorAll(".acts li");
+    if (items.length) {
+      items.forEach(function (li, i) {
+        var en = Array.isArray(f.action) ? f.action[i] : "";
+        li.textContent = tf(key + "_action" + (i + 1), en, vals);
+      });
+    }
+    var sev = el.querySelector(".sev");
+    if (sev) sev.textContent = t18("sev_" + f.severity, f.severity);
+    var conf = el.querySelector(".conf");
+    if (conf && f.confidence) {
+      conf.textContent = t18("conf_label", "Confidence:") + " "
+        + t18("conf_" + f.confidence, f.confidence);
+    }
+    var saving = f.est_monthly_saving_usd;
+    var save = el.querySelector(".save");
+    if (save && saving) {
+      save.textContent = tf("save_permo", "\u2248%V%/mo", {V: usd(saving)});
+    }
+    var demoted = el.querySelector(".demoted");
+    if (demoted && saving != null) {
+      demoted.textContent = tf("demoted_note",
+        "Real but immaterial at this volume (~%V%/month). Kept so you can see "
+        + "the pattern before it grows.", {V: usd(saving)});
+    }
+  });
+}
+
 /* ---- behavioral metrics ---------------------------------------------------
    Favor these over raw volume: they say whether AI collaboration is getting
    more effective, not just how much of it happened. */
@@ -1251,9 +1390,12 @@ function initTheme() {
   });
 }
 
-/* Interface strings only. Findings and the method notes are generated by the
-   engine in English and stay that way — see the header of assets/i18n.js for
-   why, and note_en, which says so on the page in any other language. */
+/* Interface strings, and — since the translateFindings() pass above —
+   findings too. The method notes in the footer are the one thing left in
+   English by design: they are fixed editorial copy about how the numbers
+   were produced, distinct from the findings themselves, which are generated
+   per-digest from live numbers and translate the same way any other
+   engine-composed sentence on this page does (see the meter panel). */
 function initLang() {
   if (typeof I18N === "undefined") return;      // e.g. the headless smoke test
   var root = document.documentElement;
@@ -1328,8 +1470,7 @@ function initLang() {
         esc((D.generated_at || "").slice(0, 16).replace("T", " ")));
     }
 
-    // Only shown when the interface is not in the language the engine writes.
-    each(".lang-note", function (el) { el.hidden = (lang === "en"); });
+    translateFindings();
     if (typeof fillSelects === "function" && $("provider")) fillSelects();
     // The preset row and the range line live outside draw(); re-stamp them too,
     // or the page switches language everywhere except its own top-left corner.

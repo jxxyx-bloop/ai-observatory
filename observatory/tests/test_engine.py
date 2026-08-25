@@ -301,6 +301,55 @@ def test_hidden_guards():
                % (name, name))
 
 
+def test_findings_i18n_coverage():
+    """Every detector's title/body/action exists in every shipped locale.
+
+    Two locale tables that can disagree eventually will (the project's own
+    words, about a different pair of tables — see PROJECT.md's carry-forward
+    on `site/i18n.py` vs `assets/i18n.js`). This is that same class of check
+    for a third table: insights.py names 25 detector ids, and
+    assets/i18n.js owes each one an `f_<id>_title`, `f_<id>_body`, and either
+    an `f_<id>_action` or an `f_<id>_action1` in all thirteen `T["..."]`
+    blocks. A detector added to one side and not the other fails silently at
+    runtime — the English fallback just never gets replaced — which is
+    exactly the kind of drift a human reviewing a diff in one file has no way
+    to catch.
+    """
+    print("\nfindings i18n coverage")
+    src = (Path(__file__).resolve().parent.parent / "insights.py").read_text(encoding="utf-8")
+    ids = re.findall(r'return \[_f\(\s*\n\s*"([a-z0-9-]+)"', src)
+    ok("insights.py still defines detectors", len(ids) >= 20)
+
+    i18n = (Path(__file__).resolve().parent.parent / "assets" / "i18n.js").read_text(encoding="utf-8")
+    locales = re.findall(r'T\["([^"]+)"\] = \{', i18n)
+    check("thirteen locale tables", len(locales), 13)
+
+    # One block per locale, from its own header to the next top-level "};".
+    blocks = {}
+    starts = [(m.group(1), m.start()) for m in re.finditer(r'T\["([^"]+)"\] = \{', i18n)]
+    closes = [m.start() for m in re.finditer(r'\n\};\n', i18n)]
+    ci = 0
+    for loc, start in starts:
+        while closes[ci] < start:
+            ci += 1
+        blocks[loc] = i18n[start:closes[ci]]
+        ci += 1
+
+    missing = []
+    for loc, body in blocks.items():
+        keys = set(re.findall(r'"?([\w]+)"?:\s*"', body))
+        for fid in ids:
+            stem = "f_" + fid.replace("-", "_")
+            if stem + "_title" not in keys:
+                missing.append("%s: %s_title" % (loc, stem))
+            if stem + "_body" not in keys:
+                missing.append("%s: %s_body" % (loc, stem))
+            if stem + "_action" not in keys and stem + "_action1" not in keys:
+                missing.append("%s: %s_action(1)" % (loc, stem))
+    ok("every detector has a title/body/action in every locale", not missing,
+       "missing: " + ", ".join(missing[:12]) + (" …" if len(missing) > 12 else ""))
+
+
 # --- updates ---------------------------------------------------------------
 
 def _git(cwd, *args):
@@ -848,6 +897,7 @@ def test_duplicate_disclosure():
 def main():
     for fn in (test_window_phase, test_cost, test_plan_value, test_paths,
                test_share_payload, test_pipeline, test_hidden_guards,
+               test_findings_i18n_coverage,
                test_updater, test_sync_integrity, test_unpriced_disclosure,
                test_doctor_install_checks, test_cli_dispatch,
                test_duplicate_disclosure):
