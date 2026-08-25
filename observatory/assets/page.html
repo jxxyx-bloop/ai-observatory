@@ -51,9 +51,6 @@ var l=localStorage.getItem("observatory-lang");if(l)r.setAttribute("data-lang",l
     <li><a href="#models" data-sec="models">
       <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"></circle><circle cx="12" cy="12" r="8.5"></circle></svg>
       <span data-i18n="nav_models">Models</span></a></li>
-    <li><a href="#timing" data-sec="timing">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"></circle><path d="M12 7v5.3l3.4 2"></path></svg>
-      <span data-i18n="nav_timing">Timing</span></a></li>
     <li><a href="#trends" data-sec="trends">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 16l5-5 3.5 3.5L20 7m0 0h-4.5M20 7v4.5"></path></svg>
       <span data-i18n="nav_trends">Trends</span></a></li>
@@ -199,12 +196,23 @@ var l=localStorage.getItem("observatory-lang");if(l)r.setAttribute("data-lang",l
     </div>
   </section>
 
-  <section id="timing"><h2 data-i18n="s_timing">When you work, and what it costs</h2>
+  <!-- One card for two views of the same question. The rolling means say
+       whether the way you work is changing; the grid says when the work
+       actually happens. They were two sections with two nav stops, which
+       made the reader treat them as unrelated — and left the heatmap alone
+       in a card tall enough to fill a screen. Sub-headed rather than split,
+       the way the Hangar port arranges the same pair. -->
+  <section id="trends"><h2 data-i18n="s_trends">Are you getting better at this?</h2>
+    <p class="sub note" data-i18n="n_trends">7-day rolling mean across the whole
+      range.</p>
 
-    <!-- Heading and hint are written by draw(), not by the translator: which of
-         the two this panel is depends on whether the reader uses a time-priced
-         vendor at all. -->
-    <div class="panel"><h2 id="meterTitle">Your week against the meter</h2>
+    <div class="panel">
+      <div id="trends-charts"></div>
+
+      <!-- Heading and hint are written by draw(), not by the translator: which
+           of the two this sub-panel is depends on whether the reader uses a
+           time-priced vendor at all. -->
+      <h2 class="subhead" id="meterTitle">Your week against the meter</h2>
       <p class="sub note" id="meterHint">Your own hours, with every vendor's peak
         window drawn over them.</p>
       <div id="meter"></div>
@@ -219,12 +227,6 @@ var l=localStorage.getItem("observatory-lang");if(l)r.setAttribute("data-lang",l
       <div id="phase"></div>
       <p class="sub foot" id="phaseNote"></p>
     </div>
-  </section>
-
-  <section id="trends"><h2 data-i18n="s_trends">Are you getting better at this?</h2>
-    <p class="sub note" data-i18n="n_trends">7-day rolling mean across the whole
-      range.</p>
-    <div id="trends-charts"></div>
   </section>
 
   <section id="work"><h2 data-i18n="s_tools">Tools, delegation and the heaviest sessions</h2>

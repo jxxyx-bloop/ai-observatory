@@ -301,15 +301,27 @@ svg{display:block;width:100%;height:auto;max-width:100%}
 .heatcell{stroke:var(--panel);stroke-width:1.5}
 
 /* Behavioral trends: three compact rolling-mean sparklines, one metric each. */
-.sparks{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(210px,1fr))}
+.sparks{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(180px,1fr))}
 .spark{background:var(--panel);border:1px solid var(--line);border-radius:var(--r-data);
   padding:12px 14px}
-.spark .sk{font-size:11px;color:var(--muted);letter-spacing:.04em;display:flex;
+.spark .sk{font-size:11px;color:var(--muted);letter-spacing:.02em;display:flex;
   align-items:center;gap:2px}
 .spark .sv{font-size:19px;font-weight:650;letter-spacing:-.01em;margin-top:2px;
   font-variant-numeric:tabular-nums}
 .spark .sb{font-size:10px;color:var(--muted);margin-top:2px;letter-spacing:.02em}
-.spark svg{margin-top:6px}
+/* An explicit height, not the global svg{height:auto}. The sparkline's viewBox
+   is 220x46; left to derive its height from a card that is actually ~340px
+   wide, the aspect ratio renders it at ~71px — half again as tall as the
+   46px the chart was drawn for, and the same stretch bug the daily chart and
+   the heatmap each had in their own way. A sparkline is a shape, not a
+   measured plot: it may stretch horizontally (nothing is read off its x-axis)
+   but its height is a fixed design value. */
+.spark svg{margin-top:6px;height:46px}
+
+/* A sub-heading inside a panel that holds two views of one question. Same
+   micro-label treatment as a panel's own h2, with the space above that marks
+   it as a new thing rather than a caption on the thing before it. */
+.panel .subhead{margin-top:18px}
 
 /* Shared hover tooltip for every chart — SVG bars and HTML hbars alike.
    Colors invert relative to the page so it reads as a distinct overlay in

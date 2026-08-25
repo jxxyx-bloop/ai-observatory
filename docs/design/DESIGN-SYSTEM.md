@@ -191,6 +191,26 @@ cell and was never stretched, because it renders at its own intrinsic size
 KPI-strip-style page rhythm work at the width this redesign settled on — so
 they need the measurement discipline the calendar gets for free.
 
+**A shape may stretch; a plot may not.** The third variant of the same bug:
+a sparkline's viewBox is 220×46, and `svg{height:auto}` rendered it at ~71px
+inside a ~340px card. Unlike the two charts above, the fix is not to measure —
+nothing is read off a sparkline's x-axis, so it is *free* to stretch
+horizontally. What it may not do is derive its height from that stretch. So
+sparklines pin `height` in CSS and let width do what it likes, grid charts
+measure width and pin height in the viewBox, and full plots measure both.
+Three different answers, one question to ask first: **is this value read off
+an axis, or is it a shape?**
+
+**One card per question, sub-headed rather than split.** The three behavioral
+sparklines and the weekday×hour grid answer one question — how am I working,
+and is it changing — so they live in one panel under one section heading,
+with the grid introduced by a `.subhead` inside the card. They had been two
+sections with two rail stops, which made a reader treat them as unrelated and
+left the grid alone in a card tall enough to fill a screen. Splitting a
+question across two nav stops costs more than the scroll it saves. This is
+also the Hangar port's arrangement, and the reason its `#trends` card carries
+an `<h3>` in the middle of it.
+
 **Elevation** is three shadows, and depth is only ever expressed as *one* of
 shadow, border, or fill — never two at once.
 
