@@ -271,6 +271,13 @@ def test_hidden_guards():
     html = (assets / "page.html").read_text(encoding="utf-8")
     css = "\n".join((assets / f).read_text(encoding="utf-8")
                     for f in ("tokens.css", "app.css"))
+    # Comments first. Everything below treats the run of text before a `{` as
+    # the selector, so a comment is indistinguishable from one — and these
+    # stylesheets are heavily commented, in prose that names the very classes
+    # this check looks for. A note reading "a query container, like .panel
+    # above" sitting above `.kpi{display:grid}` made the pair read as
+    # `.panel{display:grid}` and failed a rule that was never written.
+    css = re.sub(r"/\*.*?\*/", "", css, flags=re.S)
     # Selectors and bodies. A body cannot contain a brace, so this walks past
     # @media wrappers on its own rather than needing a real parser.
     rules = re.findall(r"([^{}]+)\{([^{}]*)\}", css)
@@ -370,6 +377,43 @@ def test_updater():
            updater.for_render(dict(after, behind=1))["state"] == "ready")
         ok("and nothing is said when there is nothing to say",
            updater.for_render({"behind": 0}) is None)
+
+        # The receipt retires when the reader acts on it. Everything below is
+        # the sequence a real install walks: the launch that applies the update
+        # renders once with somebody watching, and the refresh command that
+        # render handed them is what clears the strip.
+        seen_state = dict(after, applied=dict(after["applied"], seen=True))
+        ok("an unattended render still shows a receipt already read",
+           updater.for_render(seen_state, attended=False)["state"] == "applied")
+        ok("but an attended one does not repeat it",
+           updater.for_render(seen_state, attended=True) is None)
+
+        first = updater.receipt(data, attended=True)
+        check("the launch render earns the receipt", first["state"], "applied")
+        ok("and remembers that it did",
+           (updater.read(data).get("applied") or {}).get("seen") is True)
+        ok("the refresh it asked for retires the strip",
+           updater.receipt(data, attended=True) is None)
+        ok("and drops the dead receipt from the state file",
+           "applied" not in updater.read(data))
+
+        # The agent renders at 09:00 with nobody watching. A seen-once flag
+        # burned there would lose the receipt for the one person it was for,
+        # which is the trap the `attended` scoping exists to avoid.
+        updater.write(data, dict(after))
+        ok("an unattended render shows it", updater.receipt(data)["state"] == "applied")
+        ok("without burning it",
+           not (updater.read(data).get("applied") or {}).get("seen"))
+        ok("so the reader still gets it when they open the page",
+           updater.receipt(data, attended=True)["state"] == "applied")
+
+        # The backstop, for a reader who never refreshes by hand.
+        updater.write(data, dict(after, applied=dict(after["applied"],
+                                                     at="2020-01-01T00:00:00Z")))
+        ok("an unread receipt still expires on the clock",
+           updater.receipt(data) is None)
+        ok("and is swept out of the state file",
+           "applied" not in updater.read(data))
 
         # A tracked edit is the one thing that must never be fast-forwarded
         # over. git refuses per-file; this asserts we surface that rather than

@@ -16,20 +16,31 @@ body{font-size:15px;line-height:1.55;overflow-x:hidden}
    padding silently resolved to 0. Desktop hid it, because max-width plus auto
    margins centre the column anyway; below 1120px there is no slack left to
    centre and the content went edge to edge.) */
-.wrap{width:100%;max-width:1120px;margin:0 auto;padding:0 var(--gutter);
+/* Wider than the landing page's --page, and deliberately not the same token.
+   A brochure caps its measure because prose past ~70 characters is harder to
+   read; a dashboard has no measure to protect — it has six KPIs, two-up
+   panels and a 90-column chart, all of which were being squeezed into 1040px
+   of content while a 1440px monitor showed 200px of empty page down each
+   side. The cap still exists, because a chart stretched across an ultrawide
+   is its own problem; it just sits where this content actually stops
+   benefiting rather than where a paragraph does. */
+.wrap{width:100%;max-width:1320px;margin:0 auto;padding:0 var(--gutter);
   min-width:0}
-h1{font-size:clamp(22px,3.4vw,30px);margin:0 0 4px;letter-spacing:-.02em;font-weight:650}
+h1{font-size:clamp(24px,3vw,32px);margin:0;letter-spacing:-.018em;
+  font-weight:700;line-height:1.15}
 /* Two levels of heading, matching the landing page: a section announces
    itself in sentence case; a panel inside it keeps the dense uppercase
    micro-label, which is what a chart caption should be. */
-h2{font-size:12px;margin:0 0 14px;letter-spacing:.06em;text-transform:uppercase;
-  color:var(--muted);font-weight:640}
+h2{font-size:var(--t-cap-lg);margin:0 0 12px;letter-spacing:var(--cap-track-lg);
+  text-transform:var(--cap-case);line-height:1.3;
+  color:var(--muted);font-weight:var(--cap-weight)}
 section>h2{font-size:var(--t-h3);margin:0 0 10px;letter-spacing:var(--tr-head);
   text-transform:none;color:var(--ink);font-weight:640}
-.sub{color:var(--muted);font-size:13.5px;margin:0}
+.sub{color:var(--muted);font-size:13px;margin:0}
+.pageheadid .sub{margin-top:6px;font-size:12.5px}
 .note{margin:-6px 0 12px}
 .foot{margin:10px 0 0;font-size:12.5px}
-section{margin:30px 0 0;min-width:0}
+section{margin:26px 0 0;min-width:0}
 /* Each panel is a query container, so what is inside it can respond to the
    width it was actually given rather than to the window. That distinction
    matters here because the same panel appears full-width in one section and
@@ -38,12 +49,13 @@ section{margin:30px 0 0;min-width:0}
    Container queries are baseline in every browser this page targets. */
 .panel{container-type:inline-size}
 
-.panel{min-width:0;max-width:100%;background:var(--panel);border:1px solid var(--line);border-radius:var(--r-sm);
-  padding:clamp(14px,2.4vw,20px)}
+.panel{min-width:0;max-width:100%;background:var(--panel);
+  border:1px solid var(--line);border-radius:var(--r-data);
+  padding:clamp(15px,2.2vw,19px) clamp(16px,2.4vw,20px) clamp(17px,2.6vw,20px)}
 /* min(320px,100%), not a bare 320px: a bare minimum keeps the track at 320px
    even when the container is narrower, so on a 320px phone the panel pushed
    40px past the gutter and dragged the page into horizontal scroll. */
-.grid2{display:grid;gap:16px;
+.grid2{display:grid;gap:18px;
   grid-template-columns:repeat(auto-fit,minmax(min(320px,100%),1fr))}
 /* The daily chart and the calendar are stacked, not paired, and that is a
    measurement rather than a preference.
@@ -59,18 +71,49 @@ section{margin:30px 0 0;min-width:0}
    Two levers if this is ever worth revisiting: raise the cap, or tighten the
    calendar's viewBox, which is 300 wide around 168px of ink. Until then,
    stacked is the only arrangement where neither is cut off. */
-section>.panel+.panel,section>.grid2+.panel,section>.panel+.grid2{margin-top:16px}
-/* The info icon was wrapping onto a line of its own under a two-word KPI
-   label; a little more column width keeps label and icon together. */
-.kpis{grid-template-columns:repeat(auto-fit,minmax(172px,1fr))}
+section>.panel+.panel,section>.grid2+.panel,section>.panel+.grid2{margin-top:18px}
+/* The scoreboard: one field, not six cards.
 
-.kpis{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));margin-top:18px}
-.kpi{background:var(--panel);border:1px solid var(--line);border-radius:var(--r-sm);padding:14px 16px}
+   Six separately-bordered rounded cards with a 10px moat between them draw
+   six outlines and five gaps to carry five comparisons. The numbers are the
+   comparison — they share a scale, they were measured over one range, and
+   they are meant to be read across. So they get one border and hairline
+   seams: `gap:1px` over a background of --line paints the dividers, and
+   `overflow:hidden` lets the container's own radius clip the end cells. It is
+   one rule doing the work of six, and it removes ~60px of gap that was
+   holding the numbers apart for no reason.
+
+   The info icon was wrapping onto a line of its own under a two-word label;
+   a little more column width keeps label and icon together. */
+.kpis{display:grid;gap:var(--seam);
+  grid-template-columns:repeat(auto-fit,minmax(158px,1fr));
+  margin-top:16px;background:var(--line);
+  border:1px solid var(--line);border-radius:var(--r-data);overflow:hidden}
+/* A query container, like .panel above and for the same reason: the value's
+   size has to answer to the cell it landed in, not to the window. Six KPIs
+   inside a 1120px page are ~178px each whatever the viewport does, so a
+   viewport-relative clamp sized "$3,576.65" against 1440px of screen and
+   overflowed a cell that never got wider than 178. */
+.kpi{background:var(--panel);padding:15px 17px 17px;display:grid;gap:3px;
+  align-content:start;container-type:inline-size;min-width:0}
+/* The one number the page is really about. An inset rule rather than a border,
+   so it cannot alter the cell's box and knock the seam grid out of true. */
 .kpi.lead{box-shadow:inset 3px 0 0 var(--accent)}
-.kpi .v{font-size:clamp(19px,2.6vw,24px);font-weight:650;letter-spacing:-.02em;
-  font-variant-numeric:tabular-nums}
-.kpi .k{font-size:11.5px;color:var(--muted);letter-spacing:.05em;text-transform:uppercase;margin-top:3px}
-.kpi .n{font-size:12px;color:var(--faint);margin-top:5px;line-height:1.4}
+/* Label first. A number is only a fact once you know what it counts, and the
+   old order made the eye land on "$3,576.65" and then hunt downward for the
+   noun. Reading order now matches the sentence: what it is, how much, what
+   that means. */
+/* Two lines are reserved whether or not this label needs them, so every value
+   in the row starts at the same height. Without it a cell whose label wraps
+   ("Model-switch share") drops its number half a line below its neighbours,
+   and six numbers that are meant to be scanned across sit on four baselines. */
+.kpi .k{font-size:var(--t-cap-lg);color:var(--muted);
+  letter-spacing:var(--cap-track-lg);text-transform:var(--cap-case);
+  font-weight:var(--cap-weight);line-height:1.3;min-height:2.6em}
+.kpi .v{font-size:clamp(21px,13.5cqw,32px);font-weight:700;letter-spacing:-.02em;
+  line-height:1.05;font-variant-numeric:tabular-nums;
+  min-width:0;overflow-wrap:anywhere}
+.kpi .n{font-size:11.5px;color:var(--faint);line-height:1.4}
 
 /* Info affordance: every metric explains its own formula. Neutral until
    hovered/focused, so it never competes with a chart's own accent. */
@@ -101,7 +144,7 @@ h2 .info{margin-left:7px}
    A six-track grid because six divides by two and three: full, half and third
    all land on the same gutters. */
 .finds{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));
-  gap:10px;align-items:start}
+  gap:12px;align-items:start}
 .finds>.find{grid-column:span var(--span,6)}
 .finds>.find[data-sev="low"]{--span:3}
 .finds>.find[data-sev="info"]{--span:2}
@@ -114,11 +157,14 @@ h2 .info{margin-left:7px}
    sits — which left the phone layout showing 163px cards. */
 @media (max-width:1080px){.finds>.find[data-sev="info"]{--span:3}}
 @media (max-width:760px){.finds>.find[data-sev]{--span:6}}
-.find{border:1px solid var(--line);border-left:3px solid var(--c);border-radius:8px;
+.find{border:1px solid var(--line);border-left:3px solid var(--c);
+  border-radius:var(--r-data);
   padding:14px 16px;margin:0;background:var(--panel)}
 .find .top{display:flex;flex-wrap:wrap;gap:8px;align-items:baseline;margin-bottom:6px}
-.find .sev{font-size:10.5px;font-weight:700;letter-spacing:.08em;color:var(--c);
-  border:1px solid var(--c);border-radius:4px;padding:1px 6px;text-transform:uppercase}
+.find .sev{font-size:var(--t-cap-lg);font-weight:var(--cap-weight);
+  letter-spacing:var(--cap-track-lg);color:var(--c);
+  border:1px solid var(--c);border-radius:var(--r-data-sm);padding:1px 6px;
+  text-transform:var(--cap-case)}
 .find .ttl{font-weight:620;font-size:15px}
 .find .save{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums;margin-left:auto}
 /* Numbered steps carry the same left rule as a prose action, so the two forms
@@ -154,9 +200,10 @@ h2 .info{margin-left:7px}
    ("All providers"), which is shorter and is what a screen reader wanted
    anyway. */
 .controls{display:flex;flex-wrap:wrap;gap:var(--s2);align-items:center;
-  margin-top:var(--s4);padding:9px 10px;background:var(--panel);
-  border:1px solid var(--line);border-radius:var(--r-md)}
-.lbl{font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--faint);
+  margin-top:var(--s3);padding:8px 10px;background:var(--panel);
+  border:1px solid var(--line);border-radius:var(--r-data)}
+.lbl{font-size:var(--t-cap-lg);letter-spacing:var(--cap-track-lg);
+  text-transform:var(--cap-case);color:var(--faint);
   font-weight:600;white-space:nowrap}
 /* max-width is what lets the phone treatment below actually happen. `flex:none`
    sizes this row to its max-content width, so on a narrow screen it grew past
@@ -165,27 +212,29 @@ h2 .info{margin-left:7px}
    tap. Capped at the panel, the chips wrap as intended; above the breakpoint,
    where the row is still one joined pill, overflow scrolls rather than clips so
    a preset can never become unreachable again. */
-.seg{display:flex;border:1px solid var(--line);border-radius:var(--r-pill);
+.seg{display:flex;border:1px solid var(--line);border-radius:var(--r-data);
   overflow-x:auto;overflow-y:hidden;flex:none;max-width:100%;
   scrollbar-width:none;-webkit-overflow-scrolling:touch}
 .seg::-webkit-scrollbar{display:none}
 /* flex:none so a capped row wraps or scrolls rather than squeezing the labels
    out of their own buttons — these are nowrap, so shrinking spills the text. */
-.seg button{appearance:none;border:0;border-right:1px solid var(--line);background:transparent;
-  color:var(--muted);font:inherit;font-size:12.5px;padding:5px 12px;cursor:pointer;
-  white-space:nowrap;flex:none;transition:background var(--d-fast) var(--ease)}
+.seg button{appearance:none;border:0;border-right:1px solid var(--line);
+  background:transparent;color:var(--muted);font:inherit;font-size:12.5px;
+  font-weight:600;padding:6px 13px;cursor:pointer;
+  white-space:nowrap;flex:none;transition:background var(--d-fast) var(--ease),
+  color var(--d-fast) var(--ease)}
 .seg button:last-child{border-right:0}
 .seg button:hover{background:var(--track);color:var(--ink)}
 .seg button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);font-weight:600}
-.seg.small button{font-size:11.5px;padding:4px 10px}
+.seg.small button{font-size:11.5px;padding:5px 11px}
 
 .dates{display:flex;align-items:center;gap:4px;padding:2px 8px;flex:none;
-  border:1px solid var(--line);border-radius:var(--r-pill);color:var(--faint);
+  border:1px solid var(--line);border-radius:var(--r-data);color:var(--faint);
   font-size:12px}
 .controls select,.controls input[type="date"]{font:inherit;font-size:12.5px;
   color:var(--ink);background:transparent;border:0;padding:3px 2px}
 .controls select{background:var(--bg);border:1px solid var(--line);
-  border-radius:var(--r-pill);padding:5px 9px;max-width:170px;cursor:pointer;
+  border-radius:var(--r-data);padding:5px 9px;max-width:170px;cursor:pointer;
   min-width:0;flex:0 1 auto;text-overflow:ellipsis}
 .controls select:hover{border-color:var(--line-strong)}
 .resetbtn{display:inline-flex;align-items:center;justify-content:center;
@@ -201,19 +250,21 @@ h2 .info{margin-left:7px}
    a wrapping chip row rather than being clipped at the panel edge. */
 @media (max-width:620px){
   .seg{flex-wrap:wrap;border:0;gap:5px}
-  .seg button{border:1px solid var(--line);border-radius:var(--r-pill)}
+  .seg button{border:1px solid var(--line);border-radius:var(--r-data)}
   .resetbtn{margin-left:0}
 }
 .chartbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:12px}
 .legend{font-size:12px;color:var(--faint)}
-.legend i{display:inline-block;width:9px;height:9px;border-radius:2px;margin:0 4px 0 10px;
-  background:var(--accent);vertical-align:baseline}
-.legend i.avg{background:var(--med);height:2px;border-radius:0;width:14px;vertical-align:middle}
+.legend i{display:inline-block;width:9px;height:9px;
+  border-radius:var(--r-data-sm);margin:0 4px 0 10px;
+  background:var(--bar);vertical-align:baseline}
+.legend i.avg{background:var(--accent);height:3px;border-radius:var(--r-data-sm);
+  width:14px;vertical-align:middle}
 svg{display:block;width:100%;height:auto;max-width:100%}
 /* The calendar is the exception: a day is a fixed square, so it keeps its
    intrinsic size and scrolls when a year of data outgrows the panel. */
 #calendar{overflow-x:auto;-webkit-overflow-scrolling:touch}
-#calendar svg{width:auto;max-width:none}
+#calendar svg{width:auto;max-width:none;display:block;margin-inline:auto}
 #calendar rect[data-day]{cursor:pointer}
 #calendar rect[data-day]:hover{stroke:var(--ink);stroke-width:1.5}
 .axis{font-size:10.5px;fill:var(--faint)}
@@ -226,7 +277,11 @@ svg{display:block;width:100%;height:auto;max-width:100%}
    Without max-width the 720px chart inside pushed <main> to 750px and every
    section on the page inherited a horizontal scrollbar on a phone. */
 #daily,#hours,.scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:100%}
-#daily>svg,#hours>svg{min-width:720px}
+/* The daily chart now renders at its measured width, so it must not be
+   stretched on top of that — width:100% with an intrinsic-height svg would
+   re-introduce the scaling the measurement exists to remove. */
+#daily>svg{min-width:720px;max-width:100%;height:auto;display:block}
+#hours>svg{min-width:720px}
 .empty{color:var(--faint);font-size:13.5px;margin:6px 0;font-style:italic}
 
 /* Daily rhythm bars double as a drill-down control: click a day to filter
@@ -241,7 +296,7 @@ svg{display:block;width:100%;height:auto;max-width:100%}
 
 /* Behavioral trends: three compact rolling-mean sparklines, one metric each. */
 .sparks{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(210px,1fr))}
-.spark{background:var(--panel);border:1px solid var(--line);border-radius:var(--r-sm);
+.spark{background:var(--panel);border:1px solid var(--line);border-radius:var(--r-data);
   padding:12px 14px}
 .spark .sk{font-size:11px;color:var(--muted);letter-spacing:.04em;display:flex;
   align-items:center;gap:2px}
@@ -255,23 +310,36 @@ svg{display:block;width:100%;height:auto;max-width:100%}
    both themes. */
 .tt{position:fixed;left:-9999px;top:-9999px;z-index:80;pointer-events:none;
   background:var(--ink);color:var(--bg);font-size:12px;line-height:1.45;
-  padding:6px 10px;border-radius:6px;box-shadow:0 4px 14px rgba(0,0,0,.2);
+  padding:6px 10px;border-radius:var(--r-data);box-shadow:0 4px 14px rgba(0,0,0,.2);
   opacity:0;transform:translateY(2px);transition:opacity .08s ease,transform .08s ease;
   white-space:normal;width:max-content;max-width:260px}
 .tt.show{opacity:1;transform:translateY(0)}
 
-.hbars{display:flex;flex-direction:column;gap:9px}
+.hbars{display:flex;flex-direction:column;gap:7px}
 .hbar{display:grid;gap:10px;align-items:center;
   grid-template-columns:minmax(0,11fr) minmax(56px,14fr) minmax(46px,auto)}
-.hbar .hl{font-size:12.5px;color:var(--ink);overflow:hidden;text-overflow:ellipsis;
+.hbar .hl{font-size:13px;color:var(--ink);overflow:hidden;text-overflow:ellipsis;
   white-space:nowrap}
-.hbar .ht{height:10px;border-radius:5px;background:var(--track);overflow:hidden}
-.hbar .ht>i{display:block;height:100%;border-radius:5px;background:var(--accent)}
-.hbar .hv{font-size:12px;color:var(--muted);text-align:right;
+/* A flat, near-square track. The 5px radius on a 10px bar was a full
+   semicircle at each end, which rounds the one edge the reader is measuring
+   against — the tip of a pill sits a couple of pixels short of where the
+   value actually is, and does it differently for every length. */
+.hbar .ht{height:9px;border-radius:var(--r-data-sm);background:var(--track);
+  overflow:hidden}
+.hbar .ht>i{display:block;height:100%;border-radius:var(--r-data-sm);
+  background:var(--bar)}
+/* The longest bar is the answer to the panel's question; the rest are the
+   context that makes it mean something. Colouring all of them identically
+   spends the accent on the sorting rather than on the finding. */
+.hbar:first-child .ht>i{background:var(--accent)}
+.hbar .hv{font-size:13px;font-weight:600;color:var(--ink);text-align:right;
   font-variant-numeric:tabular-nums;white-space:nowrap}
 .hbar.hit{cursor:pointer}
 .hbar.hit:hover .hl{color:var(--accent);font-weight:600}
-.hbar.hit:hover .ht>i{opacity:.75}
+.hbar.hit:hover .ht>i{background:var(--accent)}
+/* SVG bars answer to the same rule: neutral until the pointer picks one out. */
+.daybar{transition:fill var(--d-fast) var(--ease)}
+.daycol:hover .daybar{fill:var(--accent)}
 
 table{width:100%;border-collapse:collapse;font-size:13.5px;min-width:660px}
 th,td{text-align:right;padding:7px 9px;border-bottom:1px solid var(--line);white-space:nowrap}
@@ -316,7 +384,7 @@ code{font:12.5px ui-monospace,SFMono-Regular,Menlo,monospace;background:var(--tr
   padding:var(--s4) 0 var(--s3);overflow:visible}
 
 .railmark{display:flex;align-items:center;justify-content:center;flex:none;
-  width:40px;height:40px;border-radius:var(--r-sm);
+  width:40px;height:40px;border-radius:var(--r-data);
   transition:background var(--d-fast) var(--ease)}
 .railmark svg{width:22px;height:22px;fill:none;stroke:var(--accent);
   stroke-width:1.5;stroke-linecap:round}
@@ -325,12 +393,20 @@ code{font:12.5px ui-monospace,SFMono-Regular,Menlo,monospace;background:var(--tr
 .railnav{list-style:none;margin:0;padding:0 var(--s2);display:grid;gap:3px;width:100%;
   min-height:0;overflow-y:auto;scrollbar-width:thin}
 .railnav a{display:grid;justify-items:center;gap:5px;padding:9px 2px 7px;
-  border-radius:var(--r-sm);color:var(--rail-ink);text-decoration:none;
+  border-radius:var(--r-data);color:var(--rail-ink);text-decoration:none;
   transition:background var(--d-fast) var(--ease),color var(--d-fast) var(--ease)}
 .railnav a svg{width:19px;height:19px;fill:none;stroke:currentColor;
   stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
-.railnav a span{font-size:9px;font-weight:700;letter-spacing:.05em;
-  text-transform:uppercase;line-height:1.15;text-align:center}
+/* Every value here is a token because every value here is script-dependent —
+   see the micro-label note in tokens.css. At 9px uppercase this tile is the
+   smallest label on the page, which is fine for LATIN and unreadable for 总览.
+   `word-break` earns its place too: an 88px rail minus padding leaves ~68px,
+   and "Bahasa Indonesia"-length section names have to break somewhere the
+   author chose rather than overflow the tile. */
+.railnav a span{font-size:var(--t-cap);font-weight:var(--cap-weight);
+  letter-spacing:var(--cap-track);text-transform:var(--cap-case);
+  line-height:var(--cap-lh);text-align:center;
+  overflow-wrap:break-word;hyphens:auto}
 .railnav a:hover{background:var(--rail-hover);color:var(--rail-ink-on)}
 /* The lit tile is the scrollspy's only output. Anything more (a moving marker,
    a progress bar) competes with the charts for the same attention. */
@@ -339,7 +415,7 @@ code{font:12.5px ui-monospace,SFMono-Regular,Menlo,monospace;background:var(--tr
 .railfoot{margin-top:auto;display:grid;gap:2px;justify-items:center;width:100%;
   padding:0 var(--s2)}
 .railbtn{display:flex;align-items:center;justify-content:center;gap:4px;
-  width:100%;padding:8px 2px;border:0;border-radius:var(--r-sm);
+  width:100%;padding:8px 2px;border:0;border-radius:var(--r-data);
   background:transparent;color:var(--rail-ink);cursor:pointer;font:inherit;
   transition:background var(--d-fast) var(--ease),color var(--d-fast) var(--ease)}
 .railbtn:hover{background:var(--rail-hover);color:var(--rail-ink-on)}
@@ -354,15 +430,15 @@ code{font:12.5px ui-monospace,SFMono-Regular,Menlo,monospace;background:var(--tr
 .menu>summary::-webkit-details-marker{display:none}
 .menu[open]>summary{background:var(--rail-on);color:var(--rail-ink-on)}
 .sheet{position:absolute;bottom:0;left:calc(100% + 8px);z-index:70;min-width:196px;
-  padding:var(--s2);border-radius:var(--r-md);background:var(--panel);
+  padding:var(--s2);border-radius:var(--r-data);background:var(--panel);
   border:1px solid var(--line);box-shadow:var(--shadow-lg);display:grid;gap:1px;
   max-height:min(70vh,440px);overflow:auto}
-.sheet a{padding:6px var(--s3);border-radius:var(--r-xs);color:var(--muted);
+.sheet a{padding:6px var(--s3);border-radius:var(--r-data-sm);color:var(--muted);
   font-size:var(--t-sm);text-decoration:none}
 .sheet a:hover{background:var(--accent-soft);color:var(--ink)}
 .sheet a[aria-current="true"]{color:var(--accent);font-weight:600}
 
-.pagehead{padding:var(--s6) 0 0}
+.pagehead{padding:var(--s5) 0 0}
 /* Not the reader's language: says so once, where the English begins. */
 .lang-note{color:var(--faint);font-style:italic}
 
@@ -375,10 +451,12 @@ code{font:12.5px ui-monospace,SFMono-Regular,Menlo,monospace;background:var(--tr
   /* Wider than the label needs. At 8px of side margin against 4px of padding
      the fill hugged the word, which read as cramped next to the rail items
      above it — those get their breathing room from the rail's own padding. */
-  margin:6px 4px 0;padding:11px 10px;border-radius:var(--r-sm,10px);
+  margin:6px 4px 0;padding:11px 10px;border-radius:var(--r-data);
   color:var(--accent-ink);background:var(--accent);
-  font-size:10.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;
-  text-decoration:none;text-align:center}
+  font-size:var(--t-cap-lg);font-weight:var(--cap-weight);
+  letter-spacing:var(--cap-track);text-transform:var(--cap-case);
+  line-height:var(--cap-lh);
+  text-decoration:none;text-align:center;overflow-wrap:anywhere}
 .railcta:hover{opacity:.9}
 .railcta svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;
   stroke-linecap:round;stroke-linejoin:round}
@@ -396,6 +474,7 @@ code{font:12.5px ui-monospace,SFMono-Regular,Menlo,monospace;background:var(--tr
     overflow-x:auto;overflow-y:hidden;scrollbar-width:none}
   .railnav::-webkit-scrollbar{display:none}
   .railnav a{padding:6px 10px;min-width:64px}
+  .railnav a span{white-space:nowrap;overflow-wrap:normal}
   /* Horizontal rail: the CTA has to match the tiles' height and sit on one
      line, or it stretches the whole strip and pushes the settings off-screen.
      It also leaves the scrolling nav and pins next to them, so "set up" stays
@@ -414,10 +493,19 @@ code{font:12.5px ui-monospace,SFMono-Regular,Menlo,monospace;background:var(--tr
    be read. Three states share one box: `demo` (indigo — sample data), `aging`
    (a day behind) and `stale` (a week behind). A fresh report renders nothing,
    so the strip costs zero pixels in the normal case. */
-/* Title line: heading left, sample-data flag right. Wraps to its own line on a
-   narrow screen rather than squeezing the heading. */
-.pageheadrow{display:flex;align-items:baseline;justify-content:space-between;
-  gap:12px;flex-wrap:wrap}
+/* Title line: identity left, range right, sample-data flag between them.
+   `align-items:flex-end` rather than `baseline` — the left column is now two
+   lines (heading over stamp) and a shared baseline would align the range
+   buttons to the *heading's* baseline, floating them above the row. Aligning
+   the boxes' bottom edges puts the control on the stamp's line, which is what
+   makes the row read as one band instead of two things at different heights.
+   Wraps rather than squeezing the heading on a narrow screen. */
+.pageheadrow{display:flex;align-items:flex-end;justify-content:space-between;
+  gap:12px 16px;flex-wrap:wrap}
+/* min-width:0 so a long heading can ellipsize its own line rather than forcing
+   the range control to wrap at widths where both would still fit. */
+.pageheadid{min-width:0;flex:1 1 auto}
+.pageheadrow .seg{flex:none;margin-left:auto}
 /* Quiet on purpose. It sits under the findings, so the page has already made
    its case and the ask does not need to raise its voice to be noticed — a line
    of muted text with the star doing the pointing. Anything louder here would
@@ -437,7 +525,8 @@ code{font:12.5px ui-monospace,SFMono-Regular,Menlo,monospace;background:var(--tr
 
 .demoflag{margin:0;display:flex;align-items:center;gap:9px;flex:none}
 .demoflag[hidden]{display:none}
-.demochip{font-size:10.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;
+.demochip{font-size:var(--t-cap-lg);font-weight:var(--cap-weight);
+  letter-spacing:var(--cap-track-lg);text-transform:var(--cap-case);
   padding:3px 8px;border-radius:999px;white-space:nowrap;
   color:var(--accent-ink);background:var(--accent)}
 .demotry{font-size:12.5px;font-weight:600;color:var(--accent);white-space:nowrap}
@@ -445,7 +534,7 @@ code{font:12.5px ui-monospace,SFMono-Regular,Menlo,monospace;background:var(--tr
 
 .fresh{display:flex;gap:14px;align-items:center;flex-wrap:wrap;
   margin:0 0 22px;padding:13px 16px;border:1px solid var(--line);
-  border-left-width:3px;border-radius:var(--r-sm,10px);background:var(--card,var(--bg))}
+  border-left-width:3px;border-radius:var(--r-data);background:var(--card,var(--bg))}
 .fresh[hidden]{display:none}
 .fresh.aging{border-left-color:var(--med)}
 .fresh.stale{border-left-color:var(--high)}
@@ -464,12 +553,13 @@ code{font:12.5px ui-monospace,SFMono-Regular,Menlo,monospace;background:var(--tr
 .freshtext{margin:0;flex:1 1 260px;font-size:13.5px;line-height:1.55;color:var(--muted)}
 .freshtext strong{color:var(--ink);font-weight:650}
 .freshact{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-.freshact code{font-size:12px;padding:5px 9px;border-radius:6px;
+.freshact code{font-size:12px;padding:6px 9px;border-radius:var(--r-data-sm);
   background:var(--bg);border:1px solid var(--line);color:var(--ink);
-  white-space:nowrap;overflow-x:auto;max-width:min(56vw,420px)}
+  line-height:1.5;white-space:pre-wrap;overflow-wrap:anywhere;
+  max-width:min(56vw,460px)}
 .freshbtn{flex:none;padding:6px 14px;font:inherit;font-size:12.5px;font-weight:650;
   color:var(--accent-ink);background:var(--accent);border:0;
-  border-radius:6px;cursor:pointer}
+  border-radius:var(--r-data-sm);cursor:pointer}
 .freshbtn:hover{opacity:.9}
 @media print{.fresh{display:none}}
 .freshlink{flex:none;font-size:12.5px;font-weight:650;color:var(--accent);

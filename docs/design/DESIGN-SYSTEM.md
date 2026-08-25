@@ -86,6 +86,32 @@ One system sans, one system mono. **No webfont** — see §7.
 | `--t-lede` | The one paragraph under a headline | normal |
 | `--t-body` / `--t-sm` / `--t-xs` | Prose / UI / dense UI | normal |
 | `--t-micro` | Eyebrows and badges, uppercase | `--tr-eyebrow` (+.14em) |
+| `--t-cap` / `--t-cap-lg` | Rail tiles, KPI keys, panel heads, table headers | `--cap-track` / `--cap-track-lg` |
+
+### The caption scale is per-script
+
+`--t-cap` and its siblings (`--cap-track`, `--cap-case`, `--cap-weight`,
+`--cap-lh`) are **redefined by the document's language**, and a caption must
+read them rather than hard-code a size.
+
+A 9px uppercase caption is a Latin device. It works because capitals are
+simple, open shapes the eye completes from very little ink, and because
+tracking them apart is what makes a run of capitals legible at all. None of
+that transfers: `text-transform:uppercase` is a no-op on CJK and Devanagari,
+so those scripts render their full stroke count at a size chosen for shapes
+that had been simplified, and fill in to a grey smudge. Thai keeps Latin-ish
+widths but hangs marks outside a 1.15 line-height.
+
+| Script | `--t-cap` | Case | Tracking |
+|---|---|---|---|
+| Latin (default) | 9px | uppercase | +.05em |
+| Latin, long section words (id, ms, fil, pt-BR, es, vi) | 9.5px | none | +.01em |
+| Thai, Devanagari | 10.5px | none | +.01em, `--cap-lh` 1.5 |
+| CJK (zh-Hans, zh-Hant, ja, ko) | 12px | none | 0, `--cap-lh` 1.35 |
+
+The rule matches on both `[lang]` and `[data-lang]`: the landing page ships one
+static page per language and sets `lang` at build time, while the dashboard is
+a single page that sets both at runtime when the reader switches.
 
 Display sizes are fluid; **body text is not**. A paragraph that resizes with
 the viewport is harder to read, not easier. Line length is capped at
@@ -106,10 +132,39 @@ values are a bug.
 
 | | |
 |---|---|
-| `--r` (6px) | Dense data — table cells, dashboard panels. Data reads wrong when rounded. |
-| `--r-sm` / `--r-md` | Cards, inputs, code blocks |
+| `--r-data` (4px) / `--r-data-sm` (3px) | **The dashboard.** Panels, the KPI strip, chart wells, chips, segmented controls, bar tracks. |
+| `--r` (6px) | Dense data — table cells. Data reads wrong when rounded. |
+| `--r-sm` / `--r-md` | **Landing page** cards, inputs, code blocks |
 | `--r-lg` / `--r-xl` | Hero surfaces and full-bleed bands |
 | `--r-pill` | Anything with an icon in it |
+
+The two surfaces share a palette, a type stack and a spacing base, but **not a
+corner**. The landing page is a brochure and rounds generously; the dashboard
+is an instrument, and at instrument density a 12px corner eats the top-left
+cell of every table and leaves a visible crescent of page between panels meant
+to read as one field. `--r-data` is a separate token rather than an override
+of the scale so that restyling one surface cannot silently restyle the other.
+
+**Width.** The landing page caps content at `--page` (1120px) to protect the
+measure of its prose. The dashboard caps at **1320px**, because it has no
+measure to protect — six KPIs, two-up panels and a 90-column chart were being
+squeezed into 1040px while a wide monitor showed 200px of empty page down each
+side.
+
+**Seams, not moats.** Cells that share a scale and are meant to be read across
+(the KPI strip) get one border and 1px seams — `gap:1px` over a `--line`
+background, `overflow:hidden` to let the container's radius clip the ends —
+not one rounded box each with a gap between them.
+
+**One protagonist per chart.** Supporting marks take `--bar`; the single mark
+that answers the panel's question takes `--accent`. Colouring every bar in the
+accent spends it on the sorting rather than on the finding.
+
+**Charts are measured, never scaled.** An SVG scales its type and its
+hairlines along with its geometry, so a 720-wide viewBox stretched to fill a
+1175px panel renders 11px axis labels at 18px. Chart code reads its
+container's width and emits a viewBox that matches it 1:1, with a floor below
+which the panel scrolls horizontally instead.
 
 **Elevation** is three shadows, and depth is only ever expressed as *one* of
 shadow, border, or fill — never two at once.

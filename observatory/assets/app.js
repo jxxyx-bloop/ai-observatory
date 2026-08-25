@@ -228,12 +228,28 @@ function bars(rows, label, value, fmt, pickable) {
 
 function daily(days, byDate, metric, fmt, picked) {
   if (!days.length) return '<p class="empty">' + esc(t18("e_none", "Nothing in this range.")) + "</p>";
-  var W = 720, L = 50, R = 8, TOP = 18, PH = 112, H = 218;
+  /* The canvas is measured, not fixed, so the viewBox and the rendered box
+     agree 1:1 and nothing on the chart is scaled.
+
+     A 720-wide viewBox stretched to fill a 1175px panel is a 1.63x scale, and
+     an SVG scales everything — so the axis labels came out at 18px on a page
+     whose body text is 15px, and the gridline hairlines at 1.6px. The chart
+     read as a blown-up picture of a chart. Measuring the container instead
+     means more days fit in the same space at the type size the design
+     actually chose, which is also what makes the bars stop looking sparse.
+
+     720 stays as the floor: below it the panel scrolls horizontally, which is
+     what `#daily{overflow-x:auto}` and the svg's min-width have always done. */
+  var host = $("daily");
+  var avail = host ? host.clientWidth : 0;
+  var W = Math.max(720, Math.round(avail) || 720);
+  var L = 50, R = 8, TOP = 18, PH = 112, H = 218;
   var base = TOP + PH, plotW = W - L - R, step = plotW / days.length;
   var bw = Math.max(1.5, Math.min(step * 0.68, 26));
   var vals = days.map(function (d) { return (byDate[d] || 0); });
   var peak = Math.max.apply(null, vals) || 1;
-  var s = '<svg viewBox="0 0 ' + W + ' ' + H + '" role="img" preserveAspectRatio="xMinYMin meet">';
+  var s = '<svg viewBox="0 0 ' + W + ' ' + H + '" role="img" '
+    + 'width="' + W + '" height="' + H + '" preserveAspectRatio="xMinYMin meet">';
 
   // Weekend bands first, so every mark sits on top of them.
   days.forEach(function (d, i) {
@@ -246,7 +262,7 @@ function daily(days, byDate, metric, fmt, picked) {
         + step.toFixed(1) + '" height="' + PH + '" fill="var(--sel)"/>';
     }
   });
-  [0, 0.5, 1].forEach(function (f) {
+  [0, 0.25, 0.5, 0.75, 1].forEach(function (f) {
     var gy = TOP + PH * (1 - f);
     s += '<line x1="' + L + '" y1="' + gy.toFixed(1) + '" x2="' + (W - R) + '" y2="'
       + gy.toFixed(1) + '" stroke="var(--line)" stroke-width="1"/>'
@@ -261,7 +277,7 @@ function daily(days, byDate, metric, fmt, picked) {
     s += '<g class="daycol" data-day="' + d + '" data-tt="'
       + esc(longDate(d) + " — " + fmt(v) + " " + metric) + '">'
       + '<rect x="' + x.toFixed(1) + '" y="' + (base - h).toFixed(1) + '" width="' + bw.toFixed(1)
-      + '" height="' + Math.max(h, v ? 1.2 : 0).toFixed(1) + '" rx="2" fill="var(--accent)"'
+      + '" height="' + Math.max(h, v ? 1.2 : 0).toFixed(1) + '" rx="1" class="daybar" fill="var(' + (isPicked ? "--accent" : "--bar") + ')"'
       + (isPicked ? ' stroke="var(--ink)" stroke-width="1.2"' : '') + '/>'
       + '<rect class="hitcol" x="' + (L + i * step).toFixed(1) + '" y="' + TOP + '" width="'
       + step.toFixed(1) + '" height="' + PH + '" fill="transparent"/></g>';
@@ -281,8 +297,12 @@ function rollingMean(vals, L, step, base, PH, peak) {
     var y = base - PH * ((sum / 7) / peak);
     pts.push((L + i * step + step / 2).toFixed(1) + "," + y.toFixed(1));
   }
-  return '<polyline points="' + pts.join(" ") + '" fill="none" stroke="var(--med)" '
-    + 'stroke-width="1.6" stroke-linejoin="round" opacity=".9"/>';
+  // The accent lives on the mean, not on the bars. Ninety bars drawn in the
+  // accent are ninety equally loud marks; the trend under them is the only
+  // thing on this chart that answers "is this going up?", and it was the one
+  // mark rendered in a muted gold behind them. One protagonist per chart.
+  return '<polyline points="' + pts.join(" ") + '" fill="none" stroke="var(--accent)" '
+    + 'stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>';
 }
 /* Per-day axis: a weekday initial under every column, and a dated label on as
    many as will fit without touching. Month starts always keep their label and
@@ -766,8 +786,11 @@ function kpiCards(t, sessions) {
      tf("n_wr", "%W% edits per %R% lookups", {W: num(t.writes), R: num(t.reads)})]
   ];
   return cards.map(function (c) {
-    return '<div class="kpi' + (c[3] ? " lead" : "") + '"><div class="v">' + c[0]
-      + '</div><div class="k">' + c[1] + '</div><div class="n">' + esc(c[2]) + "</div></div>";
+    // Label, then number, then the gloss. A number is only a fact once you
+    // know what it counts, and the old order landed the eye on "$3,576.65"
+    // and made it hunt downward for the noun.
+    return '<div class="kpi' + (c[3] ? " lead" : "") + '"><div class="k">' + c[1]
+      + '</div><div class="v">' + c[0] + '</div><div class="n">' + esc(c[2]) + "</div></div>";
   }).join("");
 }
 
@@ -859,8 +882,24 @@ function dayFilter(F) {
 }
 
 var drawn = false;
+/* The daily chart sizes itself to the box it was given, so a window that
+   changes width has to redraw or the canvas keeps the old one's measurements.
+   Debounced because a drag fires this continuously and `draw()` rebuilds every
+   panel on the page; 150ms is below the point a redraw reads as lag and well
+   above the frame rate of a resize drag. */
+var resizeTimer = null, lastWidth = 0;
+function onResize() {
+  var w = window.innerWidth;
+  if (w === lastWidth) return;         // height-only changes move nothing
+  lastWidth = w;
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(function () { if (drawn) draw(); }, 150);
+}
+window.addEventListener("resize", onResize);
+
 function draw() {
   drawn = true;
+  lastWidth = window.innerWidth;
   var F = state();
   /* A date input can be emptied — backspace in the field, or the clear control
      the browser draws — and an empty string walks straight into `parse("")`,

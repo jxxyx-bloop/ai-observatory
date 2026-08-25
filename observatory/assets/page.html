@@ -124,20 +124,29 @@ var l=localStorage.getItem("observatory-lang");if(l)r.setAttribute("data-lang",l
          say the same thing in a tenth of the space, and the link goes where the
          command was trying to send them anyway. -->
     <div class="pageheadrow">
-      <h1 data-i18n="title">Your AI coding, measured.</h1>
+      <div class="pageheadid">
+        <h1 data-i18n="title">Your AI coding, measured.</h1>
+        <p class="sub" id="span">Loading…</p>
+      </div>
       <p class="demoflag" id="demoFlag" hidden>
         <span class="demochip" id="demoChip">Sample data</span>
         <a class="demotry" id="demoTry" href="#">Try it yourself</a>
       </p>
+      <!-- The range presets sit on the title line, not in the filter row.
+           They are the question the whole page answers ("over what period?"),
+           and they were the one control a reader touches on nearly every
+           visit — filed alongside five they touch on almost none. Its own
+           labelled group rather than a slice of "Filters", which is what it
+           always was. -->
+      <div class="seg" id="presets" role="group"
+           data-i18n-aria="f_range" aria-label="Range"></div>
     </div>
-    <p class="sub" id="span">Loading…</p>
   </header>
 
   <!-- Filters: one row, no stacked captions. Each control names itself in its
        own default option ("All providers"), which is both shorter and what a
        screen reader wanted anyway. -->
   <div class="controls" role="group" data-i18n-aria="f_group" aria-label="Filters">
-    <div class="seg" id="presets"></div>
     <div class="dates">
       <input type="date" id="from" data-i18n-aria="f_from" aria-label="From">
       <span aria-hidden="true">–</span>

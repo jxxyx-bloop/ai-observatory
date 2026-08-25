@@ -247,10 +247,15 @@ def cmd_report(argv) -> int:
         return 1
     DIST.mkdir(parents=True, exist_ok=True)
     out = DIST / "observatory.html"
+    # `--no-open` is what the unattended paths pass, and it is exactly the
+    # question the update receipt needs answered: is anybody about to look at
+    # this? A render that ends in a browser window is one the reader is present
+    # for, so it may both show a receipt and retire one they have already read.
+    attended = "--no-open" not in argv
     _write_atomic(out, render.render(
         digest, refresh=launcher.refresh_command(ROOT),
         demo=(DATA / ".demo").exists(),
-        update=updater.for_render(updater.read(DATA))))
+        update=updater.receipt(DATA, attended=attended)))
     kb = out.stat().st_size / 1024
     if "--no-open" in argv:
         print(f"report: {out} ({kb:.0f} KB)")
@@ -432,7 +437,7 @@ def cmd_setup(argv) -> int:
     out = DIST / "observatory.html"
     _write_atomic(out, render.render(digest, refresh=launcher.refresh_command(ROOT),
                                      demo=(DATA / ".demo").exists(),
-                                     update=updater.for_render(updater.read(DATA))))
+                                     update=updater.receipt(DATA, attended=True)))
 
     print("\nDone. Opening your dashboard now.")
     if not launcher.open_report(out):
