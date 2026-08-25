@@ -275,13 +275,19 @@ svg{display:block;width:100%;height:auto;max-width:100%}
    sub-legible. Below the viewBox width it scrolls instead, at full type size. */
 /* A scroll container still has to be told it may not exceed its parent.
    Without max-width the 720px chart inside pushed <main> to 750px and every
-   section on the page inherited a horizontal scrollbar on a phone. */
-#daily,#hours,.scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:100%}
-/* The daily chart now renders at its measured width, so it must not be
+   section on the page inherited a horizontal scrollbar on a phone.
+
+   `#meter`, not `#hours` — the weekday×hour heatmap's container was renamed
+   at some point and this selector was not, so the rule below had matched
+   nothing since. A phone narrower than the 560px floor squeezed 24 hour
+   columns into an unreadable smear instead of scrolling, silently, because
+   nothing here was ever actually applying the fix it claimed to. */
+#daily,#meter,.scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:100%}
+/* Both charts now render at their measured width, so neither must be
    stretched on top of that — width:100% with an intrinsic-height svg would
    re-introduce the scaling the measurement exists to remove. */
 #daily>svg{min-width:720px;max-width:100%;height:auto;display:block}
-#hours>svg{min-width:720px}
+#meter>svg{min-width:560px;max-width:100%;height:auto;display:block}
 .empty{color:var(--faint);font-size:13.5px;margin:6px 0;font-style:italic}
 
 /* Daily rhythm bars double as a drill-down control: click a day to filter

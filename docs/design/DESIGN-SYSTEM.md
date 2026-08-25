@@ -164,7 +164,32 @@ accent spends it on the sorting rather than on the finding.
 hairlines along with its geometry, so a 720-wide viewBox stretched to fill a
 1175px panel renders 11px axis labels at 18px. Chart code reads its
 container's width and emits a viewBox that matches it 1:1, with a floor below
-which the panel scrolls horizontally instead.
+which the panel scrolls horizontally instead. This is a width rule, not a
+height one — see the next paragraph for why the two are decided separately.
+
+**A grid's row height is a design decision, not a side effect of its width.**
+The weekday×hour heatmap (`meter()`) inherited the same fixed-viewBox bug as
+the daily chart, with a worse result: because a 2D grid's height is *derived*
+from its width through the aspect ratio a fixed viewBox bakes in, widening the
+page to close the whitespace gap (see the width-cap change above) widened this
+chart too, which *proportionally grew its height with it* — 20px cells
+rendering at ~30px, on a chart with no text of its own to make the distortion
+obvious the way axis labels did on the daily chart. The fix is the same
+measure-the-container rule, but the height in the viewBox this chart computes
+stays a **fixed pixel value** (16px cell, 3px gap) regardless of what the
+measured width comes out to — width and height are independent numbers here,
+not two sides of one ratio.
+
+16/3 is deliberate, not incidental: it is the exact density of the Wingman
+Hangar port's `HeatmapStrip.svelte`, adopted because a 7×24 grid is a texture
+read at a glance, not 168 things read one at a time, and a texture can afford
+to be small. Precedent for this already existed in-repo before either chart
+was fixed — the "long view" GitHub-style calendar (`calendar()`) uses a 12px
+cell and was never stretched, because it renders at its own intrinsic size
+(`#calendar svg{width:auto}`) rather than filling its container. `meter()` and
+`daily()` chose the opposite shape — filling the container is what makes the
+KPI-strip-style page rhythm work at the width this redesign settled on — so
+they need the measurement discipline the calendar gets for free.
 
 **Elevation** is three shadows, and depth is only ever expressed as *one* of
 shadow, border, or fill — never two at once.

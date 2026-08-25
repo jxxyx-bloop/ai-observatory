@@ -570,10 +570,32 @@ function meter(F) {
     if (pk.mask[a][b]) inPeak += grid[a][b];
   }
 
-  var W = 760, L = 38, TOP = hasPeak ? 34 : 20, CH = 20, GAP = 4;
+  /* Measured, not stretched — the same rule as the daily chart (see the
+     "Charts are measured, never scaled" note in DESIGN-SYSTEM.md) and the
+     one chart this pass missed the first time round.
+
+     A fixed 760-wide viewBox rendered at `width:100%` inside a panel that
+     is actually ~1175px wide is a 1.5x scale, and an SVG scales EVERYTHING —
+     the 20px cells this function asks for came out around 30px on screen,
+     which is what made a seven-row weekday grid tall enough to fill most of
+     a laptop screen. Measuring the container and using that as the viewBox
+     width renders at 1:1, so the cell height below is the height a cell
+     actually gets.
+
+     CH/GAP themselves are also turned down here to match the density of the
+     Wingman port's HeatmapStrip (16px cell, 3px gap) — the two products drew
+     the same chart, and the more legible default is the smaller one: two
+     numbers on a 24-hour, 7-day grid can afford to be modest, and a grid this
+     dense reads as a texture at a glance rather than as 168 things to look at
+     one by one. */
+  var host = $("meter");
+  var avail = host ? host.clientWidth : 0;
+  var W = Math.max(560, Math.round(avail) || 760), L = 38;
+  var TOP = hasPeak ? 34 : 20, CH = 16, GAP = 3;
   var cw = (W - L - 10) / 24;
   var H = TOP + 7 * (CH + GAP) + 34;
   var s = '<svg viewBox="0 0 ' + W + ' ' + H + '" role="img" '
+    + 'width="' + W + '" height="' + H + '" '
     + 'preserveAspectRatio="xMinYMin meet" aria-label="'
     + (hasPeak ? "Turns by weekday and hour, with peak-priced hours marked"
                : "Turns by weekday and hour") + '">';
