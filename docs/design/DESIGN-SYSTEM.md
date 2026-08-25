@@ -86,6 +86,32 @@ One system sans, one system mono. **No webfont** — see §7.
 | `--t-lede` | The one paragraph under a headline | normal |
 | `--t-body` / `--t-sm` / `--t-xs` | Prose / UI / dense UI | normal |
 | `--t-micro` | Eyebrows and badges, uppercase | `--tr-eyebrow` (+.14em) |
+| `--t-cap` / `--t-cap-lg` | Rail tiles, KPI keys, panel heads, table headers | `--cap-track` / `--cap-track-lg` |
+
+### The caption scale is per-script
+
+`--t-cap` and its siblings (`--cap-track`, `--cap-case`, `--cap-weight`,
+`--cap-lh`) are **redefined by the document's language**, and a caption must
+read them rather than hard-code a size.
+
+A 9px uppercase caption is a Latin device. It works because capitals are
+simple, open shapes the eye completes from very little ink, and because
+tracking them apart is what makes a run of capitals legible at all. None of
+that transfers: `text-transform:uppercase` is a no-op on CJK and Devanagari,
+so those scripts render their full stroke count at a size chosen for shapes
+that had been simplified, and fill in to a grey smudge. Thai keeps Latin-ish
+widths but hangs marks outside a 1.15 line-height.
+
+| Script | `--t-cap` | Case | Tracking |
+|---|---|---|---|
+| Latin (default) | 9px | uppercase | +.05em |
+| Latin, long section words (id, ms, fil, pt-BR, es, vi) | 9.5px | none | +.01em |
+| Thai, Devanagari | 10.5px | none | +.01em, `--cap-lh` 1.5 |
+| CJK (zh-Hans, zh-Hant, ja, ko) | 12px | none | 0, `--cap-lh` 1.35 |
+
+The rule matches on both `[lang]` and `[data-lang]`: the landing page ships one
+static page per language and sets `lang` at build time, while the dashboard is
+a single page that sets both at runtime when the reader switches.
 
 Display sizes are fluid; **body text is not**. A paragraph that resizes with
 the viewport is harder to read, not easier. Line length is capped at
@@ -106,10 +132,84 @@ values are a bug.
 
 | | |
 |---|---|
-| `--r` (6px) | Dense data — table cells, dashboard panels. Data reads wrong when rounded. |
-| `--r-sm` / `--r-md` | Cards, inputs, code blocks |
+| `--r-data` (4px) / `--r-data-sm` (3px) | **The dashboard.** Panels, the KPI strip, chart wells, chips, segmented controls, bar tracks. |
+| `--r` (6px) | Dense data — table cells. Data reads wrong when rounded. |
+| `--r-sm` / `--r-md` | **Landing page** cards, inputs, code blocks |
 | `--r-lg` / `--r-xl` | Hero surfaces and full-bleed bands |
 | `--r-pill` | Anything with an icon in it |
+
+The two surfaces share a palette, a type stack and a spacing base, but **not a
+corner**. The landing page is a brochure and rounds generously; the dashboard
+is an instrument, and at instrument density a 12px corner eats the top-left
+cell of every table and leaves a visible crescent of page between panels meant
+to read as one field. `--r-data` is a separate token rather than an override
+of the scale so that restyling one surface cannot silently restyle the other.
+
+**Width.** The landing page caps content at `--page` (1120px) to protect the
+measure of its prose. The dashboard caps at **1320px**, because it has no
+measure to protect — six KPIs, two-up panels and a 90-column chart were being
+squeezed into 1040px while a wide monitor showed 200px of empty page down each
+side.
+
+**Seams, not moats.** Cells that share a scale and are meant to be read across
+(the KPI strip) get one border and 1px seams — `gap:1px` over a `--line`
+background, `overflow:hidden` to let the container's radius clip the ends —
+not one rounded box each with a gap between them.
+
+**One protagonist per chart.** Supporting marks take `--bar`; the single mark
+that answers the panel's question takes `--accent`. Colouring every bar in the
+accent spends it on the sorting rather than on the finding.
+
+**Charts are measured, never scaled.** An SVG scales its type and its
+hairlines along with its geometry, so a 720-wide viewBox stretched to fill a
+1175px panel renders 11px axis labels at 18px. Chart code reads its
+container's width and emits a viewBox that matches it 1:1, with a floor below
+which the panel scrolls horizontally instead. This is a width rule, not a
+height one — see the next paragraph for why the two are decided separately.
+
+**A grid's row height is a design decision, not a side effect of its width.**
+The weekday×hour heatmap (`meter()`) inherited the same fixed-viewBox bug as
+the daily chart, with a worse result: because a 2D grid's height is *derived*
+from its width through the aspect ratio a fixed viewBox bakes in, widening the
+page to close the whitespace gap (see the width-cap change above) widened this
+chart too, which *proportionally grew its height with it* — 20px cells
+rendering at ~30px, on a chart with no text of its own to make the distortion
+obvious the way axis labels did on the daily chart. The fix is the same
+measure-the-container rule, but the height in the viewBox this chart computes
+stays a **fixed pixel value** (16px cell, 3px gap) regardless of what the
+measured width comes out to — width and height are independent numbers here,
+not two sides of one ratio.
+
+16/3 is deliberate, not incidental: it is the exact density of the Wingman
+Hangar port's `HeatmapStrip.svelte`, adopted because a 7×24 grid is a texture
+read at a glance, not 168 things read one at a time, and a texture can afford
+to be small. Precedent for this already existed in-repo before either chart
+was fixed — the "long view" GitHub-style calendar (`calendar()`) uses a 12px
+cell and was never stretched, because it renders at its own intrinsic size
+(`#calendar svg{width:auto}`) rather than filling its container. `meter()` and
+`daily()` chose the opposite shape — filling the container is what makes the
+KPI-strip-style page rhythm work at the width this redesign settled on — so
+they need the measurement discipline the calendar gets for free.
+
+**A shape may stretch; a plot may not.** The third variant of the same bug:
+a sparkline's viewBox is 220×46, and `svg{height:auto}` rendered it at ~71px
+inside a ~340px card. Unlike the two charts above, the fix is not to measure —
+nothing is read off a sparkline's x-axis, so it is *free* to stretch
+horizontally. What it may not do is derive its height from that stretch. So
+sparklines pin `height` in CSS and let width do what it likes, grid charts
+measure width and pin height in the viewBox, and full plots measure both.
+Three different answers, one question to ask first: **is this value read off
+an axis, or is it a shape?**
+
+**One card per question, sub-headed rather than split.** The three behavioral
+sparklines and the weekday×hour grid answer one question — how am I working,
+and is it changing — so they live in one panel under one section heading,
+with the grid introduced by a `.subhead` inside the card. They had been two
+sections with two rail stops, which made a reader treat them as unrelated and
+left the grid alone in a card tall enough to fill a screen. Splitting a
+question across two nav stops costs more than the scroll it saves. This is
+also the Hangar port's arrangement, and the reason its `#trends` card carries
+an `<h3>` in the middle of it.
 
 **Elevation** is three shadows, and depth is only ever expressed as *one* of
 shadow, border, or fill — never two at once.

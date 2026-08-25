@@ -40,10 +40,21 @@ from pathlib import Path
 
 STATE_NAME = "update.json"
 
-# How long the "here is what changed" receipt keeps showing after an update
-# lands. Deliberately a clock, not a seen-once flag: the 09:00 agent renders
-# the page while nobody is watching, so a flag would be burned by a render no
-# human ever saw and the one person it was written for would never see it.
+# The receipt retires when the reader acts on it, and this clock is only the
+# backstop for a reader who never does.
+#
+# A plain seen-once flag cannot work here, because the 09:00 agent renders the
+# page while nobody is watching: the flag would be burned by a render no human
+# ever saw, and the one person it was written for would never see it. A plain
+# clock could not work either — it made the strip outlast the thing it was
+# reporting, so somebody who read the receipt, ran the refresh command it
+# handed them, and watched the page rebuild still got the same sentence back.
+#
+# So the flag is scoped to renders a human is actually present for (`attended`
+# — anything that ends by opening a browser, as against the unattended agent
+# that passes `--no-open`). The first attended render earns the receipt; the
+# next one retires it, because by then the reader has both seen it and acted.
+# The clock survives underneath for the reader who never refreshes by hand.
 RECEIPT_HOURS = 24
 
 # Enough to show what a week of changes was about without turning the strip
@@ -199,12 +210,17 @@ def write(data_dir: Path, state: dict) -> dict:
     return state
 
 
-def for_render(state: dict, now: datetime | None = None) -> dict | None:
+def for_render(state: dict, now: datetime | None = None,
+               attended: bool = False) -> dict | None:
     """The half-dozen fields the page needs, or None when it should stay silent.
 
     Python decides which of the two things to say and the page renders what it
     is handed — the same rule the metrics follow. A browser opened from
     `file://` cannot check a clock against a repository, and should not try.
+
+    `attended` is true for a render somebody is waiting on. It only ever
+    *suppresses* an already-read receipt; it can never invent one, which is why
+    the caller may pass it without checking anything first.
     """
     if not state:
         return None
@@ -219,11 +235,52 @@ def for_render(state: dict, now: datetime | None = None) -> dict | None:
                 "blocked": state.get("blocked")}
     applied = state.get("applied") or {}
     at = _parse(applied.get("at"))
-    if at and now - at < timedelta(hours=RECEIPT_HOURS):
-        return {"state": "applied", "count": applied.get("count") or 0,
-                "lines": applied.get("lines") or [],
-                "version": applied.get("version") or "", "blocked": None}
-    return None
+    if not at or now - at >= timedelta(hours=RECEIPT_HOURS):
+        return None
+    # Read once and refreshed since: it has done its job. Anything else and the
+    # strip outlives the news, which is how a notice teaches people to stop
+    # reading notices.
+    if attended and applied.get("seen"):
+        return None
+    return {"state": "applied", "count": applied.get("count") or 0,
+            "lines": applied.get("lines") or [],
+            "version": applied.get("version") or "", "blocked": None}
+
+
+def receipt(data_dir: Path, attended: bool = False,
+            now: datetime | None = None) -> dict | None:
+    """`for_render` against the state on disk, remembering what it decided.
+
+    The remembering is the point, and it is why renders call this rather than
+    `for_render` directly: a receipt nobody can retire is a banner, and this
+    project does not ship banners. Three things happen here, all of them
+    idempotent, none of them fatal if the write fails.
+
+      · An attended render that *shows* a receipt marks it seen.
+      · An attended render that finds one already seen drops it for good.
+      · Any render past the backstop drops it, so `update.json` does not carry
+        a dead receipt around for the rest of the install's life.
+    """
+    state = read(data_dir)
+    out = for_render(state, now, attended=attended)
+    if out and out["state"] != "applied":
+        return out                       # a waiting update; nothing to retire
+
+    applied = state.get("applied") or {}
+    if not applied:
+        return out
+
+    if out is None:
+        # Either expired or already read. Both mean the same thing to the file.
+        state.pop("applied", None)
+        write(data_dir, state)
+        return None
+
+    if attended and not applied.get("seen"):
+        applied["seen"] = True
+        state["applied"] = applied
+        write(data_dir, state)
+    return out
 
 
 def _parse(stamp):

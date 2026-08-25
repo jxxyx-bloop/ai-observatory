@@ -54,14 +54,41 @@ was already a restart — and never while the user is looking at the result.
 
 Default-on is consistent with what `setup` already did without asking, and with
 what these users chose when they typed `git clone`. What makes it acceptable is
-the receipt: for 24 hours after an update lands, the freshness strip says what
-arrived, in the words of the commits that arrived. A silent code change on
-somebody's machine is not something this project should ever do; a visible one
-is just maintenance.
+the receipt: after an update lands, the freshness strip says what arrived, in
+the words of the commits that arrived. A silent code change on somebody's
+machine is not something this project should ever do; a visible one is just
+maintenance.
 
-The receipt is a clock, not a seen-once flag, precisely because the 09:00 agent
-renders the page while nobody is watching. A flag would be burned by a render
-no human ever saw.
+**The receipt retires when the reader acts on it.** *(Amended 2026-08-25; the
+original rule was a flat 24-hour clock.)*
+
+A plain seen-once flag cannot work, because the 09:00 agent renders the page
+while nobody is watching: the flag would be burned by a render no human ever
+saw, and the one person it was written for would never see it. That is what
+the clock was for.
+
+But a plain clock could not work either, and shipping it taught us why. The
+strip outlasted the thing it was reporting: somebody who read the receipt, ran
+the refresh command the strip itself handed them, and watched the page rebuild
+got the same sentence back — because re-rendering re-reads the same unexpired
+state. Worse, the only thing that can retire a receipt is a render, and the
+only scheduled render is the agent's at 09:00 local. An update applied at any
+time after 09:00 therefore survived the *next* morning's render too, so the
+effective window was 24–48 hours rather than the 24 the ADR claimed.
+
+So the flag is scoped to renders a human is actually present for. `attended`
+is true for any render that ends by opening a browser, and false for the
+unattended paths that pass `--no-open` — cron, launchd, CI. The first attended
+render earns the receipt and marks it seen; the next one retires it, because
+by then the reader has both seen it and acted. An unattended render still
+shows an unseen receipt and never burns it, which preserves the property the
+clock existed to protect. `RECEIPT_HOURS` survives underneath as the backstop
+for a reader who never refreshes by hand, and a render past it sweeps the dead
+receipt out of `update.json` rather than carrying it for the life of the
+install.
+
+A notice that outlives its news is how you teach people to stop reading
+notices, and this is the one notice the project cannot afford ignored.
 
 ### 3. A fast-forward or nothing, and dirty means *tracked* dirty
 

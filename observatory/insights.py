@@ -41,13 +41,20 @@ T = {
 PREMIUM_TIERS = {"frontier", "opus"}
 
 
-def _f(id_, severity, title, finding, action, evidence, confidence, saving=None):
+def _f(id_, severity, title, finding, action, evidence, confidence, saving=None,
+       params=None):
     out = {
         "id": id_, "severity": severity, "title": title, "finding": finding,
         "action": action, "evidence": evidence, "confidence": confidence,
     }
     if saving is not None:
         out["est_monthly_saving_usd"] = round(saving, 2)
+    # The numbers the English sentence above was built from, under the names
+    # assets/i18n.js's f_<id>_* templates substitute them by. English is not
+    # re-derived from these at render time — both are written from the same
+    # locals so they can never disagree — but every other locale is.
+    if params is not None:
+        out["i18n_params"] = params
     return out
 
 
@@ -99,7 +106,7 @@ def cache_efficiency(digest, pricing):
             "No action. Watch this number — a fall means sessions are being restarted more often.",
             {"cache_read_share_pct": _pct(served, read_total),
              "cache_read": served, "cache_create": t["cache_create"], "fresh_input": t["input"]},
-            "high",
+            "high", params={"pct": _pct(served, read_total)},
         )]
     # Every token re-created instead of read costs 12.5x the read price.
     m = pricing["multipliers"]
@@ -115,6 +122,7 @@ def cache_efficiency(digest, pricing):
         {"cache_read_share_pct": _pct(served, read_total),
          "cache_create": t["cache_create"], "cache_read": served, "fresh_input": t["input"]},
         "high", _monthly(excess, digest),
+        params={"pct": _pct(served, read_total), "floor": int(T["cache_read_share_floor"] * 100)},
     )]
 
 
@@ -138,6 +146,7 @@ def cold_cache_sessions(digest, pricing):
                        "turns": s["turns"], "cache_create": s["cache_create"]}
                       for s in sorted(victims, key=lambda x: -x["cache_create"])[:5]]},
         "high", _monthly(cost * 0.2, digest),
+        params={"n": len(victims), "wasted": wasted},
     )]
 
 
@@ -171,6 +180,7 @@ def premium_model_on_light_work(digest, pricing):
         {"premium_turns": prem_turns, "mean_output_tokens": round(avg, 1),
          "models": [r["model"] for r in prem]},
         "medium", _monthly(saving, digest),
+        params={"turns": prem_turns, "avg": round(avg), "threshold": T["light_turn_output"]},
     )]
 
 
@@ -196,6 +206,7 @@ def exploration_without_output(digest, pricing):
                        "reads": s["reads"], "cost_usd": s["cost"]}
                       for s in sorted(victims, key=lambda x: -x["cost"])[:5]]},
         "medium", _monthly(cost * 0.3, digest),
+        params={"n": len(victims), "reads": reads, "cost": round(cost, 2)},
     )]
 
 
@@ -215,6 +226,8 @@ def context_bloat(digest, pricing):
         {"sessions": len(victims), "worst_peak_context": worst["peak_context"],
          "worst_session": worst["session"], "worst_workspace": worst["workspace"]},
         "medium",
+        params={"n": len(victims), "threshold": T["context_bloat_tokens"],
+                "worst": worst["peak_context"]},
     )]
 
 
@@ -237,6 +250,8 @@ def session_churn(digest, pricing):
         {"short_sessions": len(short), "total_sessions": len(sessions),
          "share_pct": _pct(len(short), len(sessions))},
         "medium",
+        params={"short": len(short), "total": len(sessions),
+                "pct": _pct(len(short), len(sessions)), "turns": T["short_session_turns"]},
     )]
 
 
@@ -257,7 +272,7 @@ def subagent_leverage(digest, pricing):
             "stays small, which keeps every later turn cheaper.",
             {"subagent_output_share_pct": 0.0},
             "medium",
-        )]
+        )]  # nothing interpolated — the English sentence is the whole story
     if share > T["subagent_share_high"]:
         return [_f(
             "subagent-fanout", "medium",
@@ -269,6 +284,7 @@ def subagent_leverage(digest, pricing):
             {"subagent_output_share_pct": _pct(sub_out, total_out),
              "subagent_turns": digest["sidechain"]["turns"]},
             "medium",
+            params={"pct": _pct(sub_out, total_out)},
         )]
     return [_f(
         "delegation-balanced", "info",
@@ -278,6 +294,7 @@ def subagent_leverage(digest, pricing):
         "No action.",
         {"subagent_output_share_pct": _pct(sub_out, total_out)},
         "medium",
+        params={"pct": _pct(sub_out, total_out)},
     )]
 
 
@@ -303,6 +320,7 @@ def cache_ttl_choice(digest, pricing):
             {"cache_1h_share_pct": _pct(t["cache_1h"], writes),
              "reads_per_write": round(reads_per_write, 2)},
             "medium",
+            params={"pct": _pct(t["cache_1h"], writes), "ratio": round(reads_per_write, 1)},
         )]
     excess = t["cache_1h"] * (m["cache_write_1h"] - m["cache_write_5m"]) * 5.0 / 1_000_000
     return [_f(
@@ -316,6 +334,7 @@ def cache_ttl_choice(digest, pricing):
         {"cache_1h_share_pct": _pct(t["cache_1h"], writes),
          "reads_per_write": round(reads_per_write, 2)},
         "medium", _monthly(excess, digest),
+        params={"pct": _pct(t["cache_1h"], writes), "ratio": round(reads_per_write, 1)},
     )]
 
 
@@ -339,6 +358,8 @@ def tool_concentration(digest, pricing):
          "total_calls": total,
          "next": [{"tool": r["tool"], "calls": r["calls"]} for r in tools[1:4]]},
         "medium",
+        params={"tool": top["tool"], "calls": top["calls"],
+                "pct": _pct(top["calls"], total), "total": total},
     )]
 
 
@@ -362,6 +383,9 @@ def investment_concentration(digest, pricing):
                   "share_pct": _pct(w["cost"], total), "sessions": w["sessions"],
                   "turns": w["turns"]} for w in ws[:8]]},
         "high",
+        params={"ws": top["workspace"], "pct": _pct(top["cost"], total),
+                "n": top["sessions"],
+                "pct3": _pct(sum(w["cost"] for w in ws[:3]), total)},
     )]
 
 
@@ -382,6 +406,7 @@ def working_rhythm(digest, pricing):
         {"peak_hour": peak, "peak_turns": hours[peak],
          "out_of_hours_share_pct": _pct(late, total), "by_hour": hours},
         "high",
+        params={"peak": peak, "turns": hours[peak], "pct": _pct(late, total)},
     )]
 
 
@@ -424,6 +449,9 @@ def peak_window_arbitrage(digest, pricing):
             {"peak_share_pct": _pct(peak["cost"], timed_cost),
              "peak_premium_usd": round(premium, 2), "vendors": vendors},
             "high",
+            params={"pct": _pct(peak["cost"], timed_cost),
+                    "vendors": ", ".join(vendors) or "time-priced",
+                    "premium": round(premium, 2)},
         )]
 
     if monthly < T["peak_min_monthly_usd"]:
@@ -443,6 +471,9 @@ def peak_window_arbitrage(digest, pricing):
              "peak_premium_usd": round(premium, 2),
              "est_monthly_premium_usd": round(monthly, 2), "vendors": vendors},
             "high",
+            params={"pct": _pct(peak["cost"], timed_cost),
+                    "vendors": ", ".join(vendors) or "time-priced",
+                    "monthly": round(monthly, 2)},
         )]
 
     return [_f(
@@ -462,6 +493,9 @@ def peak_window_arbitrage(digest, pricing):
          "off_peak_cost_usd": round(off["cost"], 2) if off else 0.0,
          "peak_premium_usd": round(premium, 2), "vendors": vendors},
         "high", monthly,
+        params={"pct": _pct(peak["cost"], timed_cost),
+                "vendors": ", ".join(vendors) or "time-priced",
+                "premium": round(premium, 2)},
     )]
 
 
@@ -491,6 +525,7 @@ def plan_value_realised(digest, pricing):
             {"api_equivalent_usd_month": api, "plan_price_usd_month": paid,
              "multiple": mult, "days_observed": days},
             "high", paid - api,
+            params={"label": label, "days": days, "api": round(api, 2), "paid": round(paid, 2)},
         )]
     return [_f(
         "plan-value-realised", "info",
@@ -503,6 +538,8 @@ def plan_value_realised(digest, pricing):
         {"api_equivalent_usd_month": api, "plan_price_usd_month": paid,
          "multiple": mult, "verdict": value["verdict"], "days_observed": days},
         "high",
+        params={"label": label, "mult": round(mult, 1), "days": days,
+                "api": round(api, 2), "paid": round(paid, 2)},
     )]
 
 
@@ -527,6 +564,7 @@ def vendor_concentration(digest, pricing):
             {"top_vendor": top, "share_pct": _pct(top_out, total),
              "vendors": len(by_vendor)},
             "medium",
+            params={"top": top, "pct": _pct(top_out, total), "n": len(by_vendor)},
         )]
     return [_f(
         "vendor-concentration", "medium",
@@ -541,6 +579,7 @@ def vendor_concentration(digest, pricing):
         {"top_vendor": top, "share_pct": _pct(top_out, total),
          "by_vendor": sorted(by_vendor.items(), key=lambda kv: -kv[1])[:6]},
         "medium",
+        params={"top": top, "pct": _pct(top_out, total)},
     )]
 
 
@@ -571,6 +610,7 @@ def local_currency_context(digest, pricing):
         "No action. FX in this repo is indicative and hand-maintained — treat it as a "
         "sense-check, not accounting.",
         out, "medium",
+        params={"usd": round(monthly_usd, 2), "days": out.get("equivalent_dev_days")},
     )]
 
 
@@ -608,6 +648,7 @@ def duplicated_turns(digest, pricing):
         {"duplicate_turns": dupes, "distinct_turns": distinct,
          "share_of_store_pct": share},
         "high",
+        params={"dupes": dupes, "total": total, "share": share},
     )]
 
 
@@ -647,6 +688,12 @@ def unpriced_estimate(digest, pricing):
          "share_of_spend_pct": share, "models": models,
          "fallback_rate": {"input": fb.get("input"), "output": fb.get("output")}},
         "high",
+        # `named` stays a raw list here rather than the pre-joined English
+        # string above: "and others" is an English word, and joining it in
+        # lets every other locale say it in its own.
+        params={"share": share, "cost": round(cost, 2), "turns": turns,
+                "named": ", ".join(models[:3]), "more": len(models) > 3,
+                "fb_in": fb.get("input", 0), "fb_out": fb.get("output", 0)},
     )]
 
 

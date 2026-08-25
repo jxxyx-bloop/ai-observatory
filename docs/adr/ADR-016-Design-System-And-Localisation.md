@@ -50,12 +50,28 @@ Deliberately different, for a reason that is structural rather than stylistic:
 Both read the same `observatory-lang` and `observatory-theme` keys, so a choice
 made on either carries to the other.
 
-### 4. Interface strings are translated; generated findings are not
+### 4. Interface strings are translated; so, since 2026-08-25, are findings
 
-The dashboard's chrome, filters, panel titles and captions are localised. The
-findings themselves, and the method notes in the footer, are produced by
-`insights.py` in English and stay that way — and any non-English locale says so
-on the page rather than leaving the reader to notice.
+*(Originally: "generated findings are not." Reversed — see below.)*
+
+The dashboard's chrome, filters, panel titles and captions are localised. So
+are the footer's method notes, which are fixed editorial copy. Findings sit in
+between: `insights.py` still composes them once, in English, with live numbers
+threaded through sentences it builds itself — but every detector now also
+returns `i18n_params`, the same locals under stable names, and
+`assets/i18n.js` carries an `f_<id>_title` / `f_<id>_body` / `f_<id>_action`
+template per detector per locale. `translateFindings()` in `assets/app.js`
+substitutes on every language switch; English is not exempt, so a round-trip
+through another locale and back is proven to return the same text rather than
+assumed to. `test_findings_i18n_coverage` in `tests/test_engine.py` fails the
+suite if a detector is missing its template in any of the thirteen locales.
+
+The reversal is why the original limitation was accepted in the first place,
+addressed rather than argued around: translating a template with numbers
+already in it is a different job from translating a fixed label — the risk was
+never the mechanism, it was a template rendering wrong and nobody noticing.
+That is what the coverage test exists to catch, and what a native reviewer of
+each locale should still spot-check before trusting it in production.
 
 ### 5. Every figure in the README is generated
 
@@ -83,9 +99,12 @@ Screenshot generation needs Playwright, which is a dev-time and CI dependency;
 the engine stays stdlib-only Python, and nothing in the shipped product depends
 on it.
 
-**Accepted limitation.** Generated findings stay English. Translating prose that
-carries live numbers is a different job from translating a label, and doing it
-badly would damage the only thing this product sells, which is being believed.
+**Former accepted limitation, now closed.** Generated findings stayed English
+from 2026-08-19 to 2026-08-25. §4 above has the current mechanism and why
+translating a template with numbers already in it turned out to be tractable
+where translating a runtime-composed sentence is not: the numbers are named
+and passed as data, so no translator ever touches a number, only the sentence
+around it.
 
 ## Alternatives considered
 
@@ -97,7 +116,10 @@ indexed page in any language but English — for a product whose growth argument
 is regional search. Rejected.
 
 **Machine-translating the findings at render time.** Requires a network call
-from a page that promises it makes none. Rejected outright.
+from a page that promises it makes none. Rejected outright — this is also why
+§4's mechanism is a fixed template per detector rather than a general-purpose
+translator: the set of sentences a detector can produce is closed and known at
+build time, so it can be hand-translated once rather than translated live.
 
 **Hand-written translated READMEs.** Twelve documents that go stale the first
 time the English changes, which is the failure mode this ADR exists to remove.

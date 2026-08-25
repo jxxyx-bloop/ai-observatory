@@ -271,6 +271,13 @@ def test_hidden_guards():
     html = (assets / "page.html").read_text(encoding="utf-8")
     css = "\n".join((assets / f).read_text(encoding="utf-8")
                     for f in ("tokens.css", "app.css"))
+    # Comments first. Everything below treats the run of text before a `{` as
+    # the selector, so a comment is indistinguishable from one — and these
+    # stylesheets are heavily commented, in prose that names the very classes
+    # this check looks for. A note reading "a query container, like .panel
+    # above" sitting above `.kpi{display:grid}` made the pair read as
+    # `.panel{display:grid}` and failed a rule that was never written.
+    css = re.sub(r"/\*.*?\*/", "", css, flags=re.S)
     # Selectors and bodies. A body cannot contain a brace, so this walks past
     # @media wrappers on its own rather than needing a real parser.
     rules = re.findall(r"([^{}]+)\{([^{}]*)\}", css)
@@ -292,6 +299,55 @@ def test_hidden_guards():
             ok("%s (%s) stays hidden" % (who, name), guarded or not sets_display,
                "%s sets display, so [hidden] needs a %s[hidden]{display:none} guard"
                % (name, name))
+
+
+def test_findings_i18n_coverage():
+    """Every detector's title/body/action exists in every shipped locale.
+
+    Two locale tables that can disagree eventually will (the project's own
+    words, about a different pair of tables — see PROJECT.md's carry-forward
+    on `site/i18n.py` vs `assets/i18n.js`). This is that same class of check
+    for a third table: insights.py names 25 detector ids, and
+    assets/i18n.js owes each one an `f_<id>_title`, `f_<id>_body`, and either
+    an `f_<id>_action` or an `f_<id>_action1` in all thirteen `T["..."]`
+    blocks. A detector added to one side and not the other fails silently at
+    runtime — the English fallback just never gets replaced — which is
+    exactly the kind of drift a human reviewing a diff in one file has no way
+    to catch.
+    """
+    print("\nfindings i18n coverage")
+    src = (Path(__file__).resolve().parent.parent / "insights.py").read_text(encoding="utf-8")
+    ids = re.findall(r'return \[_f\(\s*\n\s*"([a-z0-9-]+)"', src)
+    ok("insights.py still defines detectors", len(ids) >= 20)
+
+    i18n = (Path(__file__).resolve().parent.parent / "assets" / "i18n.js").read_text(encoding="utf-8")
+    locales = re.findall(r'T\["([^"]+)"\] = \{', i18n)
+    check("thirteen locale tables", len(locales), 13)
+
+    # One block per locale, from its own header to the next top-level "};".
+    blocks = {}
+    starts = [(m.group(1), m.start()) for m in re.finditer(r'T\["([^"]+)"\] = \{', i18n)]
+    closes = [m.start() for m in re.finditer(r'\n\};\n', i18n)]
+    ci = 0
+    for loc, start in starts:
+        while closes[ci] < start:
+            ci += 1
+        blocks[loc] = i18n[start:closes[ci]]
+        ci += 1
+
+    missing = []
+    for loc, body in blocks.items():
+        keys = set(re.findall(r'"?([\w]+)"?:\s*"', body))
+        for fid in ids:
+            stem = "f_" + fid.replace("-", "_")
+            if stem + "_title" not in keys:
+                missing.append("%s: %s_title" % (loc, stem))
+            if stem + "_body" not in keys:
+                missing.append("%s: %s_body" % (loc, stem))
+            if stem + "_action" not in keys and stem + "_action1" not in keys:
+                missing.append("%s: %s_action(1)" % (loc, stem))
+    ok("every detector has a title/body/action in every locale", not missing,
+       "missing: " + ", ".join(missing[:12]) + (" …" if len(missing) > 12 else ""))
 
 
 # --- updates ---------------------------------------------------------------
@@ -370,6 +426,43 @@ def test_updater():
            updater.for_render(dict(after, behind=1))["state"] == "ready")
         ok("and nothing is said when there is nothing to say",
            updater.for_render({"behind": 0}) is None)
+
+        # The receipt retires when the reader acts on it. Everything below is
+        # the sequence a real install walks: the launch that applies the update
+        # renders once with somebody watching, and the refresh command that
+        # render handed them is what clears the strip.
+        seen_state = dict(after, applied=dict(after["applied"], seen=True))
+        ok("an unattended render still shows a receipt already read",
+           updater.for_render(seen_state, attended=False)["state"] == "applied")
+        ok("but an attended one does not repeat it",
+           updater.for_render(seen_state, attended=True) is None)
+
+        first = updater.receipt(data, attended=True)
+        check("the launch render earns the receipt", first["state"], "applied")
+        ok("and remembers that it did",
+           (updater.read(data).get("applied") or {}).get("seen") is True)
+        ok("the refresh it asked for retires the strip",
+           updater.receipt(data, attended=True) is None)
+        ok("and drops the dead receipt from the state file",
+           "applied" not in updater.read(data))
+
+        # The agent renders at 09:00 with nobody watching. A seen-once flag
+        # burned there would lose the receipt for the one person it was for,
+        # which is the trap the `attended` scoping exists to avoid.
+        updater.write(data, dict(after))
+        ok("an unattended render shows it", updater.receipt(data)["state"] == "applied")
+        ok("without burning it",
+           not (updater.read(data).get("applied") or {}).get("seen"))
+        ok("so the reader still gets it when they open the page",
+           updater.receipt(data, attended=True)["state"] == "applied")
+
+        # The backstop, for a reader who never refreshes by hand.
+        updater.write(data, dict(after, applied=dict(after["applied"],
+                                                     at="2020-01-01T00:00:00Z")))
+        ok("an unread receipt still expires on the clock",
+           updater.receipt(data) is None)
+        ok("and is swept out of the state file",
+           "applied" not in updater.read(data))
 
         # A tracked edit is the one thing that must never be fast-forwarded
         # over. git refuses per-file; this asserts we surface that rather than
@@ -804,6 +897,7 @@ def test_duplicate_disclosure():
 def main():
     for fn in (test_window_phase, test_cost, test_plan_value, test_paths,
                test_share_payload, test_pipeline, test_hidden_guards,
+               test_findings_i18n_coverage,
                test_updater, test_sync_integrity, test_unpriced_disclosure,
                test_doctor_install_checks, test_cli_dispatch,
                test_duplicate_disclosure):
