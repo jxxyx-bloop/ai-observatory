@@ -259,12 +259,23 @@ while pulling a webfont would be the loudest possible contradiction. So:
 
 - system font stacks only,
 - inline SVG only,
-- no CDN, no analytics, no tracking pixel,
+- no CDN, no tracking pixel, nothing fetched to draw the page,
 - enforced by the CSP in `site/build.py` (`default-src 'none'`) **and** by a CI
   step that fails the build on any remote `src`/`href`.
 
 The CSP is what makes the promise checkable by a browser instead of a sentence
 in a README.
+
+**The one boundary, drawn explicitly.** A deployment may count visits to its
+*marketing* pages — the landing page and `/setup/` — by setting `ANALYTICS_ID`;
+see [ANALYTICS.md](../setup/ANALYTICS.md). It may not reach `/demo/`, and it may
+not reach the dashboard `render.py` writes onto a laptop. Those two carry the
+promise, so the boundary is structural rather than remembered: the demo is
+rendered by the engine's own renderer, `check_no_remote.py` refuses to exempt
+anything under `demo/`, and `check_headers.py` fails a policy that would let a
+remote host reach it. The privacy copy is switched by the same variable as the
+tag, in all thirteen locales, so a page cannot advertise a promise it is not
+keeping.
 
 ---
 

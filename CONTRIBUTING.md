@@ -100,6 +100,7 @@ overwrites them:
 ```bash
 python3 site/build.py                              # every locale
 python3 site/tools/check_no_remote.py site/dist    # the zero-network promise
+python3 site/tools/check_headers.py site/dist      # the policy that enforces it
 python3 site/tools/diagrams.py && python3 site/tools/readmes.py
 ```
 

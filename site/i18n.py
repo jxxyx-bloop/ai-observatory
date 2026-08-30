@@ -165,6 +165,8 @@ STRINGS["en"] = {
     "priv_2": "Dropped as each file is read, so it never reaches the dashboard.",
     "priv_3": "The dashboard and this page make zero external requests. No CDN, no "
               "fonts, no analytics.",
+    "priv_3_analytics": "The dashboard makes zero external requests, ever. This page alone loads "
+                       "Google Analytics to count visits — no CDN, no fonts, nothing else.",
 
     "start_h2": "One command, about a minute",
     "start_d": "One line. It checks your setup, reads what your coding agents "
@@ -310,6 +312,7 @@ STRINGS["zh-Hans"] = {
     "priv_1": "从不存储：提示词、回复、代码、命令、文件路径。",
     "priv_2": "读取每个文件时即丢弃，因此从不会进入仪表板。",
     "priv_3": "看板和本页都不发起任何外部请求。无 CDN、无字体、无统计。",
+    "priv_3_analytics": "看板永远不发起任何外部请求。仅本页加载 Google Analytics 用于统计访问量——无 CDN、无字体，仅此而已。",
 
     "start_cta1": "打开在线演示",
 
@@ -414,6 +417,7 @@ STRINGS["zh-Hant"] = {
     "priv_1": "從不儲存：提示詞、回覆、程式碼、指令、檔案路徑。",
     "priv_2": "讀取每個檔案時即丟棄，因此從不會進入儀表板。",
     "priv_3": "儀表板與本頁都不發出任何外部請求。無 CDN、無字型、無分析。",
+    "priv_3_analytics": "儀表板永遠不發出任何外部請求。僅本頁載入 Google Analytics 用於統計造訪量——無 CDN、無字型，僅此而已。",
 
     "start_cta1": "開啟線上示範",
 
@@ -518,6 +522,7 @@ STRINGS["ja"] = {
     "priv_1": "決して保存しないもの：プロンプト、応答、コード、コマンド、ファイルパス。",
     "priv_2": "ファイルを読むそばから捨てるので、ダッシュボードには届きません。",
     "priv_3": "ダッシュボードもこのページも外部リクエストはゼロ。CDNもフォントも解析タグもありません。",
+    "priv_3_analytics": "ダッシュボードは外部リクエストを一切送りません。訪問数を数えるために Google Analytics を読み込むのはこのページだけです。CDN もフォントもありません。",
 
     "start_cta1": "デモを開く",
 
@@ -622,6 +627,7 @@ STRINGS["ko"] = {
     "priv_1": "절대 저장하지 않는 것: 프롬프트, 응답, 코드, 명령어, 파일 경로.",
     "priv_2": "파일을 읽는 즉시 버리므로 대시보드까지 오지 않습니다.",
     "priv_3": "대시보드도 이 페이지도 외부 요청이 0건입니다. CDN도, 폰트도, 애널리틱스도 없습니다.",
+    "priv_3_analytics": "대시보드는 외부 요청을 전혀 보내지 않습니다. 방문 수를 세기 위해 Google Analytics를 불러오는 것은 이 페이지뿐입니다. CDN도 폰트도 없습니다.",
 
     "start_cta1": "라이브 데모 열기",
 
@@ -726,6 +732,7 @@ STRINGS["hi"] = {
     "priv_1": "कभी संग्रहित नहीं: प्रॉम्प्ट, जवाब, कोड, कमांड, फ़ाइल पाथ।",
     "priv_2": "हर फ़ाइल पढ़ते ही हटा दिया जाता है, इसलिए यह डैशबोर्ड तक पहुँचता ही नहीं।",
     "priv_3": "डैशबोर्ड और यह पेज कोई बाहरी अनुरोध नहीं करते। न CDN, न फ़ॉन्ट, न एनालिटिक्स।",
+    "priv_3_analytics": "डैशबोर्ड कभी कोई बाहरी अनुरोध नहीं करता। विज़िट गिनने के लिए Google Analytics सिर्फ़ यही पेज लोड करता है — न CDN, न फ़ॉन्ट, और कुछ नहीं।",
 
     "start_cta1": "लाइव डेमो खोलें",
 
@@ -830,6 +837,7 @@ STRINGS["id"] = {
     "priv_1": "Tidak pernah disimpan: prompt, jawaban, kode, perintah, jalur berkas.",
     "priv_2": "Dibuang saat tiap berkas dibaca, jadi tidak pernah sampai ke dasbor.",
     "priv_3": "Dasbor dan halaman ini nol permintaan eksternal. Tanpa CDN, tanpa font, tanpa analitik.",
+    "priv_3_analytics": "Dasbor tidak pernah membuat permintaan eksternal. Hanya halaman ini yang memuat Google Analytics untuk menghitung kunjungan — tanpa CDN, tanpa font, tanpa yang lain.",
 
     "start_cta1": "Buka demo langsung",
 
@@ -934,6 +942,7 @@ STRINGS["vi"] = {
     "priv_1": "Không bao giờ lưu: prompt, câu trả lời, mã nguồn, lệnh, đường dẫn tệp.",
     "priv_2": "Được loại bỏ ngay khi đọc mỗi tệp, nên không bao giờ đến bảng điều khiển.",
     "priv_3": "Bảng điều khiển và trang này không gửi bất kỳ yêu cầu ra ngoài nào. Không CDN, không font, không analytics.",
+    "priv_3_analytics": "Bảng điều khiển không bao giờ gửi yêu cầu ra ngoài. Chỉ trang này tải Google Analytics để đếm lượt truy cập — không CDN, không phông chữ, không gì khác.",
 
     "start_cta1": "Mở bản demo",
 
@@ -1038,6 +1047,7 @@ STRINGS["th"] = {
     "priv_1": "ไม่เก็บเด็ดขาด: พรอมป์ต์ คำตอบ โค้ด คำสั่ง และพาธไฟล์",
     "priv_2": "ถูกทิ้งตั้งแต่ตอนอ่านแต่ละไฟล์ จึงไม่เคยไปถึงแดชบอร์ด",
     "priv_3": "ทั้งแดชบอร์ดและหน้านี้ไม่มีการเรียกภายนอกเลย ไม่มี CDN ไม่มีฟอนต์ ไม่มี analytics",
+    "priv_3_analytics": "แดชบอร์ดไม่ส่งคำขอออกภายนอกเลย มีเพียงหน้านี้ที่โหลด Google Analytics เพื่อนับผู้เข้าชม ไม่มี CDN ไม่มีฟอนต์ ไม่มีอย่างอื่น",
 
     "start_cta1": "เปิดเดโม",
 
@@ -1142,6 +1152,7 @@ STRINGS["ms"] = {
     "priv_1": "Tidak pernah disimpan: prompt, jawapan, kod, arahan, laluan fail.",
     "priv_2": "Dibuang semasa setiap fail dibaca, jadi ia tidak pernah sampai ke papan pemuka.",
     "priv_3": "Papan pemuka dan halaman ini sifar permintaan luar. Tanpa CDN, tanpa fon, tanpa analitik.",
+    "priv_3_analytics": "Papan pemuka tidak pernah membuat permintaan luaran. Hanya halaman ini memuatkan Google Analytics untuk mengira lawatan — tiada CDN, tiada fon, tiada apa-apa lagi.",
 
     "start_cta1": "Buka demo langsung",
 
@@ -1246,6 +1257,7 @@ STRINGS["fil"] = {
     "priv_1": "Hindi kailanman iniimbak: prompt, sagot, code, command, file path.",
     "priv_2": "Itinatapon habang binabasa ang bawat file, kaya hindi ito nakakarating sa dashboard.",
     "priv_3": "Zero external request ang dashboard at ang pahinang ito. Walang CDN, walang font, walang analytics.",
+    "priv_3_analytics": "Hindi kailanman gumagawa ng panlabas na request ang dashboard. Ang pahinang ito lang ang naglo-load ng Google Analytics para bilangin ang mga bisita — walang CDN, walang font, wala nang iba.",
 
     "start_cta1": "Buksan ang live demo",
 
@@ -1350,6 +1362,7 @@ STRINGS["pt-BR"] = {
     "priv_1": "Nunca armazenado: prompts, respostas, código, comandos, caminhos de arquivo.",
     "priv_2": "Descartado à medida que cada arquivo é lido, então nunca chega ao painel.",
     "priv_3": "O painel e esta página fazem zero requisições externas. Sem CDN, sem fontes, sem analytics.",
+    "priv_3_analytics": "O painel nunca faz requisições externas. Só esta página carrega o Google Analytics para contar visitas — sem CDN, sem fontes, nada mais.",
 
     "start_cta1": "Abrir a demo",
 
@@ -1454,6 +1467,7 @@ STRINGS["es"] = {
     "priv_1": "Nunca se guarda: prompts, respuestas, código, comandos, rutas de archivo.",
     "priv_2": "Se descarta al leer cada archivo, así que nunca llega al panel.",
     "priv_3": "El panel y esta página no hacen ninguna petición externa. Sin CDN, sin fuentes, sin analítica.",
+    "priv_3_analytics": "El panel nunca hace peticiones externas. Solo esta página carga Google Analytics para contar visitas: sin CDN, sin fuentes, nada más.",
 
     "start_cta1": "Abrir la demo",
 
