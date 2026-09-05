@@ -92,10 +92,77 @@ def test_example_openai_jsonl():
     check("second turn prices as off-peak", pricing.window_phase(b["model"], b["ts"], p), "off-peak")
 
 
+def test_gemini_cli():
+    """Gemini CLI, against fixtures in the shape @google/gemini-cli-core declares.
+
+    The record shape here is taken from that package's own `chatRecordingTypes`
+    (MessageRecord / TokensSummary / ToolCallRecord) and the code in
+    `chatRecordingService.recordMessageTokens` that fills it, at version 0.58.0
+    — not from this parser, and not from memory. The two facts worth stating
+    plainly, because everything else follows from them:
+
+      * `tokens.input` is the API's `promptTokenCount`, which *includes*
+        `cachedContentTokenCount`. Gemini CLI's own telemetry computes fresh
+        input as `prompt - cached`, so the spec sets `input_is_total`.
+      * No message record carries the session id. It is in the filename, and a
+        subagent's transcript is nested under its parent session id — which is
+        what `from_path` exists to read.
+    """
+    print("\nspec: gemini-cli.json")
+    c = collector_for("gemini-cli.json")
+    chats = HERE / "fixtures" / "gemini-cli" / "chats"
+    main_file = str(chats / "session-2026-08-19T01-02-a1b2c3d4.jsonl")
+    events, cursor = c.collect(main_file, {})
+
+    # Six records: metadata, a user turn, two priced gemini turns, one gemini
+    # turn with no usage yet, and a `$set` metadata update. Two are priced.
+    check("exactly the priced turns are emitted", len(events), 2)
+    check("the cursor records the turn count", cursor["turn"], 2)
+    check("re-reading from the cursor yields nothing new",
+          c.collect(main_file, cursor)[0], [])
+
+    a, b = events
+    check("timestamp", a["ts"], "2026-08-19T01:02:11.000Z")
+    check("session comes from the filename, not the record", a["session"], "a1b2c3d4")
+    check("model", a["model"], "gemini-2.5-pro")
+    check("second turn keeps its own model", b["model"], "gemini-2.5-flash")
+    check("tool names collected", a["tools"], ["read_file", "list_directory"])
+    # input_is_total: 52000 prompt - 48000 cached - 0 created = 4000 fresh.
+    check("input has the cached component subtracted out", a["input"], 4000)
+    check("cache_read", a["cache_read"], 48000)
+    check("output", a["output"], 880)
+    check("no cache-creation concept, so it stays zero", a["cache_create"], 0)
+    check("repo resolved from a tool argument, since no cwd is recorded",
+          a["repo"], "my-app")
+    # Two labels, because the turn touched that area two ways: `read_file` named
+    # a file under src/api, and `list_directory` named the directory itself.
+    # ADR-008 will not interpolate a path's last segment — in the case the rule
+    # was written for that segment is a filename — so a directory argument lands
+    # one level coarser. Both labels are true; asserting the pair keeps the
+    # behaviour visible rather than letting a change to it pass unnoticed.
+    check("surfaces resolved from what the turn touched",
+          a["surfaces"], ["src", "src/api"])
+    check("a main-session turn is not delegated work", a["sidechain"], False)
+    check("entrypoint falls back to the spec default", a["entrypoint"], "cli")
+
+    # A subagent transcript is nested under the parent session id, so its turns
+    # roll up to the session that delegated them rather than inventing a new one.
+    sub_file = str(chats / "9f8e7d6c-parent-session" / "subagent-explorer.jsonl")
+    sub, _ = c.collect(sub_file, {})
+    check("the subagent's priced turn is emitted", len(sub), 1)
+    check("subagent rolls up to the parent session", sub[0]["session"], "9f8e7d6c")
+    check("subagent turns are marked as delegated", sub[0]["sidechain"], True)
+    check("subagent input is net of cache", sub[0]["input"], 2000)
+
+    # No path may survive into an event, anywhere.
+    blob = json.dumps(events + sub)
+    check("no absolute path reaches the event", "/home/dev/code" in blob, False)
+
+
 def main():
     topo.use(FIXTURE_TOPOLOGY)
     try:
-        for fn in (test_example_openai_jsonl,):
+        for fn in (test_example_openai_jsonl, test_gemini_cli):
             fn()
     finally:
         topo.use(None)

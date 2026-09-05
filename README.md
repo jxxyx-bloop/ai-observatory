@@ -350,6 +350,7 @@ no code that can send it anywhere.
 | Codex | `~/.codex/sessions/**/*.jsonl` |
 | Kimi Code | `~/.kimi-code/sessions/**/wire.jsonl` |
 | Antigravity | `~/.gemini/antigravity/brain/**` |
+| Gemini CLI | `~/.gemini/tmp/*/chats/**/*.jsonl` |
 | **Anything else** | a [declarative spec](observatory/collectors/specs/README.md) — one JSON file, no Python |
 
 Collection is read-only and costs zero tokens.

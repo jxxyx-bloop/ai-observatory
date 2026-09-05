@@ -1,0 +1,31 @@
+{
+  "_doc": "Gemini CLI. Verified against @google/gemini-cli-core 0.58.0: chatRecordingService writes one JSONL file per session under the project's temp dir, chatRecordingTypes declares the record shape, and telemetry/uiTelemetry computes fresh input as `prompt - cached` — which is why input_is_total is true here. The session id is not on any message record; it lives in the filename, and a subagent's transcript is nested under its parent session id. See from_path.",
+  "provider": "gemini-cli",
+  "roots": [
+    "~/.gemini/tmp/*/chats/session-*.jsonl",
+    "~/.gemini/tmp/*/chats/*/*.jsonl"
+  ],
+  "where": { "type": "gemini" },
+  "default_entrypoint": "cli",
+  "input_is_total": true,
+  "from_path": {
+    "session": [
+      "/chats/([^/]+)/[^/]+\\.jsonl$",
+      "/session-.*-([^-/]+)\\.jsonl$"
+    ],
+    "sidechain": "/chats/[^/]+/[^/]+\\.jsonl$"
+  },
+  "fields": {
+    "ts": "timestamp",
+    "model": "model",
+    "input": "tokens.input",
+    "output": "tokens.output",
+    "cache_read": "tokens.cached"
+  },
+  "tools": {
+    "list": "toolCalls",
+    "name": "name",
+    "args": "args",
+    "path_args": ["file_path", "dir_path", "path"]
+  }
+}

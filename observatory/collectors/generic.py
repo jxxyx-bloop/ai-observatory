@@ -26,6 +26,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import sys
 from pathlib import Path
 
@@ -58,6 +59,45 @@ def dig(node, path):
         if node is None:
             return None
     return node
+
+
+def _from_path(source: str, spec: dict) -> dict:
+    """What the *file* knows that its records do not.
+
+    Several tools put the session id in the filename and never repeat it on a
+    turn — Gemini CLI writes `chats/session-<ts>-<id8>.jsonl`, and nests a
+    subagent's transcript under `chats/<parent session id>/`. Without this the
+    whole provider collapses into one giant session, and every per-session
+    detector (context carried per turn, cache paid for and abandoned) reads a
+    number that means nothing.
+
+    `from_path.session` is an ordered list of patterns; the first to match wins
+    and its first capture group is the id. `from_path.sidechain` is a single
+    pattern whose match marks the turn as delegated work.
+    """
+    cfg = spec.get("from_path") or {}
+    out = {}
+    posix = Path(source).as_posix()
+
+    patterns = cfg.get("session") or []
+    if isinstance(patterns, str):
+        patterns = [patterns]
+    for pattern in patterns:
+        try:
+            hit = re.search(pattern, posix)
+        except re.error:
+            continue          # a bad pattern costs that field, never the sync
+        if hit and hit.groups():
+            out["session"] = hit.group(1)
+            break
+
+    side = cfg.get("sidechain")
+    if side:
+        try:
+            out["sidechain"] = bool(re.search(side, posix))
+        except re.error:
+            pass
+    return out
 
 
 def _matches(rec, where) -> bool:
@@ -120,6 +160,7 @@ class SpecCollector(Collector):
         spec = self.spec
         where = spec.get("where") or {}
         f = spec.get("fields") or {}
+        from_path = _from_path(source, spec)
         events = []
 
         with path.open("r", encoding="utf-8", errors="replace") as fh:
@@ -140,16 +181,19 @@ class SpecCollector(Collector):
                            ("input", "output", "cache_create", "cache_read")):
                     continue
                 turn += 1
-                events.append(self._turn(rec, turn))
+                events.append(self._turn(rec, turn, from_path))
             offset = fh.tell()
 
         return events, {"offset": offset, "turn": turn}
 
-    def _turn(self, rec: dict, turn: int) -> dict:
+    def _turn(self, rec: dict, turn: int, from_path: dict = None) -> dict:
         spec, f = self.spec, self.spec.get("fields") or {}
+        from_path = from_path or {}
         ev = blank_event(self.provider)
         ev["ts"] = dig(rec, f.get("ts"))
-        sid = dig(rec, f.get("session")) or ""
+        # The record wins when it carries a session; the filename answers for
+        # the tools that only write it there.
+        sid = dig(rec, f.get("session")) or from_path.get("session") or ""
         ev["session"] = str(sid)[:8] or None
         cwd = dig(rec, f.get("cwd")) or ""
         ev["workspace"] = os.path.basename(str(cwd).rstrip("/")) or None
@@ -161,7 +205,8 @@ class SpecCollector(Collector):
             dig(rec, f.get("model")) or spec.get("default_model"))
         ev["effort"] = dig(rec, f.get("effort"))
         ev["speed"] = dig(rec, f.get("speed"))
-        ev["sidechain"] = bool(dig(rec, f.get("sidechain")))
+        ev["sidechain"] = bool(dig(rec, f.get("sidechain"))
+                               or from_path.get("sidechain"))
         ev["agent"] = dig(rec, f.get("agent"))
         ev["turn"] = turn
         ev["stop"] = dig(rec, f.get("stop"))
