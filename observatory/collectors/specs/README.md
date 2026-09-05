@@ -1,7 +1,16 @@
 # Declarative collector specs
 
-One JSON file per provider. If a tool writes JSONL transcripts with token
-counts on a record, it needs no Python — drop a spec here and it is supported.
+One JSON file per provider. If a tool writes token counts to disk in any of
+three shapes, it needs no Python — drop a spec here and it is supported.
+
+| Shape | `format` | Worked example |
+|---|---|---|
+| One record per line | *(default)* | [`example-openai-jsonl.json`](example-openai-jsonl.json) |
+| A whole document per file | `"json"` | [`example-json-per-file.json`](example-json-per-file.json) |
+| A document holding an array | `"json"` + `records` | [`example-json-array.json`](example-json-array.json) |
+
+The second and third exist because a great many tools — anything that keeps one
+file per message, and most VS Code extensions — never write JSONL at all.
 
 **A spec without a fixture is not accepted.** Add
 `tests/fixtures/<provider>.jsonl` with a handful of records in the vendor's
@@ -32,6 +41,9 @@ if you get it wrong.
 | `entrypoint_map` | Raw entrypoint value → `cli` \| `ide` \| `desktop` \| `sdk`. |
 | `default_model` | Used when a record does not name one. |
 | `from_path` | What the *file* knows and its records do not — see below. |
+| `format` | `"json"` to parse whole documents. Omit for JSONL. |
+| `records` | With `format: "json"`, the dotted path to the array of records. Omit when the document *is* one record. |
+| `ts_unit` | `"millis"` or `"seconds"` when the timestamp is a number rather than an ISO-8601 string. |
 
 Dotted paths support numeric indices: `message.content.0.name`.
 
@@ -62,6 +74,15 @@ Emit prompt text, completion text, file contents, shell command strings, or an
 absolute path. `path_args` are read only to derive a repo label, and the label
 is what gets stored — never the path.
 
+## Resuming a document that has no read position
+
+A JSONL file is resumed from a byte offset. A JSON document has to be parsed
+whole, so there is nowhere to seek to: progress is instead the count of priced
+records already emitted, and the file is re-read whenever its size changes.
+That is exactly right for a history that only ever grows, and wrong for one
+that reorders or rewrites itself — worth checking before you assume a tool
+qualifies.
+
 ## Wanted
 
 Qwen Code · iFlow CLI · CodeBuddy · Trae · Lingma / 通义灵码 · Comate · Doubao ·
@@ -69,3 +90,24 @@ CodeGeeX · MiniMax Agent · Cline · Roo Code · Aider · OpenCode · Goose · 
 
 If you use one of these, you are the only person who can add it correctly —
 you have the transcripts to test against and the maintainers do not.
+
+### OpenCode — most of the way there
+
+Read off `sst/opencode` rather than a running install, so treat it as a lead
+and not a finished answer:
+
+- One JSON document per message at `<data>/storage/message/<sessionID>/<id>.json`
+  — so `format: "json"`, and the session id comes from `from_path`.
+- `packages/schema/src/session-message.ts` declares the assistant message:
+  `type: "assistant"`, `model`, `finish`, `time.created` (epoch **milliseconds**,
+  hence `ts_unit`), and `tokens: {input, output, reasoning, cache: {read, write}}`.
+- Tool calls sit in the message's own content array with `type: "tool"`, a
+  `name`, and arguments under `state.input`.
+
+Two things stopped it shipping, and both need someone with OpenCode installed:
+the repo carries two message shapes (`content` in `packages/schema`, `parts` in
+`packages/opencode/src/session/message-v2.ts`) and only a real file says which
+one that version writes; and nothing in the source settled whether
+`tokens.input` already contains `tokens.cache.read`, which is what
+`input_is_total` turns on. Get that second one backwards and every OpenCode
+user's costs are inflated by the size of their cache hits.

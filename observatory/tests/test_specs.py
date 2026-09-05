@@ -159,10 +159,82 @@ def test_gemini_cli():
     check("no absolute path reaches the event", "/home/dev/code" in blob, False)
 
 
+def test_example_json_per_file():
+    """A whole JSON document per file — the shape one-file-per-message tools use.
+
+    Three things this proves that the JSONL path never exercises: the document
+    itself is the record, an epoch-millisecond time becomes the ISO-8601 stamp
+    everything downstream parses, and the session id is read from the directory
+    because no field in the record carries it.
+    """
+    print("\nspec: example-json-per-file.json")
+    c = collector_for("example-json-per-file.json")
+    box = HERE / "fixtures" / "example-json" / "storage" / "message" / "ses_9a8b7c6d"
+
+    # A user message carries no usage, so it is never a priced turn.
+    empty, _ = c.collect(str(box / "msg_0000.json"), {})
+    check("a record with no usage is not a turn", empty, [])
+
+    priced = str(box / "msg_0001.json")
+    events, cursor = c.collect(priced, {})
+    check("the document itself is the record", len(events), 1)
+    check("the cursor records the turn count", cursor["turn"], 1)
+    check("re-reading an unchanged file yields nothing new",
+          c.collect(priced, cursor)[0], [])
+
+    a = events[0]
+    check("epoch millis became an ISO-8601 stamp", a["ts"], "2026-08-19T01:02:11.000Z")
+    check("session comes from the directory, not the record", a["session"], "ses_9a8b")
+    check("model", a["model"], "gemini-2.5-pro")
+    check("stop reason", a["stop"], "tool-calls")
+    # No input_is_total on this spec, so the counts are taken as reported.
+    check("input", a["input"], 4000)
+    check("cache_read", a["cache_read"], 48000)
+    check("cache_create", a["cache_create"], 3000)
+    check("output", a["output"], 880)
+    check("tool name read out of the content array", a["tools"], ["read"])
+    check("repo resolved from the tool argument", a["repo"], "my-app")
+    check("surface resolved from the file the turn touched", a["surfaces"], ["src/api"])
+    blob = json.dumps(events)
+    check("no absolute path reaches the event", "/home/dev/code" in blob, False)
+
+
+def test_example_json_array():
+    """One document holding an array of records, resumed by count not offset."""
+    print("\nspec: example-json-array.json")
+    c = collector_for("example-json-array.json")
+    hist = str(HERE / "fixtures" / "example-json-array" / "tasks" /
+               "task-5f4e3d2c" / "api_conversation_history.json")
+
+    events, cursor = c.collect(hist, {})
+    # Four records: a user turn, two priced assistant turns, and one assistant
+    # turn with no usage on it yet.
+    check("exactly the priced turns are emitted", len(events), 2)
+    check("the cursor counts priced records, not bytes", cursor["turn"], 2)
+    check("re-reading an unchanged file yields nothing new",
+          c.collect(hist, cursor)[0], [])
+    check("a cursor from mid-file skips what it already emitted",
+          len(c.collect(hist, {"offset": 0, "turn": 1})[0]), 1)
+
+    a, b = events
+    check("epoch seconds became an ISO-8601 stamp", a["ts"], "2026-08-19T02:00:07.000Z")
+    check("session comes from the path", a["session"], "task-5f4")
+    # input_is_total: 20000 prompt - 16000 cached - 0 created = 4000 fresh.
+    check("input has the cached component subtracted out", a["input"], 4000)
+    check("cache_read", a["cache_read"], 16000)
+    check("second priced turn is the third record, not the second",
+          b["ts"], "2026-08-19T02:05:30.000Z")
+    check("entrypoint falls back to the spec default", a["entrypoint"], "ide")
+    check("repo resolved from the tool argument", a["repo"], "my-app")
+    blob = json.dumps(events)
+    check("no absolute path reaches the event", "/home/dev/code" in blob, False)
+
+
 def main():
     topo.use(FIXTURE_TOPOLOGY)
     try:
-        for fn in (test_example_openai_jsonl, test_gemini_cli):
+        for fn in (test_example_openai_jsonl, test_gemini_cli,
+                   test_example_json_per_file, test_example_json_array):
             fn()
     finally:
         topo.use(None)

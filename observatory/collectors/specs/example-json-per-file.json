@@ -1,0 +1,28 @@
+{
+  "_doc": "Worked example for the second storage shape: a whole JSON document per file, rather than one record per line. Modelled on the layout OpenCode uses — storage/message/<sessionID>/<messageID>.json, an assistant message whose time is epoch milliseconds and whose session id exists nowhere in the record, only in the directory name. Copy this, change the roots and the paths, add a fixture. Not enabled against any real path on purpose — `roots` points at a directory nobody has. Note what is deliberately absent: `input_is_total`. Whether a vendor's input count already contains its cached count has to be read off that vendor's own code, and guessing it inflates every cost by the size of the user's cache hits.",
+  "provider": "example-json",
+  "format": "json",
+  "roots": ["~/.example-json/storage/message/*/*.json"],
+  "where": { "type": "assistant" },
+  "default_entrypoint": "cli",
+  "ts_unit": "millis",
+  "from_path": {
+    "session": ["/message/([^/]+)/[^/]+\\.json$"]
+  },
+  "fields": {
+    "ts": "time.created",
+    "model": "model",
+    "stop": "finish",
+    "input": "tokens.input",
+    "output": "tokens.output",
+    "cache_read": "tokens.cache.read",
+    "cache_create": "tokens.cache.write"
+  },
+  "tools": {
+    "list": "content",
+    "where": { "type": "tool" },
+    "name": "name",
+    "args": "state.input",
+    "path_args": ["filePath", "file_path", "path"]
+  }
+}

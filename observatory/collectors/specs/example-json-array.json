@@ -1,0 +1,28 @@
+{
+  "_doc": "Worked example for the third storage shape: one JSON document holding an array of records — the shape a VS Code extension tends to write when it keeps a whole conversation history in a single file. `records` is the dotted path to that array; everything after it works exactly as it does for JSONL. Not enabled against any real path on purpose. Because a document like this is parsed whole, there is no byte offset to resume from: progress is the count of priced records already emitted, so the file may grow but must not reorder.",
+  "provider": "example-json-array",
+  "format": "json",
+  "records": "messages",
+  "roots": ["~/.example-array/tasks/*/api_conversation_history.json"],
+  "where": { "role": "assistant" },
+  "default_entrypoint": "ide",
+  "input_is_total": true,
+  "ts_unit": "seconds",
+  "from_path": {
+    "session": ["/tasks/([^/]+)/[^/]+\\.json$"]
+  },
+  "fields": {
+    "ts": "ts",
+    "model": "model",
+    "input": "usage.prompt_tokens",
+    "output": "usage.completion_tokens",
+    "cache_read": "usage.prompt_tokens_details.cached_tokens"
+  },
+  "tools": {
+    "list": "tool_calls",
+    "where": { "type": "function" },
+    "name": "function.name",
+    "args": "function.parsed_arguments",
+    "path_args": ["file_path", "path"]
+  }
+}

@@ -28,6 +28,7 @@ import json
 import os
 import re
 import sys
+from datetime import datetime, timezone
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
@@ -100,6 +101,25 @@ def _from_path(source: str, spec: dict) -> dict:
     return out
 
 
+def _timestamp(value, unit):
+    """Epoch numbers to ISO-8601 UTC; anything else passes through untouched.
+
+    Tools that store a message as JSON tend to store its time as a number —
+    OpenCode's schema types it `DateTimeUtcFromMillis` — and everything
+    downstream of the store parses `ts` with `fromisoformat`. Converting at the
+    collector keeps one meaning of `ts` in the event store rather than teaching
+    every reader a second one.
+    """
+    if unit not in ("millis", "seconds") or value is None:
+        return value
+    try:
+        seconds = float(value) / (1000.0 if unit == "millis" else 1.0)
+        return (datetime.fromtimestamp(seconds, timezone.utc)
+                .isoformat(timespec="milliseconds").replace("+00:00", "Z"))
+    except (TypeError, ValueError, OverflowError, OSError):
+        return value          # an unparseable stamp costs that field, not the sync
+
+
 def _matches(rec, where) -> bool:
     return all(dig(rec, k) == v for k, v in (where or {}).items())
 
@@ -143,6 +163,20 @@ class SpecCollector(Collector):
 
     # -- parsing ------------------------------------------------------------
 
+    def _priced(self, rec) -> bool:
+        """A record that matches `where` and carries at least one token count.
+
+        A transcript entry with no usage on it is a message, not a turn worth
+        pricing, and counting it would make every per-turn number wrong.
+        """
+        if not isinstance(rec, dict):
+            return False
+        f = self.spec.get("fields") or {}
+        if not _matches(rec, self.spec.get("where")):
+            return False
+        return any(_int(rec, f.get(k)) for k in
+                   ("input", "output", "cache_create", "cache_read"))
+
     def collect(self, source, cursor: dict):
         path = Path(source)
         try:
@@ -157,12 +191,14 @@ class SpecCollector(Collector):
         if size == offset:
             return [], {"offset": offset, "turn": turn}
 
-        spec = self.spec
-        where = spec.get("where") or {}
-        f = spec.get("fields") or {}
-        from_path = _from_path(source, spec)
-        events = []
+        if self.spec.get("format") == "json":
+            return self._collect_json(path, size, turn)
+        return self._collect_jsonl(path, offset, turn)
 
+    def _collect_jsonl(self, path: Path, offset: int, turn: int):
+        """One record per line, resumed from a byte offset."""
+        from_path = _from_path(str(path), self.spec)
+        events = []
         with path.open("r", encoding="utf-8", errors="replace") as fh:
             fh.seek(offset)
             for line in fh:
@@ -173,24 +209,55 @@ class SpecCollector(Collector):
                     rec = json.loads(line)
                 except (ValueError, TypeError):
                     continue
-                if not _matches(rec, where):
-                    continue
-                # A record with no token counts at all is a transcript entry,
-                # not a priced turn. Skipping it here keeps `turn` honest.
-                if not any(_int(rec, f.get(k)) for k in
-                           ("input", "output", "cache_create", "cache_read")):
+                if not self._priced(rec):
                     continue
                 turn += 1
                 events.append(self._turn(rec, turn, from_path))
             offset = fh.tell()
-
         return events, {"offset": offset, "turn": turn}
+
+    def _collect_json(self, path: Path, size: int, turn: int):
+        """A whole JSON document per file, rather than a line per record.
+
+        Two shapes, one rule. With no `records` path the document *is* the
+        record — which is how the tools that write one file per message store
+        them, and why `from_path` usually has to supply the session. With a
+        `records` path the document holds an array of them.
+
+        There is no byte offset to resume from in a document that has to be
+        parsed whole, so progress is the count of priced records already
+        emitted: the file is re-read when its size changes and the first `turn`
+        of them are skipped. That is exactly right for an append-only history
+        and wrong for one that reorders itself — which is the trade a format
+        with no stable read position forces.
+        """
+        try:
+            doc = json.loads(path.read_text(encoding="utf-8", errors="replace"))
+        except (OSError, ValueError, TypeError):
+            # Half-written or not JSON at all. Bank the size so a file that
+            # will never parse is not re-read on every single sync.
+            return [], {"offset": size, "turn": turn}
+
+        records = dig(doc, self.spec["records"]) if self.spec.get("records") else [doc]
+        if not isinstance(records, list):
+            records = []
+
+        from_path = _from_path(str(path), self.spec)
+        events, seen = [], 0
+        for rec in records:
+            if not self._priced(rec):
+                continue
+            seen += 1
+            if seen <= turn:
+                continue          # emitted by an earlier sync
+            events.append(self._turn(rec, seen, from_path))
+        return events, {"offset": size, "turn": max(turn, seen)}
 
     def _turn(self, rec: dict, turn: int, from_path: dict = None) -> dict:
         spec, f = self.spec, self.spec.get("fields") or {}
         from_path = from_path or {}
         ev = blank_event(self.provider)
-        ev["ts"] = dig(rec, f.get("ts"))
+        ev["ts"] = _timestamp(dig(rec, f.get("ts")), spec.get("ts_unit"))
         # The record wins when it carries a session; the filename answers for
         # the tools that only write it there.
         sid = dig(rec, f.get("session")) or from_path.get("session") or ""

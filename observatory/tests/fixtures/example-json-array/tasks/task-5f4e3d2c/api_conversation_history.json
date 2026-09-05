@@ -1,0 +1,49 @@
+{
+ "version": 2,
+ "messages": [
+  {
+   "role": "user",
+   "ts": 1787104800
+  },
+  {
+   "role": "assistant",
+   "ts": 1787104807,
+   "model": "gemini-2.5-flash",
+   "usage": {
+    "prompt_tokens": 20000,
+    "completion_tokens": 300,
+    "prompt_tokens_details": {
+     "cached_tokens": 16000
+    }
+   },
+   "tool_calls": [
+    {
+     "type": "function",
+     "function": {
+      "name": "edit_file",
+      "parsed_arguments": {
+       "file_path": "/home/dev/code/my-app/src/api/routes.ts"
+      }
+     }
+    }
+   ]
+  },
+  {
+   "role": "assistant",
+   "ts": 1787105040,
+   "model": "gemini-2.5-flash"
+  },
+  {
+   "role": "assistant",
+   "ts": 1787105130,
+   "model": "gemini-2.5-flash",
+   "usage": {
+    "prompt_tokens": 9000,
+    "completion_tokens": 120,
+    "prompt_tokens_details": {
+     "cached_tokens": 8000
+    }
+   }
+  }
+ ]
+}
