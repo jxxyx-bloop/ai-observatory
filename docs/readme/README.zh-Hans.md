@@ -44,13 +44,13 @@
 
 ## 不是一个数字，是下一步该做什么
 
-> **高** — 你在按高峰价买 token，本可以不用 · **≈ 34 美元/月**<br>
-> 按时段计价的模型上，61% 的花费落在高峰时段，同样的 token 最多要贵一倍。<br>
-> → 不需要盯着的任务——测试生成、迁移、文档整理——排到非高峰时段跑。
-
-> **中** — 上下文在被重建，而不是复用 · **≈ 61 美元/月**<br>
+> **高** — 上下文在被重建，而不是复用 · **≈ 61 美元/月**<br>
 > 缓存复用率只有 38%。重建上下文的成本约为读回它的 12 倍。<br>
 > → 相关任务放在同一个会话里做，不要反复重开。这个差距比换任何模型都值钱。
+
+> **中** — 你在按高峰价买 token，本可以不用 · **≈ 34 美元/月**<br>
+> 按时段计价的模型上，61% 的花费落在高峰时段，同样的 token 最多要贵一倍。<br>
+> → 不需要盯着的任务——测试生成、迁移、文档整理——排到非高峰时段跑。
 
 > **低** — 18 美元的套餐给你带来了 23 倍回报 · **23 倍回报**<br>
 > 如果按量计费，同样的工作要花 412 美元。这里没有需要改的地方。<br>
@@ -61,16 +61,14 @@
 ## 快速开始
 
 ```bash
-git clone https://github.com/jxxyx-bloop/ai-observatory
-cd ai-observatory/observatory
-python3 observe.py demo digest report
+uvx ai-observatory demo digest report
 ```
 
 然后在你自己的用量上运行：
 
 ```bash
-python3 observe.py demo --purge
-python3 observe.py all
+uvx ai-observatory demo --purge
+uvx ai-observatory all
 ```
 
 仅用 Python 3 标准库。无需安装、无依赖、无构建步骤。

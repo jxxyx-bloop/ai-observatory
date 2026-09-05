@@ -15,7 +15,9 @@ import json
 import os
 from pathlib import Path
 
-CONFIG_PATH = Path(__file__).with_name("topology.json")
+import home
+
+CONFIG_PATH = home.config_path("topology.json")
 
 _CFG = None
 

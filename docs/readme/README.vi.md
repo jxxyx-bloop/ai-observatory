@@ -44,13 +44,13 @@ Agent của bạn vốn đã ghi lại từng lượt. Công cụ này đọc c�
 
 ## Không phải một con số. Là bước tiếp theo
 
-> **Cao** — Bạn đang trả giá giờ cao điểm mà lẽ ra không cần · **≈ 34 $/tháng**<br>
-> 61% chi tiêu trên các mô hình tính giá theo giờ rơi vào khung cao điểm, nơi cùng số token có thể đắt gấp đôi.<br>
-> → Đẩy những việc không cần ngồi canh — sinh test, migration, quét tài liệu — sang giờ thấp điểm.
-
-> **Trung bình** — Ngữ cảnh đang bị dựng lại thay vì tái dùng · **≈ 61 $/tháng**<br>
+> **Cao** — Ngữ cảnh đang bị dựng lại thay vì tái dùng · **≈ 61 $/tháng**<br>
 > Tỷ lệ tái dùng cache chỉ 38%. Dựng lại ngữ cảnh tốn khoảng 12 lần so với đọc lại nó.<br>
 > → Giữ một phiên cho các việc liên quan thay vì mở lại. Khoảng cách này đáng giá hơn mọi lần đổi mô hình.
+
+> **Trung bình** — Bạn đang trả giá giờ cao điểm mà lẽ ra không cần · **≈ 34 $/tháng**<br>
+> 61% chi tiêu trên các mô hình tính giá theo giờ rơi vào khung cao điểm, nơi cùng số token có thể đắt gấp đôi.<br>
+> → Đẩy những việc không cần ngồi canh — sinh test, migration, quét tài liệu — sang giờ thấp điểm.
 
 > **Thấp** — Gói 18 đô của bạn đã trả lại gấp 23 lần · **gấp 23 lần**<br>
 > Nếu tính theo lượng, cùng khối lượng việc đó tốn 412 đô. Ở đây không có gì cần sửa.<br>
@@ -61,16 +61,14 @@ Mười lăm phép kiểm tra. Mục nào đáng dưới 15 đô một tháng s�
 ## Bắt đầu nhanh
 
 ```bash
-git clone https://github.com/jxxyx-bloop/ai-observatory
-cd ai-observatory/observatory
-python3 observe.py demo digest report
+uvx ai-observatory demo digest report
 ```
 
 Rồi chạy trên chính dữ liệu của bạn:
 
 ```bash
-python3 observe.py demo --purge
-python3 observe.py all
+uvx ai-observatory demo --purge
+uvx ai-observatory all
 ```
 
 Chỉ dùng thư viện chuẩn Python 3. Không cài đặt, không phụ thuộc, không bước build.

@@ -44,13 +44,13 @@ Nakatala na ng iyong agent ang bawat turn. Binabasa ito ng tool at sinasabi ang 
 
 ## Hindi numero. Susunod na hakbang
 
-> **Mataas** — Nagbabayad ka ng peak rate na hindi naman kailangan · **≈ $34/buwan**<br>
-> 61% ng gastos mo sa mga modelong naka-presyo ayon sa oras ay bumagsak sa peak window, kung saan hanggang doble ang halaga ng parehong token.<br>
-> → Ilipat sa off-peak na oras ang trabahong hindi mo naman kailangang bantayan — test, migration, doc sweep.
-
-> **Katamtaman** — Muling itinatayo ang konteksto sa halip na gamitin ulit · **≈ $61/buwan**<br>
+> **Mataas** — Muling itinatayo ang konteksto sa halip na gamitin ulit · **≈ $61/buwan**<br>
 > 38% lang ang cache reuse. Ang muling pagtatayo ng konteksto ay mga 12× ang mahal kaysa basahin itong muli.<br>
 > → Panatilihin ang isang session para sa magkakaugnay na gawain. Mas malaki ang epekto nito kaysa sa pagpapalit ng modelo.
+
+> **Katamtaman** — Nagbabayad ka ng peak rate na hindi naman kailangan · **≈ $34/buwan**<br>
+> 61% ng gastos mo sa mga modelong naka-presyo ayon sa oras ay bumagsak sa peak window, kung saan hanggang doble ang halaga ng parehong token.<br>
+> → Ilipat sa off-peak na oras ang trabahong hindi mo naman kailangang bantayan — test, migration, doc sweep.
 
 > **Mababa** — Nagbalik ng 23× ang $18 mong plano · **23× na balik**<br>
 > Kung per token, $412 sana ang parehong trabaho. Walang kailangang ayusin dito.<br>
@@ -61,16 +61,14 @@ Labinlimang pagsusuri. Anumang wala pang $15 kada buwan ang halaga ay ibinababa,
 ## Mabilisang simula
 
 ```bash
-git clone https://github.com/jxxyx-bloop/ai-observatory
-cd ai-observatory/observatory
-python3 observe.py demo digest report
+uvx ai-observatory demo digest report
 ```
 
 Tapos sa sarili mong paggamit:
 
 ```bash
-python3 observe.py demo --purge
-python3 observe.py all
+uvx ai-observatory demo --purge
+uvx ai-observatory all
 ```
 
 Python 3 standard library lang. Walang install, walang dependency, walang build.

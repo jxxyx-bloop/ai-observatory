@@ -1,0 +1,41 @@
+{
+ "id": "msg_0001",
+ "type": "assistant",
+ "agent": "build",
+ "model": "gemini-2.5-pro",
+ "finish": "tool-calls",
+ "time": {
+  "created": 1787101331000,
+  "completed": 1787101339000
+ },
+ "tokens": {
+  "input": 4000,
+  "output": 880,
+  "reasoning": 120,
+  "cache": {
+   "read": 48000,
+   "write": 3000
+  }
+ },
+ "content": [
+  {
+   "type": "text",
+   "id": "p1",
+   "text": "Reading the handler."
+  },
+  {
+   "type": "tool",
+   "id": "t1",
+   "name": "read",
+   "state": {
+    "status": "completed",
+    "input": {
+     "filePath": "/home/dev/code/my-app/src/api/handler.ts"
+    }
+   },
+   "time": {
+    "created": 1787101332000
+   }
+  }
+ ]
+}

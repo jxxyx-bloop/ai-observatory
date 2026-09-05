@@ -303,8 +303,7 @@ def build_demo() -> str:
     # not open another page that asks them to decide again.
     html_out = render.render(
         digest, home="../", demo=True, setup="../setup/", star=REPO,
-        refresh="git clone " + REPO + ".git && cd ai-observatory/observatory "
-                "&& python3 observe.py sync digest report")
+        refresh="uvx ai-observatory sync digest report")
     shutil.rmtree(data)
     return html_out
 

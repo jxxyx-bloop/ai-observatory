@@ -44,13 +44,13 @@ Coding agent anda sudah pun merekod setiap giliran. Alat ini membaca rekod itu d
 
 ## Bukan angka. Langkah seterusnya
 
-> **Tinggi** — Anda membayar kadar waktu puncak yang sebenarnya boleh dielak · **≈ $34/bln**<br>
-> 61% perbelanjaan anda pada model berharga mengikut masa jatuh dalam tetingkap puncak, di mana token yang sama boleh dua kali ganda mahal.<br>
-> → Jadualkan kerja yang tidak perlu ditunggu — ujian, migrasi, kemas kini dokumen — ke jam luar puncak.
-
-> **Sederhana** — Konteks dibina semula, bukan diguna semula · **≈ $61/bln**<br>
+> **Tinggi** — Konteks dibina semula, bukan diguna semula · **≈ $61/bln**<br>
 > Guna semula cache hanya 38%. Membina semula konteks kira-kira 12× lebih mahal daripada membacanya kembali.<br>
 > → Kekalkan satu sesi untuk kerja yang berkaitan. Jurang ini lebih bernilai daripada menukar mana-mana model.
+
+> **Sederhana** — Anda membayar kadar waktu puncak yang sebenarnya boleh dielak · **≈ $34/bln**<br>
+> 61% perbelanjaan anda pada model berharga mengikut masa jatuh dalam tetingkap puncak, di mana token yang sama boleh dua kali ganda mahal.<br>
+> → Jadualkan kerja yang tidak perlu ditunggu — ujian, migrasi, kemas kini dokumen — ke jam luar puncak.
 
 > **Rendah** — Pelan $18 anda memulangkan 23× · **pulangan 23×**<br>
 > Pada kadar per token, kerja yang sama berharga $412. Tiada apa yang perlu dibaiki di sini.<br>
@@ -61,16 +61,14 @@ Lima belas pemeriksaan. Apa-apa yang bernilai bawah $15 sebulan diturunkan, jadi
 ## Mula pantas
 
 ```bash
-git clone https://github.com/jxxyx-bloop/ai-observatory
-cd ai-observatory/observatory
-python3 observe.py demo digest report
+uvx ai-observatory demo digest report
 ```
 
 Kemudian pada penggunaan anda sendiri:
 
 ```bash
-python3 observe.py demo --purge
-python3 observe.py all
+uvx ai-observatory demo --purge
+uvx ai-observatory all
 ```
 
 Pustaka standard Python 3 sahaja. Tanpa pemasangan, tanpa kebergantungan, tanpa langkah build.

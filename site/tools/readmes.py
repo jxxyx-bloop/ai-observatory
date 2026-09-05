@@ -102,16 +102,14 @@ def page(code: str) -> str:
 ## {t['rm_quick']}
 
 ```bash
-git clone {REPO}
-cd ai-observatory/observatory
-python3 observe.py demo digest report
+uvx ai-observatory demo digest report
 ```
 
 {t['rm_own']}
 
 ```bash
-python3 observe.py demo --purge
-python3 observe.py all
+uvx ai-observatory demo --purge
+uvx ai-observatory all
 ```
 
 {t['run_note']}

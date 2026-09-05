@@ -29,8 +29,10 @@ import re
 from datetime import datetime, timezone
 from pathlib import Path
 
-PRICING_PATH = Path(__file__).with_name("pricing.json")
-PLANS_PATH = Path(__file__).with_name("plans.json")
+import home
+
+PRICING_PATH = home.config_path("pricing.json")
+PLANS_PATH = home.config_path("plans.json")
 
 # Dated snapshots (`claude-haiku-4-5-20251001`) and the model's alias
 # (`claude-haiku-4-5`) are the same model at the same price.

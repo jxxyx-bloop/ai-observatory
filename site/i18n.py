@@ -102,18 +102,18 @@ STRINGS["en"] = {
     "sev_med": "Medium",
     "sev_low": "Low",
 
-    "f1_title": "You're paying peak rates you didn't have to",
-    "f1_save": "≈ $34/mo",
-    "f1_body": "61% of your spend on time-priced models landed inside a peak window, "
+    "f2_title": "You're paying peak rates you didn't have to",
+    "f2_save": "≈ $34/mo",
+    "f2_body": "61% of your spend on time-priced models landed inside a peak window, "
                "where the same tokens cost up to twice as much.",
-    "f1_act": "Queue the work that doesn't need watching — tests, migrations, doc "
+    "f2_act": "Queue the work that doesn't need watching — tests, migrations, doc "
               "sweeps — for an off-peak hour.",
 
-    "f2_title": "Context is being rebuilt, not reused",
-    "f2_save": "≈ $61/mo",
-    "f2_body": "Cache reuse sits at 38%. Rebuilding context costs roughly 12× what "
+    "f1_title": "Context is being rebuilt, not reused",
+    "f1_save": "≈ $61/mo",
+    "f1_body": "Cache reuse sits at 38%. Rebuilding context costs roughly 12× what "
                "reading it back does.",
-    "f2_act": "Keep one session across related tasks instead of restarting. This gap "
+    "f1_act": "Keep one session across related tasks instead of restarting. This gap "
               "is worth more than any model swap.",
 
     "f3_title": "Your $18 plan returned 23× what you paid",
@@ -195,7 +195,7 @@ STRINGS["en"] = {
               "the sample data in step 1 still shows the whole product.",
     "tr_3_q": "The page says there is no digest yet",
     "tr_3_a": "Collection and rendering are separate steps. Run "
-              "python3 observe.py digest report, or just python3 observe.py all, "
+              "ai-observatory digest report, or just ai-observatory all, "
               "which does every step in order.",
     "tr_4_q": "Nothing opened in my browser",
     "tr_4_a": "The file is still there \u2014 open dist/observatory.html from the "
@@ -205,8 +205,8 @@ STRINGS["en"] = {
     "tr_5_a": "That warning belongs to downloaded apps. The launcher is generated "
               "on your own machine, so it should never appear \u2014 if it does, the "
               "app was copied from another computer. Delete it and run "
-              "python3 observe.py install again to build a local one.",
-    "tr_note": "Still stuck? Run python3 observe.py doctor \u2014 it checks every "
+              "ai-observatory install again to build a local one.",
+    "tr_note": "Still stuck? Run ai-observatory doctor \u2014 it checks every "
                "step and prints the exact fix for whichever one failed.",
 
     "foot_tag": "MIT licensed · Local-first · No account",
@@ -257,15 +257,15 @@ STRINGS["zh-Hans"] = {
     "sev_med": "中",
     "sev_low": "低",
 
-    "f1_title": "你在按高峰价买 token，本可以不用",
-    "f1_save": "≈ 34 美元/月",
-    "f1_body": "按时段计价的模型上，61% 的花费落在高峰时段，同样的 token 最多要贵一倍。",
-    "f1_act": "不需要盯着的任务——测试生成、迁移、文档整理——排到非高峰时段跑。",
+    "f2_title": "你在按高峰价买 token，本可以不用",
+    "f2_save": "≈ 34 美元/月",
+    "f2_body": "按时段计价的模型上，61% 的花费落在高峰时段，同样的 token 最多要贵一倍。",
+    "f2_act": "不需要盯着的任务——测试生成、迁移、文档整理——排到非高峰时段跑。",
 
-    "f2_title": "上下文在被重建，而不是复用",
-    "f2_save": "≈ 61 美元/月",
-    "f2_body": "缓存复用率只有 38%。重建上下文的成本约为读回它的 12 倍。",
-    "f2_act": "相关任务放在同一个会话里做，不要反复重开。这个差距比换任何模型都值钱。",
+    "f1_title": "上下文在被重建，而不是复用",
+    "f1_save": "≈ 61 美元/月",
+    "f1_body": "缓存复用率只有 38%。重建上下文的成本约为读回它的 12 倍。",
+    "f1_act": "相关任务放在同一个会话里做，不要反复重开。这个差距比换任何模型都值钱。",
 
     "f3_title": "18 美元的套餐给你带来了 23 倍回报",
     "f3_save": "23 倍回报",
@@ -361,15 +361,15 @@ STRINGS["zh-Hant"] = {
     "sev_med": "中",
     "sev_low": "低",
 
-    "f1_title": "你在用尖峰價買 token，其實不必",
-    "f1_save": "≈ 34 美元/月",
-    "f1_body": "在按時段計價的模型上，61% 的花費落在尖峰時段，同樣的 token 最多貴一倍。",
-    "f1_act": "不需要盯著的工作——測試產生、遷移、文件整理——排到離峰時段執行。",
+    "f2_title": "你在用尖峰價買 token，其實不必",
+    "f2_save": "≈ 34 美元/月",
+    "f2_body": "在按時段計價的模型上，61% 的花費落在尖峰時段，同樣的 token 最多貴一倍。",
+    "f2_act": "不需要盯著的工作——測試產生、遷移、文件整理——排到離峰時段執行。",
 
-    "f2_title": "脈絡在被重建，而不是重用",
-    "f2_save": "≈ 61 美元/月",
-    "f2_body": "快取重用率只有 38%。重建脈絡的成本約為讀回它的 12 倍。",
-    "f2_act": "相關工作留在同一個 session，不要反覆重開。這個差距比換任何模型都值錢。",
+    "f1_title": "脈絡在被重建，而不是重用",
+    "f1_save": "≈ 61 美元/月",
+    "f1_body": "快取重用率只有 38%。重建脈絡的成本約為讀回它的 12 倍。",
+    "f1_act": "相關工作留在同一個 session，不要反覆重開。這個差距比換任何模型都值錢。",
 
     "f3_title": "18 美元的方案帶來了 23 倍回報",
     "f3_save": "23 倍回報",
@@ -465,15 +465,15 @@ STRINGS["ja"] = {
     "sev_med": "中",
     "sev_low": "低",
 
-    "f1_title": "払わなくてよいピーク料金を払っています",
-    "f1_save": "≈ 月34ドル",
-    "f1_body": "時間帯課金モデルでの支出の61%がピーク時間帯に入っており、同じトークンが最大2倍の値段になっています。",
-    "f1_act": "見ている必要のない作業（テスト生成・移行・ドキュメント整理）はオフピーク帯に回してください。",
+    "f2_title": "払わなくてよいピーク料金を払っています",
+    "f2_save": "≈ 月34ドル",
+    "f2_body": "時間帯課金モデルでの支出の61%がピーク時間帯に入っており、同じトークンが最大2倍の値段になっています。",
+    "f2_act": "見ている必要のない作業（テスト生成・移行・ドキュメント整理）はオフピーク帯に回してください。",
 
-    "f2_title": "コンテキストを再利用せず、作り直しています",
-    "f2_save": "≈ 月61ドル",
-    "f2_body": "キャッシュ再利用率は38%。コンテキストの再構築は、読み戻すおよそ12倍のコストがかかります。",
-    "f2_act": "関連する作業は同じセッションで続けてください。この差はモデルの入れ替えより効きます。",
+    "f1_title": "コンテキストを再利用せず、作り直しています",
+    "f1_save": "≈ 月61ドル",
+    "f1_body": "キャッシュ再利用率は38%。コンテキストの再構築は、読み戻すおよそ12倍のコストがかかります。",
+    "f1_act": "関連する作業は同じセッションで続けてください。この差はモデルの入れ替えより効きます。",
 
     "f3_title": "月18ドルのプランが23倍を返しています",
     "f3_save": "23倍",
@@ -569,15 +569,15 @@ STRINGS["ko"] = {
     "sev_med": "보통",
     "sev_low": "낮음",
 
-    "f1_title": "내지 않아도 될 피크 요금을 내고 있습니다",
-    "f1_save": "≈ 월 34달러",
-    "f1_body": "시간대 과금 모델 지출의 61%가 피크 구간에 들어갔고, 같은 토큰이 최대 두 배까지 비쌉니다.",
-    "f1_act": "지켜볼 필요 없는 작업(테스트 생성, 마이그레이션, 문서 정리)은 비피크 시간대로 미루세요.",
+    "f2_title": "내지 않아도 될 피크 요금을 내고 있습니다",
+    "f2_save": "≈ 월 34달러",
+    "f2_body": "시간대 과금 모델 지출의 61%가 피크 구간에 들어갔고, 같은 토큰이 최대 두 배까지 비쌉니다.",
+    "f2_act": "지켜볼 필요 없는 작업(테스트 생성, 마이그레이션, 문서 정리)은 비피크 시간대로 미루세요.",
 
-    "f2_title": "컨텍스트를 재사용하지 않고 다시 만들고 있습니다",
-    "f2_save": "≈ 월 61달러",
-    "f2_body": "캐시 재사용률이 38%입니다. 컨텍스트를 다시 쌓는 비용은 다시 읽는 것의 약 12배입니다.",
-    "f2_act": "연관된 작업은 한 세션에서 이어가세요. 이 격차가 모델 교체보다 큽니다.",
+    "f1_title": "컨텍스트를 재사용하지 않고 다시 만들고 있습니다",
+    "f1_save": "≈ 월 61달러",
+    "f1_body": "캐시 재사용률이 38%입니다. 컨텍스트를 다시 쌓는 비용은 다시 읽는 것의 약 12배입니다.",
+    "f1_act": "연관된 작업은 한 세션에서 이어가세요. 이 격차가 모델 교체보다 큽니다.",
 
     "f3_title": "월 18달러 플랜이 23배를 돌려줬습니다",
     "f3_save": "23배",
@@ -673,15 +673,15 @@ STRINGS["hi"] = {
     "sev_med": "मध्यम",
     "sev_low": "कम",
 
-    "f1_title": "आप पीक दर चुका रहे हैं, जिसकी ज़रूरत नहीं थी",
-    "f1_save": "≈ $34/माह",
-    "f1_body": "समय-आधारित दर वाले मॉडलों पर आपका 61% ख़र्च पीक विंडो में पड़ा, जहाँ वही टोकन दोगुने तक महँगे हैं।",
-    "f1_act": "जिस काम पर नज़र रखने की ज़रूरत नहीं — टेस्ट, माइग्रेशन, डॉक्स — उसे ऑफ़-पीक घंटे में चलाएँ।",
+    "f2_title": "आप पीक दर चुका रहे हैं, जिसकी ज़रूरत नहीं थी",
+    "f2_save": "≈ $34/माह",
+    "f2_body": "समय-आधारित दर वाले मॉडलों पर आपका 61% ख़र्च पीक विंडो में पड़ा, जहाँ वही टोकन दोगुने तक महँगे हैं।",
+    "f2_act": "जिस काम पर नज़र रखने की ज़रूरत नहीं — टेस्ट, माइग्रेशन, डॉक्स — उसे ऑफ़-पीक घंटे में चलाएँ।",
 
-    "f2_title": "कॉन्टेक्स्ट दोबारा बन रहा है, दोबारा इस्तेमाल नहीं हो रहा",
-    "f2_save": "≈ $61/माह",
-    "f2_body": "कैश पुनः-उपयोग 38% पर है। कॉन्टेक्स्ट दोबारा बनाने की लागत उसे पढ़ने से लगभग 12 गुना है।",
-    "f2_act": "जुड़े हुए कामों के लिए एक ही सेशन चलाएँ। यह फ़र्क़ किसी भी मॉडल बदलने से ज़्यादा क़ीमती है।",
+    "f1_title": "कॉन्टेक्स्ट दोबारा बन रहा है, दोबारा इस्तेमाल नहीं हो रहा",
+    "f1_save": "≈ $61/माह",
+    "f1_body": "कैश पुनः-उपयोग 38% पर है। कॉन्टेक्स्ट दोबारा बनाने की लागत उसे पढ़ने से लगभग 12 गुना है।",
+    "f1_act": "जुड़े हुए कामों के लिए एक ही सेशन चलाएँ। यह फ़र्क़ किसी भी मॉडल बदलने से ज़्यादा क़ीमती है।",
 
     "f3_title": "आपके $18 प्लान ने 23 गुना लौटाया",
     "f3_save": "23× रिटर्न",
@@ -777,15 +777,15 @@ STRINGS["id"] = {
     "sev_med": "Sedang",
     "sev_low": "Rendah",
 
-    "f1_title": "Anda membayar tarif puncak yang sebenarnya bisa dihindari",
-    "f1_save": "≈ $34/bln",
-    "f1_body": "61% pengeluaran Anda pada model bertarif waktu jatuh di jendela puncak, saat token yang sama bisa dua kali lebih mahal.",
-    "f1_act": "Jadwalkan pekerjaan yang tak perlu ditunggui — tes, migrasi, penyisiran dokumen — ke jam di luar puncak.",
+    "f2_title": "Anda membayar tarif puncak yang sebenarnya bisa dihindari",
+    "f2_save": "≈ $34/bln",
+    "f2_body": "61% pengeluaran Anda pada model bertarif waktu jatuh di jendela puncak, saat token yang sama bisa dua kali lebih mahal.",
+    "f2_act": "Jadwalkan pekerjaan yang tak perlu ditunggui — tes, migrasi, penyisiran dokumen — ke jam di luar puncak.",
 
-    "f2_title": "Konteks dibangun ulang, bukan dipakai ulang",
-    "f2_save": "≈ $61/bln",
-    "f2_body": "Pemakaian ulang cache hanya 38%. Membangun ulang konteks kira-kira 12× lebih mahal daripada membacanya kembali.",
-    "f2_act": "Pakai satu sesi untuk tugas-tugas yang berkaitan. Selisih ini lebih besar daripada ganti model apa pun.",
+    "f1_title": "Konteks dibangun ulang, bukan dipakai ulang",
+    "f1_save": "≈ $61/bln",
+    "f1_body": "Pemakaian ulang cache hanya 38%. Membangun ulang konteks kira-kira 12× lebih mahal daripada membacanya kembali.",
+    "f1_act": "Pakai satu sesi untuk tugas-tugas yang berkaitan. Selisih ini lebih besar daripada ganti model apa pun.",
 
     "f3_title": "Paket $18 Anda mengembalikan 23×",
     "f3_save": "23× balik modal",
@@ -881,15 +881,15 @@ STRINGS["vi"] = {
     "sev_med": "Trung bình",
     "sev_low": "Thấp",
 
-    "f1_title": "Bạn đang trả giá giờ cao điểm mà lẽ ra không cần",
-    "f1_save": "≈ 34 $/tháng",
-    "f1_body": "61% chi tiêu trên các mô hình tính giá theo giờ rơi vào khung cao điểm, nơi cùng số token có thể đắt gấp đôi.",
-    "f1_act": "Đẩy những việc không cần ngồi canh — sinh test, migration, quét tài liệu — sang giờ thấp điểm.",
+    "f2_title": "Bạn đang trả giá giờ cao điểm mà lẽ ra không cần",
+    "f2_save": "≈ 34 $/tháng",
+    "f2_body": "61% chi tiêu trên các mô hình tính giá theo giờ rơi vào khung cao điểm, nơi cùng số token có thể đắt gấp đôi.",
+    "f2_act": "Đẩy những việc không cần ngồi canh — sinh test, migration, quét tài liệu — sang giờ thấp điểm.",
 
-    "f2_title": "Ngữ cảnh đang bị dựng lại thay vì tái dùng",
-    "f2_save": "≈ 61 $/tháng",
-    "f2_body": "Tỷ lệ tái dùng cache chỉ 38%. Dựng lại ngữ cảnh tốn khoảng 12 lần so với đọc lại nó.",
-    "f2_act": "Giữ một phiên cho các việc liên quan thay vì mở lại. Khoảng cách này đáng giá hơn mọi lần đổi mô hình.",
+    "f1_title": "Ngữ cảnh đang bị dựng lại thay vì tái dùng",
+    "f1_save": "≈ 61 $/tháng",
+    "f1_body": "Tỷ lệ tái dùng cache chỉ 38%. Dựng lại ngữ cảnh tốn khoảng 12 lần so với đọc lại nó.",
+    "f1_act": "Giữ một phiên cho các việc liên quan thay vì mở lại. Khoảng cách này đáng giá hơn mọi lần đổi mô hình.",
 
     "f3_title": "Gói 18 đô của bạn đã trả lại gấp 23 lần",
     "f3_save": "gấp 23 lần",
@@ -985,15 +985,15 @@ STRINGS["th"] = {
     "sev_med": "กลาง",
     "sev_low": "ต่ำ",
 
-    "f1_title": "คุณกำลังจ่ายราคาช่วงพีคทั้งที่ไม่จำเป็น",
-    "f1_save": "≈ 34 ดอลลาร์/เดือน",
-    "f1_body": "61% ของค่าใช้จ่ายบนโมเดลที่คิดราคาตามเวลา ตกอยู่ในช่วงพีค ซึ่งโทเคนเท่าเดิมอาจแพงขึ้นถึงสองเท่า",
-    "f1_act": "งานที่ไม่ต้องนั่งเฝ้า — สร้างเทสต์ ย้ายโครงสร้าง ไล่แก้เอกสาร — ให้เลื่อนไปรันช่วงนอกพีค",
+    "f2_title": "คุณกำลังจ่ายราคาช่วงพีคทั้งที่ไม่จำเป็น",
+    "f2_save": "≈ 34 ดอลลาร์/เดือน",
+    "f2_body": "61% ของค่าใช้จ่ายบนโมเดลที่คิดราคาตามเวลา ตกอยู่ในช่วงพีค ซึ่งโทเคนเท่าเดิมอาจแพงขึ้นถึงสองเท่า",
+    "f2_act": "งานที่ไม่ต้องนั่งเฝ้า — สร้างเทสต์ ย้ายโครงสร้าง ไล่แก้เอกสาร — ให้เลื่อนไปรันช่วงนอกพีค",
 
-    "f2_title": "คอนเท็กซ์ถูกสร้างใหม่ ไม่ได้ถูกใช้ซ้ำ",
-    "f2_save": "≈ 61 ดอลลาร์/เดือน",
-    "f2_body": "อัตราการใช้แคชซ้ำอยู่ที่ 38% การสร้างคอนเท็กซ์ใหม่แพงกว่าการอ่านกลับราว 12 เท่า",
-    "f2_act": "ทำงานที่เกี่ยวข้องกันในเซสชันเดียวแทนการเปิดใหม่ ช่องว่างนี้คุ้มกว่าการเปลี่ยนโมเดลใด ๆ",
+    "f1_title": "คอนเท็กซ์ถูกสร้างใหม่ ไม่ได้ถูกใช้ซ้ำ",
+    "f1_save": "≈ 61 ดอลลาร์/เดือน",
+    "f1_body": "อัตราการใช้แคชซ้ำอยู่ที่ 38% การสร้างคอนเท็กซ์ใหม่แพงกว่าการอ่านกลับราว 12 เท่า",
+    "f1_act": "ทำงานที่เกี่ยวข้องกันในเซสชันเดียวแทนการเปิดใหม่ ช่องว่างนี้คุ้มกว่าการเปลี่ยนโมเดลใด ๆ",
 
     "f3_title": "แพ็กเกจ 18 ดอลลาร์ของคุณให้ผลตอบแทน 23 เท่า",
     "f3_save": "23 เท่า",
@@ -1089,15 +1089,15 @@ STRINGS["ms"] = {
     "sev_med": "Sederhana",
     "sev_low": "Rendah",
 
-    "f1_title": "Anda membayar kadar waktu puncak yang sebenarnya boleh dielak",
-    "f1_save": "≈ $34/bln",
-    "f1_body": "61% perbelanjaan anda pada model berharga mengikut masa jatuh dalam tetingkap puncak, di mana token yang sama boleh dua kali ganda mahal.",
-    "f1_act": "Jadualkan kerja yang tidak perlu ditunggu — ujian, migrasi, kemas kini dokumen — ke jam luar puncak.",
+    "f2_title": "Anda membayar kadar waktu puncak yang sebenarnya boleh dielak",
+    "f2_save": "≈ $34/bln",
+    "f2_body": "61% perbelanjaan anda pada model berharga mengikut masa jatuh dalam tetingkap puncak, di mana token yang sama boleh dua kali ganda mahal.",
+    "f2_act": "Jadualkan kerja yang tidak perlu ditunggu — ujian, migrasi, kemas kini dokumen — ke jam luar puncak.",
 
-    "f2_title": "Konteks dibina semula, bukan diguna semula",
-    "f2_save": "≈ $61/bln",
-    "f2_body": "Guna semula cache hanya 38%. Membina semula konteks kira-kira 12× lebih mahal daripada membacanya kembali.",
-    "f2_act": "Kekalkan satu sesi untuk kerja yang berkaitan. Jurang ini lebih bernilai daripada menukar mana-mana model.",
+    "f1_title": "Konteks dibina semula, bukan diguna semula",
+    "f1_save": "≈ $61/bln",
+    "f1_body": "Guna semula cache hanya 38%. Membina semula konteks kira-kira 12× lebih mahal daripada membacanya kembali.",
+    "f1_act": "Kekalkan satu sesi untuk kerja yang berkaitan. Jurang ini lebih bernilai daripada menukar mana-mana model.",
 
     "f3_title": "Pelan $18 anda memulangkan 23×",
     "f3_save": "pulangan 23×",
@@ -1193,15 +1193,15 @@ STRINGS["fil"] = {
     "sev_med": "Katamtaman",
     "sev_low": "Mababa",
 
-    "f1_title": "Nagbabayad ka ng peak rate na hindi naman kailangan",
-    "f1_save": "≈ $34/buwan",
-    "f1_body": "61% ng gastos mo sa mga modelong naka-presyo ayon sa oras ay bumagsak sa peak window, kung saan hanggang doble ang halaga ng parehong token.",
-    "f1_act": "Ilipat sa off-peak na oras ang trabahong hindi mo naman kailangang bantayan — test, migration, doc sweep.",
+    "f2_title": "Nagbabayad ka ng peak rate na hindi naman kailangan",
+    "f2_save": "≈ $34/buwan",
+    "f2_body": "61% ng gastos mo sa mga modelong naka-presyo ayon sa oras ay bumagsak sa peak window, kung saan hanggang doble ang halaga ng parehong token.",
+    "f2_act": "Ilipat sa off-peak na oras ang trabahong hindi mo naman kailangang bantayan — test, migration, doc sweep.",
 
-    "f2_title": "Muling itinatayo ang konteksto sa halip na gamitin ulit",
-    "f2_save": "≈ $61/buwan",
-    "f2_body": "38% lang ang cache reuse. Ang muling pagtatayo ng konteksto ay mga 12× ang mahal kaysa basahin itong muli.",
-    "f2_act": "Panatilihin ang isang session para sa magkakaugnay na gawain. Mas malaki ang epekto nito kaysa sa pagpapalit ng modelo.",
+    "f1_title": "Muling itinatayo ang konteksto sa halip na gamitin ulit",
+    "f1_save": "≈ $61/buwan",
+    "f1_body": "38% lang ang cache reuse. Ang muling pagtatayo ng konteksto ay mga 12× ang mahal kaysa basahin itong muli.",
+    "f1_act": "Panatilihin ang isang session para sa magkakaugnay na gawain. Mas malaki ang epekto nito kaysa sa pagpapalit ng modelo.",
 
     "f3_title": "Nagbalik ng 23× ang $18 mong plano",
     "f3_save": "23× na balik",
@@ -1297,15 +1297,15 @@ STRINGS["pt-BR"] = {
     "sev_med": "Média",
     "sev_low": "Baixa",
 
-    "f1_title": "Você paga tarifa de pico sem precisar",
-    "f1_save": "≈ US$ 34/mês",
-    "f1_body": "61% do seu gasto em modelos com preço por horário caiu dentro da janela de pico, onde os mesmos tokens custam até o dobro.",
-    "f1_act": "Programe para fora do pico o trabalho que não exige acompanhamento — testes, migrações, varreduras de documentação.",
+    "f2_title": "Você paga tarifa de pico sem precisar",
+    "f2_save": "≈ US$ 34/mês",
+    "f2_body": "61% do seu gasto em modelos com preço por horário caiu dentro da janela de pico, onde os mesmos tokens custam até o dobro.",
+    "f2_act": "Programe para fora do pico o trabalho que não exige acompanhamento — testes, migrações, varreduras de documentação.",
 
-    "f2_title": "O contexto está sendo reconstruído, não reaproveitado",
-    "f2_save": "≈ US$ 61/mês",
-    "f2_body": "O reaproveitamento de cache está em 38%. Reconstruir o contexto custa cerca de 12× o que custa relê-lo.",
-    "f2_act": "Mantenha uma sessão para tarefas relacionadas em vez de recomeçar. Essa diferença vale mais que trocar de modelo.",
+    "f1_title": "O contexto está sendo reconstruído, não reaproveitado",
+    "f1_save": "≈ US$ 61/mês",
+    "f1_body": "O reaproveitamento de cache está em 38%. Reconstruir o contexto custa cerca de 12× o que custa relê-lo.",
+    "f1_act": "Mantenha uma sessão para tarefas relacionadas em vez de recomeçar. Essa diferença vale mais que trocar de modelo.",
 
     "f3_title": "Seu plano de US$ 18 devolveu 23×",
     "f3_save": "retorno de 23×",
@@ -1401,15 +1401,15 @@ STRINGS["es"] = {
     "sev_med": "Media",
     "sev_low": "Baja",
 
-    "f1_title": "Estás pagando tarifa punta sin necesidad",
-    "f1_save": "≈ 34 $/mes",
-    "f1_body": "El 61 % de tu gasto en modelos con precio por horas cayó dentro de la franja punta, donde los mismos tokens cuestan hasta el doble.",
-    "f1_act": "Programa fuera de punta el trabajo que no hace falta vigilar: pruebas, migraciones, barridos de documentación.",
+    "f2_title": "Estás pagando tarifa punta sin necesidad",
+    "f2_save": "≈ 34 $/mes",
+    "f2_body": "El 61 % de tu gasto en modelos con precio por horas cayó dentro de la franja punta, donde los mismos tokens cuestan hasta el doble.",
+    "f2_act": "Programa fuera de punta el trabajo que no hace falta vigilar: pruebas, migraciones, barridos de documentación.",
 
-    "f2_title": "El contexto se reconstruye en lugar de reutilizarse",
-    "f2_save": "≈ 61 $/mes",
-    "f2_body": "La reutilización de caché está en el 38 %. Reconstruir el contexto cuesta unas 12 veces lo que cuesta releerlo.",
-    "f2_act": "Mantén una sesión para tareas relacionadas en vez de empezar de cero. Esta diferencia vale más que cambiar de modelo.",
+    "f1_title": "El contexto se reconstruye en lugar de reutilizarse",
+    "f1_save": "≈ 61 $/mes",
+    "f1_body": "La reutilización de caché está en el 38 %. Reconstruir el contexto cuesta unas 12 veces lo que cuesta releerlo.",
+    "f1_act": "Mantén una sesión para tareas relacionadas en vez de empezar de cero. Esta diferencia vale más que cambiar de modelo.",
 
     "f3_title": "Tu plan de 18 $ devolvió 23×",
     "f3_save": "retorno de 23×",
