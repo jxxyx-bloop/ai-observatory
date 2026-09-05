@@ -110,9 +110,7 @@ document.documentElement.className+=" js";})();
   <div class="term glass">
     <div class="dots" aria-hidden="true"><i></i><i></i><i></i></div>
     <pre><code><span class="c"># {{run_comment}}</span>
-<span class="p">$</span> git clone {{repo}}
-<span class="p">$</span> cd ai-observatory/observatory
-<span class="p">$</span> python3 observe.py demo digest report</code></pre>
+<span class="p">$</span> uvx ai-observatory demo digest report</code></pre>
   </div>
   <p class="fine">{{run_note}}</p>
 </section>
@@ -219,7 +217,7 @@ document.documentElement.className+=" js";})();
     <p class="lede narrow">{{start_d}}</p>
 
     <div class="cmd hero-cmd">
-      <code>git clone https://github.com/jxxyx-bloop/ai-observatory.git &amp;&amp; cd ai-observatory/observatory &amp;&amp; python3 observe.py setup</code>
+      <code>uvx ai-observatory setup</code>
       <button class="copybtn" type="button" data-copy
               data-done="{{setup_copied}}">{{setup_copy}}</button>
     </div>

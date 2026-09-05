@@ -44,13 +44,13 @@ Tu agente de código ya registra cada turno. Esto lee esos registros y te dice l
 
 ## No es una cifra. Es el siguiente paso
 
-> **Alta** — Estás pagando tarifa punta sin necesidad · **≈ 34 $/mes**<br>
-> El 61 % de tu gasto en modelos con precio por horas cayó dentro de la franja punta, donde los mismos tokens cuestan hasta el doble.<br>
-> → Programa fuera de punta el trabajo que no hace falta vigilar: pruebas, migraciones, barridos de documentación.
-
-> **Media** — El contexto se reconstruye en lugar de reutilizarse · **≈ 61 $/mes**<br>
+> **Alta** — El contexto se reconstruye en lugar de reutilizarse · **≈ 61 $/mes**<br>
 > La reutilización de caché está en el 38 %. Reconstruir el contexto cuesta unas 12 veces lo que cuesta releerlo.<br>
 > → Mantén una sesión para tareas relacionadas en vez de empezar de cero. Esta diferencia vale más que cambiar de modelo.
+
+> **Media** — Estás pagando tarifa punta sin necesidad · **≈ 34 $/mes**<br>
+> El 61 % de tu gasto en modelos con precio por horas cayó dentro de la franja punta, donde los mismos tokens cuestan hasta el doble.<br>
+> → Programa fuera de punta el trabajo que no hace falta vigilar: pruebas, migraciones, barridos de documentación.
 
 > **Baja** — Tu plan de 18 $ devolvió 23× · **retorno de 23×**<br>
 > Con precio por token, el mismo trabajo habría costado 412 $. Aquí no hay nada que arreglar.<br>
@@ -61,16 +61,14 @@ Quince comprobaciones. Lo que vale menos de 15 $ al mes baja de puesto, así que
 ## Inicio rápido
 
 ```bash
-git clone https://github.com/jxxyx-bloop/ai-observatory
-cd ai-observatory/observatory
-python3 observe.py demo digest report
+uvx ai-observatory demo digest report
 ```
 
 Luego, sobre tu propio uso:
 
 ```bash
-python3 observe.py demo --purge
-python3 observe.py all
+uvx ai-observatory demo --purge
+uvx ai-observatory all
 ```
 
 Solo la biblioteca estándar de Python 3. Sin instalación, sin dependencias, sin build.

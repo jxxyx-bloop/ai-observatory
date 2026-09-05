@@ -44,13 +44,13 @@
 
 ## 不是一個數字，是下一步該做什麼
 
-> **高** — 你在用尖峰價買 token，其實不必 · **≈ 34 美元/月**<br>
-> 在按時段計價的模型上，61% 的花費落在尖峰時段，同樣的 token 最多貴一倍。<br>
-> → 不需要盯著的工作——測試產生、遷移、文件整理——排到離峰時段執行。
-
-> **中** — 脈絡在被重建，而不是重用 · **≈ 61 美元/月**<br>
+> **高** — 脈絡在被重建，而不是重用 · **≈ 61 美元/月**<br>
 > 快取重用率只有 38%。重建脈絡的成本約為讀回它的 12 倍。<br>
 > → 相關工作留在同一個 session，不要反覆重開。這個差距比換任何模型都值錢。
+
+> **中** — 你在用尖峰價買 token，其實不必 · **≈ 34 美元/月**<br>
+> 在按時段計價的模型上，61% 的花費落在尖峰時段，同樣的 token 最多貴一倍。<br>
+> → 不需要盯著的工作——測試產生、遷移、文件整理——排到離峰時段執行。
 
 > **低** — 18 美元的方案帶來了 23 倍回報 · **23 倍回報**<br>
 > 若按量計費，同樣的工作要花 412 美元。這裡沒有需要改的地方。<br>
@@ -61,16 +61,14 @@
 ## 快速開始
 
 ```bash
-git clone https://github.com/jxxyx-bloop/ai-observatory
-cd ai-observatory/observatory
-python3 observe.py demo digest report
+uvx ai-observatory demo digest report
 ```
 
 接著在你自己的用量上執行：
 
 ```bash
-python3 observe.py demo --purge
-python3 observe.py all
+uvx ai-observatory demo --purge
+uvx ai-observatory all
 ```
 
 只用 Python 3 標準函式庫。免安裝、無相依套件、無建置步驟。

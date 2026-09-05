@@ -55,6 +55,38 @@ the few changes worth making — each with a number attached.
 
 Not a number. A next move.
 
+Here is the whole report for someone running **Claude Code and nothing else** —
+the most common setup, and the one where a usage tool usually has least to say:
+
+```text
+[MEDIUM] Some sessions carry a very large context per turn
+         43 sessions peaked above 300,000 tokens on one turn (worst: 878,246).
+         Every later turn re-reads all of it.
+      1. Finish the thread. Start the next piece of work in a new session.
+      2. Carry forward only what that work needs.
+
+[MEDIUM] Almost everything runs through anthropic
+         100% of your output tokens came from one vendor. A rate change, a
+         regional outage or a quota cut is a single point of failure for your
+         whole workflow — and you have no baseline to compare a switch against.
+      1. Run one low-stakes, recurring class of work on a second vendor for a
+         fortnight. Not to save money — to know what switching would cost.
+
+[INFO]   Cache is doing its job
+         89.3% of everything the models read came from cache rather than
+         being re-billed at full input rate.
+      1. No action. Watch it — a fall means sessions are being restarted
+         more often than they need to be.
+```
+
+**No HIGH finding, and none invented.** That report is what healthy usage looks
+like here. Fifteen checks run; anything worth under **$15 a month is demoted**,
+so the top of the list always means something. A tool that manufactures a
+problem to look useful is a tool you stop believing.
+
+Now add a second vendor, and a finding appears that no other open-source
+tracker can produce at all:
+
 ```text
 [HIGH]   You are buying tokens at peak rates you did not have to pay   ≈ $21/mo
          66.9% of your time-priced spend (deepseek, zhipu) ran inside a peak
@@ -64,19 +96,11 @@ Not a number. A next move.
       2. Leave interactive work alone: the premium buys your attention.
       3. Windows are narrow. DeepSeek 01:00-04:00 and 06:00-10:00 UTC.
          GLM 14:00-18:00 UTC+8, weekdays only.
-
-[MEDIUM] Some sessions carry a very large context per turn
-         116 sessions peaked above 300,000 tokens on one turn (worst: 942,469).
-         Every later turn re-reads all of it.
-      1. Finish the thread. Start the next piece of work in a new session.
-      2. Carry forward only what that work needs.
 ```
 
-That is copied from the live demo, not written for this page.
-
-Fifteen checks. Anything worth under **$15 a month is demoted**, so the top of
-the list always means something — and **healthy usage is reported as healthy**.
-A tool that invents problems to look useful is a tool you stop believing.
+Both blocks are copied from real runs of the engine — the first from the demo
+filtered to Claude Code alone, the second from the full
+[live demo](https://aiobservatory.dev/demo/). Neither was written for this page.
 
 ## How it works
 
@@ -88,31 +112,39 @@ A tool that invents problems to look useful is a tool you stop believing.
 ## Quick start
 
 ```bash
-git clone https://github.com/jxxyx-bloop/ai-observatory.git && cd ai-observatory/observatory && python3 observe.py setup
+uvx ai-observatory setup
 ```
 
-One line, five steps: check your machine, update to the latest version, read the
-logs your agents already wrote on this disk, build your dashboard, put an icon
-in your Dock and open it. It prints each step as it runs — a command that stays
+One command, nothing to install first, nothing left behind. It checks your
+machine, reads the logs your agents already wrote on this disk, builds your
+dashboard and opens it. It prints each step as it runs — a command that stays
 silent for eight seconds looks exactly like one that has crashed.
 
-**Python 3 standard library only.** No dependencies, no build step, no account,
-no network, nothing to `pip install` — which is why the install is one command
-and not a requirements file.
+Prefer `pipx run ai-observatory setup`, or `pip install ai-observatory` for a
+permanent one. All three give you the same `ai-observatory` command.
 
-Want to look first? The [live demo](https://aiobservatory.dev/demo/) is
-the real dashboard, built from 60 days of sample data by the same code you would
-run yourself.
+**Python 3 standard library only.** No dependencies to resolve, no build step,
+no account, no network — the wheel is the code and nothing else, which is why
+this runs on a machine that has never installed a Python package.
+
+Want to look first, without installing anything at all? The
+[live demo](https://aiobservatory.dev/demo/) is the real dashboard, built from
+60 days of sample data by the same code you would run yourself.
 
 <details>
 <summary>Prefer to run the steps yourself</summary>
 
 ```bash
-python3 observe.py demo digest report   # 60 days of sample data, to look around
-python3 observe.py demo --purge         # remove it before collecting your own
-python3 observe.py all                  # read, measure, build — on your usage
-python3 observe.py install              # the app, the Dock icon, a daily refresh
+ai-observatory demo digest report   # 60 days of sample data, to look around
+ai-observatory demo --purge         # remove it before collecting your own
+ai-observatory all                  # read, measure, build — on your usage
+ai-observatory install              # the app, the Dock icon, a daily refresh
 ```
+
+Installed this way, everything lives in `~/.ai-observatory` — your event store,
+your dashboard, and the `settings.json` and `topology.json` you edit. The rate
+card stays in the package so an upgrade delivers corrected prices; drop a file
+of the same name beside your settings to override it.
 
 Do not skip the purge. Sample data left in the store is counted as if it were
 yours, and it is built to show every problem the tool can find.
@@ -132,10 +164,29 @@ Everything it writes lives under `$HOME`, and nothing it does touches `data/`.
 
 </details>
 
+<details>
+<summary><b>From a checkout</b> — for contributors, and for the Dock icon</summary>
+
+<br>
+
+```bash
+git clone https://github.com/jxxyx-bloop/ai-observatory.git
+cd ai-observatory/observatory && python3 observe.py setup
+```
+
+Identical engine, run in place: `data/` and `dist/` sit beside `observatory/`,
+and the four JSON config files are the ones in the repo. This is the path to
+take if you intend to send a pull request, and the only one that can install
+the macOS launcher — `install` builds a bundle that calls `observe.py` by path,
+so it needs a checkout to point at. `ai-observatory install` says so and stops
+rather than writing a launcher that cannot work.
+
+</details>
+
 ### When something looks wrong
 
 ```bash
-python3 observe.py doctor     # checks each step, prints the fix for what failed
+ai-observatory doctor     # checks each step, prints the fix for what failed
 ```
 
 The dashboard also dates itself. A report more than a day old says so above the
@@ -153,10 +204,12 @@ exists, but it can always know its own age.
 `unattributed` instead of by project.
 
 ```bash
-python3 observe.py sync --full digest report   # --full after any topology change
+ai-observatory sync --full digest report   # --full after any topology change
 ```
 
-**2. Set two fields** in [`settings.json`](observatory/settings.json):
+**2. Set two fields** in `settings.json` — `~/.ai-observatory/settings.json`
+when installed, [`observatory/settings.json`](observatory/settings.json) in a
+checkout:
 
 | Field | Set it to |
 |---|---|
@@ -173,7 +226,7 @@ returned 23× what you paid."*
 **3. Make it a habit.** Zero tokens, ~0.2 s:
 
 ```cron
-0 9 * * *  cd /path/to/ai-observatory/observatory && python3 observe.py all
+0 9 * * *  ai-observatory all
 ```
 
 </details>
@@ -185,23 +238,23 @@ returned 23× what you paid."*
 
 | Command | What it does |
 |---|---|
-| `observe.py sync` | Collect new events into `data/` (incremental, ~0.2 s) |
-| `observe.py digest` | Aggregate + run the detectors → `data/digest.json` |
-| `observe.py report` | Render → `dist/observatory.html` |
-| `observe.py insights` | Print the findings as text — for reading inside an agent session |
-| `observe.py setup` | The whole install in one command — check, update, collect, build, pin, open |
-| `observe.py doctor` | Check every step and print the fix for whichever failed |
-| `observe.py demo` | 60 deterministic days of synthetic usage |
-| `observe.py demo --purge` | remove that synthetic usage from the store again |
-| `observe.py share` | Build the community payload and **print it** — never uploads |
-| `observe.py all` | sync → digest → report |
-| `observe.py dedupe` | Repair a store that holds the same turn twice — keeps the first copy |
-| `observe.py check-update` | Fetch what is new. Downloads objects, runs none of them |
-| `observe.py update` | Fast-forward onto whatever `check-update` already fetched |
-| `observe.py install` | Create the double-clickable launcher and the daily refresh |
+| `ai-observatory sync` | Collect new events into `data/` (incremental, ~0.2 s) |
+| `ai-observatory digest` | Aggregate + run the detectors → `data/digest.json` |
+| `ai-observatory report` | Render → `dist/observatory.html` |
+| `ai-observatory insights` | Print the findings as text — for reading inside an agent session |
+| `ai-observatory setup` | The whole install in one command — check, update, collect, build, pin, open |
+| `ai-observatory doctor` | Check every step and print the fix for whichever failed |
+| `ai-observatory demo` | 60 deterministic days of synthetic usage |
+| `ai-observatory demo --purge` | remove that synthetic usage from the store again |
+| `ai-observatory share` | Build the community payload and **print it** — never uploads |
+| `ai-observatory all` | sync → digest → report |
+| `ai-observatory dedupe` | Repair a store that holds the same turn twice — keeps the first copy |
+| `ai-observatory check-update` | Fetch what is new. Downloads objects, runs none of them |
+| `ai-observatory update` | Fast-forward onto whatever `check-update` already fetched |
+| `ai-observatory install` | Create the double-clickable launcher and the daily refresh |
 
-Commands compose: `observe.py sync digest report` is one process. Flags modify a
-command and never stand alone — `observe.py --help` prints this list rather than
+Commands compose: `ai-observatory sync digest report` is one process. Flags modify
+a command and never stand alone — `ai-observatory --help` prints this list rather than
 running anything.
 
 </details>
@@ -286,7 +339,7 @@ see the [protocol](docs/specs/Community-Share-Protocol.md).*
 If you ever turn on the community layer, what it would send is under a
 kilobyte, and every number in it is a range rather than a value — no repository
 name, no session id, nothing that identifies you.
-[`observe.py share`](observatory/share.py) prints the whole thing, and contains
+[`ai-observatory share`](observatory/share.py) prints the whole thing, and contains
 no code that can send it anywhere.
 
 ## What it can read
