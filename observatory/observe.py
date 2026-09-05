@@ -9,6 +9,8 @@
     python3 observe.py demo      # fill the store with 60 days of synthetic usage
     python3 observe.py demo --purge   # remove that synthetic usage again
     python3 observe.py dedupe    # repair a store that holds the same turn twice
+    python3 observe.py contribute      # find tools here that no collector reads yet
+    python3 observe.py contribute --from=DIR   # draft a spec + a publishable fixture
     python3 observe.py share     # build the opt-in community payload (never uploads)
     python3 observe.py check-update   # fetch what is new (downloads, runs nothing)
     python3 observe.py update         # fast-forward onto what check-update fetched
@@ -42,6 +44,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent))
 
 import analyze  # noqa: E402
+import contribute as contribute_mod  # noqa: E402
 import demo as demo_mod  # noqa: E402
 import home  # noqa: E402
 import insights as insights_mod  # noqa: E402
@@ -160,6 +163,80 @@ def cmd_share(argv) -> int:
     print(share_mod.describe(payload))
     print(f"\nWritten to {out.relative_to(ROOT)}. Nothing has been uploaded — "
           f"`share` only ever writes a file. See docs/specs/Community-Share-Protocol.md.")
+    return 0
+
+
+def cmd_contribute(argv) -> int:
+    """Draft a collector spec from a tool on this machine.
+
+    With no argument it looks for transcript stores no collector claims yet and
+    prints what it found. Given one, it writes the two files a pull request
+    needs: a draft spec, and a fixture rebuilt by allow-list so it is safe to
+    publish.
+
+    It never uploads. It writes into `contrib/` and tells you where.
+    """
+    # A path arrives as `--from=...` rather than a bare operand: `main` reads
+    # every non-flag word on the line as a command name, and a directory is not
+    # a command. Flags modify a command and never stand alone — same rule.
+    targets = [a.split("=", 1)[1] for a in argv[1:]
+               if a.startswith("--from=") and len(a) > 7]
+
+    if not targets:
+        found = contribute_mod.scan()
+        if not found:
+            print(home.retarget(
+                "contribute: found no unrecognised transcript stores.\n"
+                "            Point it at one directly if you know where your "
+                "tool writes:\n"
+                "              python3 observe.py contribute "
+                "--from=~/.your-tool/sessions"))
+            return DECLINED
+        print(f"contribute: {len(found)} candidate store(s) no collector claims yet.\n")
+        for c in found:
+            print(f"  {contribute_mod.Path(c['dir']).as_posix()}")
+            print(f"    {c['files']} {c['ext']} file(s)")
+        print(home.retarget(
+            "\nScaffold one with:\n  python3 observe.py contribute --from=<directory>"))
+        return 0
+
+    target = contribute_mod.Path(os.path.expanduser(targets[0]))
+    source = target
+    if target.is_dir():
+        files = sorted(list(target.glob("**/*.jsonl")) + list(target.glob("**/*.json")),
+                       key=lambda f: -f.stat().st_size)
+        if not files:
+            print(f"contribute: no .json or .jsonl under {target}")
+            return 1
+        source = files[0]
+
+    built = contribute_mod.build(str(source))
+    if not built["records_seen"]:
+        print(f"contribute: could not read any records out of {source}")
+        return 1
+
+    out = ROOT / "contrib"
+    out.mkdir(parents=True, exist_ok=True)
+    spec_path = out / "spec.json"
+    fixture_path = out / ("fixture" + (".jsonl" if built["format"] == "jsonl" else ".json"))
+    _write_atomic(spec_path, json.dumps(built["spec"], indent=2) + "\n")
+    if built["format"] == "jsonl":
+        body = "\n".join(json.dumps(r) for r in built["fixture"]) + "\n"
+    else:
+        body = json.dumps(built["fixture"] if built["format"] != "json"
+                          else built["fixture"][0], indent=1) + "\n"
+    _write_atomic(fixture_path, body)
+    _write_atomic(out / "CHECKLIST.md", contribute_mod.CHECKLIST)
+
+    print(f"contribute: read {built['records_seen']} record(s) from {source.name} "
+          f"({built['format']})")
+    print(f"  {spec_path}      draft spec — every value in it is a guess")
+    print(f"  {fixture_path}   fixture, rebuilt by allow-list")
+    print(f"  {out / 'CHECKLIST.md'}  the three things to check before a PR")
+    print("\nNothing was uploaded. Read the fixture before you publish it, and "
+          "read the checklist\nbefore you trust the spec — `input_is_total` is "
+          "left unset on purpose, because\nguessing it misprices every user of "
+          "that tool.")
     return 0
 
 
@@ -586,7 +663,7 @@ COMMANDS = {
     "insights": cmd_insights, "all": cmd_all, "demo": cmd_demo,
     "share": cmd_share, "doctor": cmd_doctor, "install": cmd_install,
     "setup": cmd_setup, "check-update": cmd_check_update, "update": cmd_update,
-    "dedupe": cmd_dedupe,
+    "dedupe": cmd_dedupe, "contribute": cmd_contribute,
 }
 
 

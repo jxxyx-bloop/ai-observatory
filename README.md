@@ -249,6 +249,8 @@ returned 23× what you paid."*
 | `ai-observatory share` | Build the community payload and **print it** — never uploads |
 | `ai-observatory all` | sync → digest → report |
 | `ai-observatory dedupe` | Repair a store that holds the same turn twice — keeps the first copy |
+| `ai-observatory contribute` | Find tools here that no collector reads yet |
+| `ai-observatory contribute --from=DIR` | Draft a spec, and a fixture rebuilt to be safe to publish |
 | `ai-observatory check-update` | Fetch what is new. Downloads objects, runs none of them |
 | `ai-observatory update` | Fast-forward onto whatever `check-update` already fetched |
 | `ai-observatory install` | Create the double-clickable launcher and the daily refresh |
@@ -431,7 +433,19 @@ Three useful contributions, in ascending order of effort:
 
 1. **Fix a stale price** in `pricing.json` — one line and a citation.
 2. **Add a plan** to `plans.json`.
-3. **Add your coding tool** via a [collector spec](observatory/collectors/specs/README.md) and a fixture.
+3. **Add your coding tool** via a [collector spec](observatory/collectors/specs/README.md) and a fixture — and you do not have to write either by hand:
+
+```bash
+ai-observatory contribute                      # what is on this machine that we cannot read?
+ai-observatory contribute --from=~/.your-tool  # a draft spec, and a fixture safe to publish
+```
+
+It reads the transcripts already on your disk, infers the field paths, and
+rebuilds a fixture by allow-list — numbers kept, paths and ids replaced with
+synthetic ones, every other string dropped. It never uploads, and it refuses to
+guess `input_is_total`, because getting that one backwards inflates every user
+of that tool's costs by the size of their cache hits. Read the checklist it
+writes beside the draft.
 
 A fourth: **improve a translation.** All landing-page copy is in
 [`site/i18n.py`](site/i18n.py), all dashboard copy in

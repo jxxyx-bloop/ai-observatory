@@ -89,7 +89,17 @@ Qwen Code · iFlow CLI · CodeBuddy · Trae · Lingma / 通义灵码 · Comate �
 CodeGeeX · MiniMax Agent · Cline · Roo Code · Aider · OpenCode · Goose · Zed.
 
 If you use one of these, you are the only person who can add it correctly —
-you have the transcripts to test against and the maintainers do not.
+you have the transcripts to test against and the maintainers do not. You do not
+have to start from a blank file either:
+
+```bash
+ai-observatory contribute                      # what here can we not read yet?
+ai-observatory contribute --from=~/.your-tool  # a draft spec, and a fixture
+```
+
+It infers the field paths from your own transcripts and rebuilds a fixture by
+allow-list, so what it hands you is safe to attach to a pull request. It leaves
+`input_is_total` unset on purpose — see step 2 of the checklist it writes.
 
 ### OpenCode — most of the way there
 

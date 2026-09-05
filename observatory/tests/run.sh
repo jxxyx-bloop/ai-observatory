@@ -12,6 +12,10 @@ echo "== collector specs =="
 python3 tests/test_specs.py
 
 echo
+echo "== contribute =="
+python3 tests/test_contribute.py
+
+echo
 echo "== provider collectors =="
 for t in tests/test_*_code.py; do
   [ -e "$t" ] || continue
