@@ -11,6 +11,7 @@ reason about them; it does not have to derive them.
 
 from __future__ import annotations
 
+import home
 import pricing as price
 import settings
 
@@ -642,7 +643,7 @@ def duplicated_turns(digest, pricing):
         f"two syncs at once, or a `sync --full` run before the repair landed. The "
         f"duplicates are identical in provider, session, timestamp, turn and token "
         f"counts, which is why they can be identified at all.",
-        ["Run `python3 observe.py dedupe`, then `python3 observe.py digest report`. "
+        [home.retarget("Run `python3 observe.py dedupe`, then `python3 observe.py digest report`.") + " "
          "It keeps the first copy of each turn and is safe on a healthy store.",
          f"Re-read this page afterwards — expect roughly {share}% off every total."],
         {"duplicate_turns": dupes, "distinct_turns": distinct,

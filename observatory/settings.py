@@ -20,8 +20,10 @@ import os
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
-SETTINGS_PATH = Path(__file__).with_name("settings.json")
-LOCAL_PATH = Path(__file__).with_name("settings.local.json")
+import home
+
+SETTINGS_PATH = home.config_path("settings.json")
+LOCAL_PATH = home.config_path("settings.local.json")
 
 DEFAULTS = {
     "timezone_offset_hours": "auto",

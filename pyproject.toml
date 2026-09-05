@@ -1,0 +1,53 @@
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ai-observatory"
+dynamic = ["version"]
+description = "Know what to change about your AI coding. Reads the logs your coding agent already writes and ranks the few changes worth making, each with a number attached."
+readme = "README.md"
+license = { file = "LICENSE" }
+requires-python = ">=3.9"
+authors = [{ name = "jxxyx-bloop" }]
+keywords = [
+    "claude-code", "codex", "token-tracker", "cost-tracking",
+    "local-first", "usage-analytics", "ai-cost", "developer-tools",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Topic :: Software Development",
+    "Topic :: Utilities",
+]
+
+# Deliberately empty, and load-bearing. The engine is standard library only —
+# that is why the install is one command with nothing to resolve, and why it
+# will still run in three years. Adding a dependency here is a decision to be
+# argued in an ADR, not a convenience.
+dependencies = []
+
+[project.urls]
+Homepage = "https://aiobservatory.dev/"
+Demo = "https://aiobservatory.dev/demo/"
+Source = "https://github.com/jxxyx-bloop/ai-observatory"
+Issues = "https://github.com/jxxyx-bloop/ai-observatory/issues"
+
+[project.scripts]
+ai-observatory = "observatory.cli:main"
+
+[tool.setuptools.dynamic]
+version = { attr = "observatory.__version__" }
+
+[tool.setuptools]
+# The engine modules import each other by bare name, so the package ships as a
+# flat directory and `cli.py` puts it on `sys.path` before the first import.
+packages = ["observatory", "observatory.collectors"]
+
+[tool.setuptools.package-data]
+observatory = ["*.json", "assets/*"]
+"observatory.collectors" = ["specs/*.json", "specs/*.md"]

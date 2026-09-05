@@ -98,7 +98,15 @@ def version(root: Path) -> str:
     if ok and out:
         return out
     ok, out = _git(root, "rev-parse", "--short", "HEAD")
-    return out if ok else "unknown"
+    if ok and out:
+        return out
+    # Installed from PyPI there is no git to ask, but the wheel carries the
+    # number it was built with — "unknown" is only honest when nothing knows.
+    try:
+        from observatory import __version__
+        return f"v{__version__}"
+    except Exception:
+        return "unknown"
 
 
 def _upstream(root: Path):

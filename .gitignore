@@ -34,3 +34,8 @@ site/dist/
 
 # Real wrangler config carries an account id; the .example is the tracked one.
 server/wrangler.toml
+
+# Packaging output — `pip wheel`/`python -m build` leave these behind. The
+# wheel is built from the tree on demand, so none of it is worth tracking.
+build/
+*.egg-info/

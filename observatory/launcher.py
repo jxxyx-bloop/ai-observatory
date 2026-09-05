@@ -49,6 +49,8 @@ import zlib
 from datetime import datetime
 from pathlib import Path
 
+import home
+
 import normalize
 import settings
 import updater
@@ -78,7 +80,14 @@ def tilde(path: Path) -> str | None:
 
 
 def refresh_command(root: Path) -> str:
-    """The one line that re-collects and re-renders, safe to show anyone."""
+    """The one line that re-collects and re-renders, safe to show anyone.
+
+    Installed from PyPI there is no `observe.py` to `cd` to, and printing a
+    path that does not exist is worse than printing nothing — the line appears
+    on a stale dashboard, where the reader's whole job is to copy it.
+    """
+    if not home.is_checkout():
+        return "ai-observatory all"
     short = tilde(root / "observatory")
     if short is None:
         return "python3 observe.py all"
@@ -124,12 +133,16 @@ def doctor(root: Path) -> list[dict]:
         "macOS ships Python 3. If this fails you are likely on an old system "
         "Python — install a current one from python.org and try again.")
 
-    engine = root / "observatory" / "observe.py"
-    add(engine.exists(),
-        "The engine is where the launcher expects it",
-        f"Looking for {tilde(engine) or engine}.",
-        "The project folder was moved or renamed after install. Re-run "
-        "`python3 observe.py install` from its new location to repoint the app.")
+    # Only meaningful for the generated launcher, which calls `observe.py` by
+    # path. Installed from PyPI the entry point is resolved by the shell and a
+    # missing checkout is not a fault to report.
+    if home.is_checkout():
+        engine = root / "observatory" / "observe.py"
+        add(engine.exists(),
+            "The engine is where the launcher expects it",
+            f"Looking for {tilde(engine) or engine}.",
+            "The project folder was moved or renamed after install. Re-run "
+            "`python3 observe.py install` from its new location to repoint the app.")
 
     data = root / "data"
     events = sorted(data.glob("events-*.ndjson")) if data.exists() else []
@@ -200,6 +213,11 @@ def doctor(root: Path) -> list[dict]:
         + (" Commit or stash your local changes first."
            if waiting.get("blocked") == "local changes" else ""))
 
+    # One rewrite here covers the `doctor` command, the app's error page and
+    # the docs, because all three read this list.
+    for check in out:
+        check["detail"] = home.retarget(check["detail"])
+        check["fix"] = home.retarget(check["fix"])
     return out
 
 

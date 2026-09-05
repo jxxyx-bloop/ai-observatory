@@ -43,6 +43,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 
 import analyze  # noqa: E402
 import demo as demo_mod  # noqa: E402
+import home  # noqa: E402
 import insights as insights_mod  # noqa: E402
 import launcher  # noqa: E402
 import normalize  # noqa: E402
@@ -52,9 +53,9 @@ import settings  # noqa: E402
 import share as share_mod  # noqa: E402
 import updater  # noqa: E402
 
-ROOT = Path(__file__).parent.parent
-DATA = ROOT / "data"
-DIST = ROOT / "dist"
+ROOT = home.root()
+DATA = home.data()
+DIST = home.dist()
 DIGEST = DATA / "digest.json"
 
 # A command's third answer, alongside 0 and a failing code: it declined to do
@@ -145,7 +146,7 @@ def cmd_demo(argv) -> int:
     # itself between two of them is the worst bug this tool could ship.
     (DATA / ".demo").write_text("synthetic usage — safe to delete\n", encoding="utf-8")
     print(f"demo: wrote {written:,} synthetic events across 60 days. "
-          f"Now run `python3 observe.py digest report`.")
+          + home.retarget("Now run `python3 observe.py digest report`."))
     return 0
 
 
@@ -320,6 +321,14 @@ def cmd_install(argv) -> int:
             print(line)
         return 0
 
+    if not home.is_checkout():
+        print("install: the launcher runs `observe.py` out of a git checkout, "
+              "and this copy was installed from PyPI.")
+        print("         Refresh with:  ai-observatory all")
+        print("         For the Dock icon and the 09:00 refresh, clone the "
+              "repo and run `python3 observe.py install` there.")
+        return DECLINED
+
     created = launcher.install(ROOT, daily="--no-daily" not in argv)
     print("Installed:")
     for line in created:
@@ -427,11 +436,18 @@ def cmd_setup(argv) -> int:
        f"{len(digest.get('findings') or [])} findings")
 
     # 5 ── keeping it -------------------------------------------------------
-    phase("Putting it in your Dock")
-    for line in launcher.install(ROOT, daily="--no-daily" not in argv):
-        ok(" ".join(line.split()))
-    if "--no-dock" not in argv:
-        ok(launcher.add_to_dock().replace("dock", "", 1).strip())
+    # Installed from PyPI there is no checkout for a launcher to call, so this
+    # step is skipped rather than failed: the dashboard is what `setup`
+    # promised, and it has already been built by the time we get here.
+    if home.is_checkout():
+        phase("Putting it in your Dock")
+        for line in launcher.install(ROOT, daily="--no-daily" not in argv):
+            ok(" ".join(line.split()))
+        if "--no-dock" not in argv:
+            ok(launcher.add_to_dock().replace("dock", "", 1).strip())
+    else:
+        phase("Keeping it current")
+        ok("Refresh anytime with:  ai-observatory all")
 
     DIST.mkdir(parents=True, exist_ok=True)
     out = DIST / "observatory.html"
@@ -442,9 +458,13 @@ def cmd_setup(argv) -> int:
     print("\nDone. Opening your dashboard now.")
     if not launcher.open_report(out):
         print(f"Could not open a browser \u2014 the file is at {out}")
-    print("\nTomorrow: click the AI Observatory icon in your Dock. It refreshes, "
-          "then opens.")
-    print("Undo everything:  python3 observe.py install --remove")
+    if home.is_checkout():
+        print("\nTomorrow: click the AI Observatory icon in your Dock. It "
+              "refreshes, then opens.")
+        print("Undo everything:  python3 observe.py install --remove")
+    else:
+        print(f"\nTomorrow: run `ai-observatory all` to refresh it. "
+              f"Your settings are in {home.root()}.")
     return 0
 
 
@@ -588,6 +608,12 @@ def main(argv) -> int:
     code is the last command's, so a bare `demo` still reports the refusal to a
     script while `demo digest report` exits 0 on the dashboard it built.
     """
+    # Installed from PyPI, the two files the docs tell you to edit are copied
+    # into ~/.ai-observatory the first time anything runs. Saying so once, here,
+    # is the difference between a config file and a config file nobody finds.
+    for created in home.seed():
+        print(f"Created {created} — edit it to set your currency and plan.")
+
     flags = [a for a in argv[1:] if a.startswith("-")]
     names = [a for a in argv[1:] if not a.startswith("-")]
 
