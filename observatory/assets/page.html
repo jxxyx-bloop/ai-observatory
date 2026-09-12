@@ -48,9 +48,6 @@ var l=localStorage.getItem("observatory-lang");if(l)r.setAttribute("data-lang",l
     <li><a href="#effort" data-sec="effort">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h11M4 18h7"></path></svg>
       <span data-i18n="nav_effort">Effort</span></a></li>
-    <li><a href="#models" data-sec="models">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"></circle><circle cx="12" cy="12" r="8.5"></circle></svg>
-      <span data-i18n="nav_models">Models</span></a></li>
     <li><a href="#trends" data-sec="trends">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 16l5-5 3.5 3.5L20 7m0 0h-4.5M20 7v4.5"></path></svg>
       <span data-i18n="nav_trends">Trends</span></a></li>
@@ -122,7 +119,7 @@ var l=localStorage.getItem("observatory-lang");if(l)r.setAttribute("data-lang",l
          command was trying to send them anyway. -->
     <div class="pageheadrow">
       <div class="pageheadid">
-        <h1 data-i18n="title">Your AI coding, measured.</h1>
+        <h1 data-i18n="title">Where your AI effort went</h1>
         <p class="sub" id="span">Loading…</p>
       </div>
       <p class="demoflag" id="demoFlag" hidden>
@@ -140,59 +137,69 @@ var l=localStorage.getItem("observatory-lang");if(l)r.setAttribute("data-lang",l
     </div>
   </header>
 
-  <!-- Filters: one row, no stacked captions. Each control names itself in its
-       own default option ("All providers"), which is both shorter and what a
-       screen reader wanted anyway. -->
-  <div class="controls" role="group" data-i18n-aria="f_group" aria-label="Filters">
-    <div class="dates">
-      <input type="date" id="from" data-i18n-aria="f_from" aria-label="From">
-      <span aria-hidden="true">–</span>
-      <input type="date" id="to" data-i18n-aria="f_to" aria-label="To">
+  <!-- Provider/lane/repo drill-down and the explicit date inputs have no
+       Hangar equivalent — the company-wide port dropped per-repo filtering
+       entirely (it serves people who are not all engineers; this tool still
+       does). So the capability stays, but collapsed behind one disclosure
+       rather than a permanently-visible bar: the default view is then just
+       the range toggle above, matching Hangar's shape, and the whole
+       row — dates, three selects, reset, and the scope recap that only ever
+       described *this* row's state — opens together on one click. -->
+  <details class="filters" id="filtersToggle">
+    <summary class="filterbtn">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M7 12h10M10 18h4"></path></svg>
+      <span data-i18n="f_group">Filters</span>
+    </summary>
+    <div class="controls" role="group" data-i18n-aria="f_group" aria-label="Filters">
+      <div class="dates">
+        <input type="date" id="from" data-i18n-aria="f_from" aria-label="From">
+        <span aria-hidden="true">–</span>
+        <input type="date" id="to" data-i18n-aria="f_to" aria-label="To">
+      </div>
+      <select id="provider" data-i18n-aria="f_provider" aria-label="Provider"></select>
+      <select id="lane" data-i18n-aria="f_lane" aria-label="Lane"></select>
+      <select id="repo" data-i18n-aria="f_repo" aria-label="Repo"></select>
+      <button id="reset" type="button" class="resetbtn"
+              data-i18n-title="f_reset" title="Reset"
+              data-i18n-aria="f_reset" aria-label="Reset">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 10a8 8 0 1 1 .7 5"></path><path d="M4 5v5h5"></path></svg>
+      </button>
     </div>
-    <select id="provider" data-i18n-aria="f_provider" aria-label="Provider"></select>
-    <select id="lane" data-i18n-aria="f_lane" aria-label="Lane"></select>
-    <select id="repo" data-i18n-aria="f_repo" aria-label="Repo"></select>
-    <button id="reset" type="button" class="resetbtn"
-            data-i18n-title="f_reset" title="Reset"
-            data-i18n-aria="f_reset" aria-label="Reset">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 10a8 8 0 1 1 .7 5"></path><path d="M4 5v5h5"></path></svg>
-    </button>
-  </div>
-  <p class="scope" id="scope"></p>
+    <p class="scope" id="scope"></p>
+  </details>
 
-  <section id="overview"><h2 data-i18n="s_overview">Where you stand</h2>
+  <section id="overview">
     <div class="kpis" id="kpis"></div>
   </section>
 
-  <section id="rhythm"><h2 data-i18n="s_daily">Daily rhythm</h2>
-    <p class="sub note" data-i18n="n_daily">Every day in range. Click a day to filter
-      the page to it; click again to clear.</p>
+  <!-- Heading is written by draw(), not the translator: it names whichever
+       metric the segmented control below has selected, so it stays true to
+       what the chart is actually showing when the reader switches metrics. -->
+  <section id="rhythm"><h2 id="dailyTitle">Loading…</h2>
     <div class="panel">
       <div class="chartbar"><div class="seg small" id="dailyMetric"></div>
         <span class="legend" id="dailyLegend"></span></div>
       <div id="daily"></div>
     </div>
-    <div class="panel calpanel"><h2 data-i18n="s_calendar">The long view</h2>
-      <p class="sub note" data-i18n="n_calendar">Every day since collection began, one
-        square each. Click a week to filter to it.</p>
-      <div id="calendar"></div>
-    </div>
   </section>
 
+  <!-- Repo/folder, model/effort, and tool/agent breakdowns all read from the
+       same date-range-filtered set (DF in app.js) — none of them is actually
+       whole-window, unlike the calendar above or the findings below, which
+       genuinely are. So all six share one grid rather than the four-panel
+       version splitting three-and-one at the dashboard's width: six panels
+       in the same 340px-minimum grid (app.css) pack a clean two rows of
+       three, instead of a lone fourth panel stretching a half-empty row. -->
   <section id="effort"><h2 data-i18n="s_invest">Where the effort goes</h2>
-    <p class="sub note" data-i18n="n_invest">Repository first, then the folders inside.
-      Click a bar to filter.</p>
     <div class="grid2">
       <div class="panel"><h2 data-i18n="s_byrepo">By repository</h2><div id="repos"></div></div>
       <div class="panel"><h2 id="surfaceTitle" data-i18n="s_inside">Inside</h2><div id="surfaces"></div>
         <p class="sub foot" id="surfaceNote"></p></div>
-    </div>
-  </section>
-
-  <section id="models"><h2 data-i18n="s_models">Model mix</h2>
-    <div class="grid2">
       <div class="panel"><h2 data-i18n="s_output_model">Output by model</h2><div id="models-chart"></div></div>
       <div class="panel"><h2 data-i18n="s_efforts">Turns by reasoning effort</h2><div id="efforts"></div></div>
+      <div class="panel"><h2 data-i18n="s_toolcalls">Tool calls</h2><div id="tools"></div></div>
+      <div class="panel"><h2 data-i18n="s_agents">Named subagents</h2><div id="agents"></div>
+        <p class="sub foot" id="agentsNote"></p></div>
     </div>
   </section>
 
@@ -215,8 +222,23 @@ var l=localStorage.getItem("observatory-lang");if(l)r.setAttribute("data-lang",l
       <h2 class="subhead" id="meterTitle">Your week against the meter</h2>
       <p class="sub note" id="meterHint">Your own hours, with every vendor's peak
         window drawn over them.</p>
-      <div id="meter"></div>
-      <p class="sub foot" id="meterNote"></p>
+      <!-- Same seven rows, two different slices of time: the meter is
+           weekday x hour over the selected range, the calendar beside it is
+           day x week since collection began. Side by side rather than
+           stacked, since they answer a shared question and a few months of
+           history never needed a full-width panel of its own to show it —
+           that panel was mostly the blank space to the right of a much
+           narrower chart. Wraps to stacked below the width both need. -->
+      <div class="heatpair">
+        <div class="heatcol" id="meterCol">
+          <div id="meter"></div>
+          <p class="sub foot" id="meterNote"></p>
+        </div>
+        <div class="heatcol" id="calCol">
+          <h2 class="subhead" data-i18n="s_calendar">The long view</h2>
+          <div id="calendar"></div>
+        </div>
+      </div>
     </div>
 
     <div class="panel" id="phaseSection" hidden><h2><span data-i18n="s_phase">Peak and off-peak</span><span class="info" tabindex="0"
@@ -229,12 +251,11 @@ var l=localStorage.getItem("observatory-lang");if(l)r.setAttribute("data-lang",l
     </div>
   </section>
 
-  <section id="work"><h2 data-i18n="s_tools">Tools, delegation and the heaviest sessions</h2>
-    <div class="grid2">
-      <div class="panel"><h2 data-i18n="s_toolcalls">Tool calls</h2><div id="tools"></div></div>
-      <div class="panel"><h2 data-i18n="s_agents">Named subagents</h2><div id="agents"></div>
-        <p class="sub foot" id="agentsNote"></p></div>
-    </div>
+  <!-- Tool calls and Named subagents moved up into #effort's grid — same
+       date-range scope, and it filled the empty half of that grid's last
+       row. What's left here is one panel, so the section needs no heading
+       of its own beyond the panel's — same reasoning as #overview above. -->
+  <section id="work">
     <div class="panel"><h2 data-i18n="s_sessions">Heaviest sessions</h2>
       <p class="sub note" data-i18n="n_sessions">Writes/reads is the produce-to-explore
         ratio. Peak context is the largest single-turn context.</p>
