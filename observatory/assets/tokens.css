@@ -128,10 +128,21 @@
   --accent-ink:#ffffff;       /* text on top of --accent */
   --accent-soft:rgba(79,70,229,.10);
 
+  /* The dashboard's own protagonist colour — Shopee orange, kept as a
+     SEPARATE token from --accent for the same reason --r-data is separate
+     from --r: the landing page's indigo identity must not change just
+     because the dashboard is restyled. Only observatory/assets/app.css and
+     app.js may read this token; site/style.css never does. */
+  --accent-data:#ee4d2d;
+  --accent-data-ink:#ffffff;
+  --accent-data-soft:rgba(238,77,45,.10);
+
   /* The dashboard's side rail. Solid and dark in BOTH themes on purpose: it is
      the one fixed thing on a page you scroll a long way, and an anchor that
-     changes weight with the theme stops being an anchor. */
-  --rail:#141b2e;
+     changes weight with the theme stops being an anchor. Shopee navy, same
+     reasoning as --accent-data above — dashboard-only, not shared with the
+     landing page. */
+  --rail:#172b4d;
   --rail-ink:rgba(255,255,255,.62);
   --rail-ink-on:#ffffff;
   --rail-hover:rgba(255,255,255,.09);
@@ -225,7 +236,14 @@
     --accent:#9b93ff;
     --accent-ink:#101018;
     --accent-soft:rgba(155,147,255,.14);
-    --rail:#080d18;
+    /* Lifted the same way --accent is above: a brighter, warmer orange holds
+       the same perceived weight against a dark ground as #ee4d2d does against
+       white. Hangar itself ships light-mode only, so there is no source
+       value to match here — this is a judgement call, not a port. */
+    --accent-data:#ff7a52;
+    --accent-data-ink:#101018;
+    --accent-data-soft:rgba(255,122,82,.14);
+    --rail:#172b4d;
 
     --high:#e8836b; --med:#dcaa57; --low:#93b4c8; --info:#9b93ff;
     --ok:#63c194;
@@ -255,7 +273,9 @@
   --line-strong:rgba(255,255,255,.20); --track:#1d1d26; --sel:#242240;
   --bar:#4d4d5e;
   --accent:#9b93ff; --accent-ink:#101018; --accent-soft:rgba(155,147,255,.14);
-  --rail:#080d18;
+  --accent-data:#ff7a52; --accent-data-ink:#101018;
+  --accent-data-soft:rgba(255,122,82,.14);
+  --rail:#172b4d;
   --high:#e8836b; --med:#dcaa57; --low:#93b4c8; --info:#9b93ff; --ok:#63c194;
   --grad:linear-gradient(100deg,#7aa6ff 0%,#a48cff 34%,#e08ad6 64%,#ffb86b 100%);
   --grad-soft:linear-gradient(100deg,rgba(122,166,255,.20),rgba(164,140,255,.17),

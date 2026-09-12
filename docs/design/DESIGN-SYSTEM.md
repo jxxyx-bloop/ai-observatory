@@ -287,8 +287,8 @@ capitalised Product Nouns; no exclamation marks; no "simply", "just",
 `<h3>`, a KPI label, a panel title, a nav tile. A full stop at the end of a
 line that is already set off by size and whitespace reads as a sentence
 someone forgot to stop typing, which is the fastest tell that copy was
-generated rather than designed. `title` in both i18n tables is "Your AI
-coding, measured" — not "…measured." A stop *inside* a heading for rhythm is
+generated rather than designed. The dashboard's `title` key is "Where your AI
+effort went" — not "…went." A stop *inside* a heading for rhythm is
 fine and stays (`find_h2`: "Not a number. A next move") — it is only the
 trailing one that goes, because the layout already marks the boundary.
 Sentences of body copy under a heading keep normal punctuation; this rule is

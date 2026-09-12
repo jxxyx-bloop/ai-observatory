@@ -223,23 +223,11 @@ function translateFindings() {
 
 /* ---- behavioral metrics ---------------------------------------------------
    Favor these over raw volume: they say whether AI collaboration is getting
-   more effective, not just how much of it happened. */
-function turnsPerSession(t, sessions) { return sessions.length ? t.turns / sessions.length : 0; }
+   more effective, not just how much of it happened. Whole-range turns/session
+   and model-switch share are computed per-day instead, inside
+   sessionSeries()/behavioralTrends() below, now that the scoreboard only
+   shows their trend rather than a whole-window snapshot. */
 function toolCallsPerTurn(t) { return t.turns ? t.tool_calls / t.turns : 0; }
-function modelSwitchShare(sessions) {
-  if (!sessions.length) return 0;
-  var n = sessions.filter(function (s) { return (s.models || []).length > 1; }).length;
-  return 100 * n / sessions.length;
-}
-function medianMinutes(sessions) {
-  var mins = sessions.map(function (s) {
-    if (!s.start || !s.end) return 0;
-    return Math.max(0, (new Date(s.end) - new Date(s.start)) / 60000);
-  }).sort(function (a, b) { return a - b; });
-  if (!mins.length) return 0;
-  var mid = Math.floor(mins.length / 2);
-  return mins.length % 2 ? mins[mid] : (mins[mid - 1] + mins[mid]) / 2;
-}
 
 /* ---- dates: everything is a plain YYYY-MM-DD string in UTC ---- */
 function parse(iso) { return new Date(iso + "T00:00:00Z"); }
@@ -416,7 +404,7 @@ function daily(days, byDate, metric, fmt, picked) {
     s += '<g class="daycol" data-day="' + d + '" data-tt="'
       + esc(longDate(d) + " — " + fmt(v) + " " + metric) + '">'
       + '<rect x="' + x.toFixed(1) + '" y="' + (base - h).toFixed(1) + '" width="' + bw.toFixed(1)
-      + '" height="' + Math.max(h, v ? 1.2 : 0).toFixed(1) + '" rx="1" class="daybar" fill="var(' + (isPicked ? "--accent" : "--bar") + ')"'
+      + '" height="' + Math.max(h, v ? 1.2 : 0).toFixed(1) + '" rx="1" class="daybar" fill="var(' + (isPicked ? "--accent-data" : "--bar") + ')"'
       + (isPicked ? ' stroke="var(--ink)" stroke-width="1.2"' : '') + '/>'
       + '<rect class="hitcol" x="' + (L + i * step).toFixed(1) + '" y="' + TOP + '" width="'
       + step.toFixed(1) + '" height="' + PH + '" fill="transparent"/></g>';
@@ -440,7 +428,7 @@ function rollingMean(vals, L, step, base, PH, peak) {
   // accent are ninety equally loud marks; the trend under them is the only
   // thing on this chart that answers "is this going up?", and it was the one
   // mark rendered in a muted gold behind them. One protagonist per chart.
-  return '<polyline points="' + pts.join(" ") + '" fill="none" stroke="var(--accent)" '
+  return '<polyline points="' + pts.join(" ") + '" fill="none" stroke="var(--accent-data)" '
     + 'stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>';
 }
 /* Per-day axis: a weekday initial under every column, and a dated label on as
@@ -636,7 +624,7 @@ function meter(F) {
       }
       s += '<rect class="heatcell" data-tt="' + esc(tip) + '" x="' + x.toFixed(1)
         + '" y="' + y.toFixed(1) + '" width="' + Math.max(1, cw - 1.5).toFixed(1)
-        + '" height="' + CH + '" rx="3" fill="' + (v ? "var(--accent)" : "var(--track)")
+        + '" height="' + CH + '" rx="3" fill="' + (v ? "var(--accent-data)" : "var(--track)")
         + '" opacity="' + op + '"/>';
       // The ring, not a second fill: volume stays encoded by opacity alone, so
       // "busy" and "expensive" never compete for the same visual channel.
@@ -717,8 +705,29 @@ function calendar() {
      counting rows to work out whether a dark square is a Tuesday or a
      Thursday — which is the one question this chart exists to answer. We take
      the extra 3px of pitch instead and label all seven. */
-  var CELL = 12, G = 4, PITCH = CELL + G;
-  var L = 34, TOP = 26;
+  var L = 34, TOP = 26, G = 4;
+  /* Measured, not intrinsic — the same rule as daily()/meter() (see
+     "Charts are measured, never scaled" in DESIGN-SYSTEM.md), applied a
+     third way. Those two stretch width only and pin a fixed cell height,
+     because neither draws a shape that has to stay square. A calendar day
+     does — GitHub's whole visual grammar depends on it — so here PITCH scales
+     evenly and CELL stays derived from it, keeping every cell square while
+     the grid still grows to fill whatever width it is given. A short history
+     in a wide panel used to leave most of the panel blank; now the same cells
+     just get bigger, capped so a two-week history does not blow up into
+     oversized tiles. The floor keeps a long history legible instead of
+     shrinking forever — #calendar's overflow-x still catches it past that. */
+  var host = $("calendar");
+  // `Math.round(avail) || 300`, not `Math.max(300, avail)` — the same
+  // fallback idiom daily()/meter() already use. clientWidth is undefined in
+  // the headless test DOM (dashboard_smoke.js stubs getBoundingClientRect,
+  // not clientWidth), and Math.max(300, undefined) is NaN, not 300: `||`
+  // catches undefined/NaN/0 alike where `Math.max` only catches values
+  // actually below the floor.
+  var avail = host ? host.clientWidth : 0;
+  var fitPitch = ((Math.round(avail) || 300) - L - 10) / weeks;
+  var PITCH = Math.max(13, Math.min(22, fitPitch));
+  var CELL = PITCH - G;
   var W = Math.max(L + weeks * PITCH + 10, 300);
   var H = TOP + 7 * PITCH + 26;
 
@@ -775,7 +784,7 @@ function calendar() {
       s += '<rect class="calcell" data-tt="' + esc(dow(d2) + " " + key + " — "
         + num(v) + " turns") + '" data-day="' + key + '" x="' + (L + w2 * PITCH)
         + '" y="' + (TOP + d2 * PITCH) + '" width="' + CELL + '" height="' + CELL
-        + '" rx="2.5" fill="' + (v ? "var(--accent)" : "var(--track)")
+        + '" rx="2.5" fill="' + (v ? "var(--accent-data)" : "var(--track)")
         + '" opacity="' + (v ? Math.max(0.18, v / maxv).toFixed(2) : "1") + '"/>';
     }
   }
@@ -795,7 +804,7 @@ function calendar() {
   [0, 0.25, 0.5, 0.75, 1].forEach(function (v) {
     s += '<rect x="' + lx + '" y="' + (ly - CELL + 2) + '" width="' + CELL
       + '" height="' + CELL + '" rx="2.5" fill="'
-      + (v ? "var(--accent)" : "var(--track)") + '" opacity="'
+      + (v ? "var(--accent-data)" : "var(--track)") + '" opacity="'
       + (v ? Math.max(0.18, v).toFixed(2) : "1") + '"/>';
     lx += PITCH;
   });
@@ -860,9 +869,9 @@ function sparkline(vals) {
   });
   var last = pts[pts.length - 1].split(",");
   return '<svg viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="xMinYMin meet" role="img">'
-    + '<polyline points="' + pts.join(" ") + '" fill="none" stroke="var(--accent)" '
+    + '<polyline points="' + pts.join(" ") + '" fill="none" stroke="var(--accent-data)" '
     + 'stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/>'
-    + '<circle cx="' + last[0] + '" cy="' + last[1] + '" r="2.6" fill="var(--accent)"/></svg>';
+    + '<circle cx="' + last[0] + '" cy="' + last[1] + '" r="2.6" fill="var(--accent-data)"/></svg>';
 }
 function lastWindowBasis(vals, counts, window) {
   /* Days and sessions behind the final rolling value — the same trailing slots
@@ -910,41 +919,51 @@ function behavioralTrends(F) {
 }
 
 /* ---- panels ------------------------------------------------------------ */
+/* `hi`/`hn` (cost only): the section heading reads "Spend per day...", not
+   "Est. cost per day..." — Est. cost is the right word on a 9-char segmented
+   button, Spend is the right word in a sentence. Every other metric's button
+   label already reads fine as a sentence subject, so only cost needs the
+   override. */
 var DAILY = [{k: "turns", i: "d_turns", n: "Turns", f: num},
-             {k: "cost", i: "d_cost", n: "Est. cost", f: usd},
+             {k: "cost", i: "d_cost", n: "Est. cost", hi: "d_cost_h", hn: "Spend", f: usd},
              {k: "output", i: "d_output", n: "Output", f: num},
              {k: "tool_calls", i: "d_tools", n: "Tool calls", f: num}];
 /* The English `n` stays as the fallback and as the tooltip's metric word. */
 function dailyLabel(m) { return t18(m.i, m.n); }
-var dailyMetric = "turns";
+function dailyHeadingLabel(m) { return m.hi ? t18(m.hi, m.hn) : dailyLabel(m); }
+// Spend, not turns, matches the Hangar port's own default and the KPI strip's
+// own lead tile — turns/output/tool-calls stay one click away on the segmented
+// control, they just are not the first thing either product shows.
+var dailyMetric = "cost";
 var selectedDay = null;  // click a bar in "Daily rhythm" to drill every panel into that day
 
-function kpiCards(t, sessions) {
+function kpiCards(t, totalDays) {
   var days = Math.max(1, t.days);
   var read = t.cache_read + t.cache_create + t.input;
   var ratio = (t.writes || t.reads)
     ? (t.writes / Math.max(t.reads, 1)).toFixed(2) + "×" : "—";
-  var tps = turnsPerSession(t, sessions), tcpt = toolCallsPerTurn(t);
-  var msw = modelSwitchShare(sessions), med = medianMinutes(sessions);
-  // Behavioral signals lead; raw volume (turns, output tokens) no longer gets
-  // a top-of-page tile of its own — it's still visible in the panels below.
+  var tcpt = toolCallsPerTurn(t);
+  // Five numbers, not six — turns/session and model-switch share still get
+  // their own trend sparklines in behavioralTrends() below, so dropping them
+  // here loses no view of the data, only the redundant top-of-page tile.
+  // Matches the Hangar port's scoreboard (design.md, "Metrics: behavioral
+  // over volume": both demoted for the same reason, in favor of a number
+  // that says how much of the synced window was actually active).
   var cards = [
     [usd(t.cost), esc(t18("k_spend", "Estimated spend")) + info("spend"),
      tf("n_spend", "~%V%/active day · notional on a seat plan",
         {V: usd(t.cost / days)}), true],
-    [tps.toFixed(1), esc(t18("k_tps", "Turns / session")) + info("turnsPerSession"),
-     sessions.length ? tf("n_tps", "median %M%m per session", {M: med.toFixed(0)})
-                     : t18("n_nosessions", "no sessions yet")],
     [pctOf(t.cache_read, read).toFixed(1) + "%",
      esc(t18("k_cache", "Served from cache")) + info("cache"),
      t18("n_cache", "the share of read tokens that cost 0.1× instead of 1×")],
+    [ratio, esc(t18("k_wr", "Write / read")) + info("writeRead"),
+     tf("n_wr", "%W% edits per %R% lookups", {W: num(t.writes), R: num(t.reads)})],
     [tcpt.toFixed(2), esc(t18("k_tcpt", "Tool calls / turn")) + info("toolCallsPerTurn"),
      tcpt >= 0.5 ? t18("n_agentic", "agentic use")
                  : t18("n_conversational", "mostly conversational")],
-    [msw.toFixed(0) + "%", esc(t18("k_msw", "Model-switch share")) + info("modelSwitchShare"),
-     tf("n_msw", "of %N% sessions used more than one model", {N: num(sessions.length)})],
-    [ratio, esc(t18("k_wr", "Write / read")) + info("writeRead"),
-     tf("n_wr", "%W% edits per %R% lookups", {W: num(t.writes), R: num(t.reads)})]
+    [num(t.days), esc(t18("k_days", "Days you used AI")),
+     totalDays ? tf("n_days", "across %N% calendar days", {N: num(totalDays)})
+               : t18("n_noactivity", "no activity in range")]
   ];
   return cards.map(function (c) {
     // Label, then number, then the gloss. A number is only a fact once you
@@ -1054,7 +1073,16 @@ function onResize() {
   if (w === lastWidth) return;         // height-only changes move nothing
   lastWidth = w;
   clearTimeout(resizeTimer);
-  resizeTimer = setTimeout(function () { if (drawn) draw(); }, 150);
+  resizeTimer = setTimeout(function () {
+    if (!drawn) return;
+    draw();
+    // Not part of draw(): the calendar shows the whole synced window
+    // regardless of the filters draw() applies, so it has always been
+    // rendered on its own (see the cold-load and language-switch call sites).
+    // Now that its cell size is measured from #calendar's width too, a
+    // resize has to repaint it the same way it repaints daily()/meter().
+    $("calendar").innerHTML = calendar();
+  }, 150);
 }
 window.addEventListener("resize", onResize);
 
@@ -1077,7 +1105,7 @@ function draw() {
     return m.k === dailyMetric;
   })[0];
 
-  $("kpis").innerHTML = kpiCards(t, ses);
+  $("kpis").innerHTML = kpiCards(t, span(F.from, F.to).length);
   // "All" is the filter's sentinel value, never shown; the words beside it are
   // copy and translate. A provider or repo name is data and stays as written.
   var slice = [F.provider === "All" ? t18("f_scope_providers", "all providers") : F.provider,
@@ -1090,6 +1118,10 @@ function draw() {
     + (F.day ? "  ·  " + tf("s_drilled", "drilled into %D% (click it again to clear)",
                             {D: longDate(F.day)}) : "");
 
+  if ($("dailyTitle")) {
+    $("dailyTitle").textContent = tf("s_daily_metric",
+      "%M% per day, with the trend underneath the noise", {M: dailyHeadingLabel(spec)});
+  }
   var byDate = {};
   agg(D.cube, CUBE, F, ["date"]).forEach(function (r) { byDate[r.date] = r[dailyMetric]; });
   $("daily").innerHTML = daily(span(F.from, F.to), byDate,
@@ -1306,9 +1338,7 @@ function init() {
   });
 
   fillSelects();
-  var cal = calendar();
-  $("calendar").innerHTML = cal;
-  if (!cal) $("calendar").closest ? 0 : 0;
+  $("calendar").innerHTML = calendar();
   ["provider", "lane", "repo"].forEach(function (id) {
     $(id).addEventListener("change", draw);
   });

@@ -52,25 +52,20 @@ section{margin:26px 0 0;min-width:0}
 .panel{min-width:0;max-width:100%;background:var(--panel);
   border:1px solid var(--line);border-radius:var(--r-data);
   padding:clamp(15px,2.2vw,19px) clamp(16px,2.4vw,20px) clamp(17px,2.6vw,20px)}
-/* min(320px,100%), not a bare 320px: a bare minimum keeps the track at 320px
-   even when the container is narrower, so on a 320px phone the panel pushed
-   40px past the gutter and dragged the page into horizontal scroll. */
+/* min(340px,100%), not a bare 340px: a bare minimum keeps the track at 340px
+   even when the container is narrower, so on a 340px phone the panel pushed
+   past the gutter and dragged the page into horizontal scroll.
+
+   340, not the previous 320: matched to the Wingman Hangar port's own card
+   min-width, and the number that decides how many bar-list panels share a
+   row. Two panels in this track at the 1320px dashboard width stretched each
+   to ~610px of mostly-empty padding around a bar list that wants maybe 400 —
+   "half a page each" was a direct complaint about that stretch. Grouping the
+   repo/folder and model/effort breakdowns into one four-panel grid (see
+   `#effort` in page.html) now packs three of the four into a row before
+   wrapping, instead of two panels stretched to fill it. */
 .grid2{display:grid;gap:18px;
-  grid-template-columns:repeat(auto-fit,minmax(min(320px,100%),1fr))}
-/* The daily chart and the calendar are stacked, not paired, and that is a
-   measurement rather than a preference.
-
-   Splitting a row down the middle is only right when both halves want the same
-   room. These do not: `#daily>svg` is pinned to a 720px canvas and
-   `#calendar svg` renders at its intrinsic 300px, both on purpose — they are
-   data charts, and shrinking one past legibility is worse than letting it
-   scroll. With panel padding and a gap the pair needs about 1130px of content.
-
-   `.wrap` caps content at 1120px, so that width is never available at any
-   viewport, and every possible split is a choice about which chart scrolls.
-   Two levers if this is ever worth revisiting: raise the cap, or tighten the
-   calendar's viewBox, which is 300 wide around 168px of ink. Until then,
-   stacked is the only arrangement where neither is cut off. */
+  grid-template-columns:repeat(auto-fit,minmax(min(340px,100%),1fr))}
 section>.panel+.panel,section>.grid2+.panel,section>.panel+.grid2{margin-top:18px}
 /* The scoreboard: one field, not six cards.
 
@@ -98,7 +93,7 @@ section>.panel+.panel,section>.grid2+.panel,section>.panel+.grid2{margin-top:18p
   align-content:start;container-type:inline-size;min-width:0}
 /* The one number the page is really about. An inset rule rather than a border,
    so it cannot alter the cell's box and knock the seam grid out of true. */
-.kpi.lead{box-shadow:inset 3px 0 0 var(--accent)}
+.kpi.lead{box-shadow:inset 3px 0 0 var(--accent-data)}
 /* Label first. A number is only a fact once you know what it counts, and the
    old order made the eye land on "$3,576.65" and then hunt downward for the
    noun. Reading order now matches the sentence: what it is, how much, what
@@ -121,8 +116,8 @@ section>.panel+.panel,section>.grid2+.panel,section>.panel+.grid2{margin-top:18p
   border-radius:50%;border:1px solid var(--faint);color:var(--faint);font-size:10px;
   font-style:normal;font-weight:700;line-height:1;margin-left:5px;cursor:help;
   vertical-align:middle;flex:none}
-.info:hover,.info:focus-visible{border-color:var(--accent);color:var(--accent)}
-.info:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.info:hover,.info:focus-visible{border-color:var(--accent-data);color:var(--accent-data)}
+.info:focus-visible{outline:2px solid var(--accent-data);outline-offset:1px}
 h2 .info{margin-left:7px}
 .k .info{margin-left:4px;transform:translateY(-1px)}
 
@@ -199,6 +194,19 @@ h2 .info{margin-left:7px}
    not as layout. Each control now names itself in its own default option
    ("All providers"), which is shorter and is what a screen reader wanted
    anyway. */
+/* Closed by default, so the page's default shape is header -> KPIs, same as
+   Hangar — provider/lane/repo drill-down and explicit date inputs have no
+   equivalent there, so they earn a click rather than a permanent bar. */
+.filters{margin-top:var(--s3)}
+.filterbtn{display:inline-flex;align-items:center;gap:6px;list-style:none;
+  padding:6px 12px;border:1px solid var(--line);border-radius:var(--r-data);
+  color:var(--muted);font-size:12.5px;font-weight:600;cursor:pointer;
+  user-select:none;width:fit-content}
+.filterbtn::-webkit-details-marker{display:none}
+.filterbtn:hover{border-color:var(--line-strong);color:var(--ink)}
+.filterbtn svg{width:15px;height:15px;fill:none;stroke:currentColor;
+  stroke-width:1.7;stroke-linecap:round;flex:none}
+.filters[open] .filterbtn{border-color:var(--accent-data);color:var(--accent-data)}
 .controls{display:flex;flex-wrap:wrap;gap:var(--s2);align-items:center;
   margin-top:var(--s3);padding:8px 10px;background:var(--panel);
   border:1px solid var(--line);border-radius:var(--r-data)}
@@ -225,7 +233,7 @@ h2 .info{margin-left:7px}
   color var(--d-fast) var(--ease)}
 .seg button:last-child{border-right:0}
 .seg button:hover{background:var(--track);color:var(--ink)}
-.seg button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);font-weight:600}
+.seg button[aria-pressed="true"]{background:var(--accent-data);color:var(--accent-data-ink);font-weight:600}
 .seg.small button{font-size:11.5px;padding:5px 11px}
 
 .dates{display:flex;align-items:center;gap:4px;padding:2px 8px;flex:none;
@@ -244,7 +252,7 @@ h2 .info{margin-left:7px}
   transition:color var(--d-fast) var(--ease),border-color var(--d-fast) var(--ease)}
 .resetbtn svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.7;
   stroke-linecap:round;stroke-linejoin:round}
-.resetbtn:hover{color:var(--accent);border-color:var(--accent)}
+.resetbtn:hover{color:var(--accent-data);border-color:var(--accent-data)}
 .scope{margin:9px 2px 0;font-size:12.5px;color:var(--faint);font-variant-numeric:tabular-nums}
 /* Below this the segmented control cannot stay one row of five, so it becomes
    a wrapping chip row rather than being clipped at the panel edge. */
@@ -258,11 +266,23 @@ h2 .info{margin-left:7px}
 .legend i{display:inline-block;width:9px;height:9px;
   border-radius:var(--r-data-sm);margin:0 4px 0 10px;
   background:var(--bar);vertical-align:baseline}
-.legend i.avg{background:var(--accent);height:3px;border-radius:var(--r-data-sm);
+.legend i.avg{background:var(--accent-data);height:3px;border-radius:var(--r-data-sm);
   width:14px;vertical-align:middle}
 svg{display:block;width:100%;height:auto;max-width:100%}
-/* The calendar is the exception: a day is a fixed square, so it keeps its
-   intrinsic size and scrolls when a year of data outgrows the panel. */
+/* The calendar is the one chart here whose measured width is a CAP, not a
+   floor (calendar(), in app.js): daily()/meter() always draw a viewBox that
+   equals or exceeds the container, so the general width:100% rule above is a
+   no-op for them — 100% of the container is already what their own viewBox
+   says. A short history in a wide column does not need more cells, only
+   bigger ones, so calendar()'s cell size stops growing past a legible
+   maximum and leaves the rest of the viewBox unset. `width:100%` would
+   re-stretch exactly that deliberately-smaller SVG back up to fill the
+   column — every cell blown back out past the cap it was just given —
+   which is the bug this rule exists to prevent. `width:auto` renders it at
+   the size its own attributes already say; `max-width:none` (not `100%`)
+   keeps that promise even past the minimum-cell floor, where the SVG is
+   wider than the column on purpose and #calendar's own overflow-x is the
+   intended way out, not a shrink. */
 #calendar{overflow-x:auto;-webkit-overflow-scrolling:touch}
 #calendar svg{width:auto;max-width:none;display:block;margin-inline:auto}
 #calendar rect[data-day]{cursor:pointer}
@@ -289,6 +309,17 @@ svg{display:block;width:100%;height:auto;max-width:100%}
 #daily>svg{min-width:720px;max-width:100%;height:auto;display:block}
 #meter>svg{min-width:560px;max-width:100%;height:auto;display:block}
 .empty{color:var(--faint);font-size:13.5px;margin:6px 0;font-style:italic}
+
+/* The meter and the calendar side by side: same seven rows, two slices of
+   time, so they read as one comparison rather than two unrelated charts
+   stacked a screen apart. Explicit flex-basis on each — the meter's own
+   560px floor, the calendar's practical minimum — so wrap is a real decision
+   (there is truly not enough width for both) rather than an arbitrary
+   breakpoint; below it they stack exactly as they did before this pairing. */
+.heatpair{display:flex;flex-wrap:wrap;gap:20px;align-items:flex-start}
+.heatcol{min-width:0}
+#meterCol{flex:2 1 560px}
+#calCol{flex:1 1 300px}
 
 /* Daily rhythm bars double as a drill-down control: click a day to filter
    every other panel down to it. */
@@ -349,15 +380,15 @@ svg{display:block;width:100%;height:auto;max-width:100%}
 /* The longest bar is the answer to the panel's question; the rest are the
    context that makes it mean something. Colouring all of them identically
    spends the accent on the sorting rather than on the finding. */
-.hbar:first-child .ht>i{background:var(--accent)}
+.hbar:first-child .ht>i{background:var(--accent-data)}
 .hbar .hv{font-size:13px;font-weight:600;color:var(--ink);text-align:right;
   font-variant-numeric:tabular-nums;white-space:nowrap}
 .hbar.hit{cursor:pointer}
-.hbar.hit:hover .hl{color:var(--accent);font-weight:600}
-.hbar.hit:hover .ht>i{background:var(--accent)}
+.hbar.hit:hover .hl{color:var(--accent-data);font-weight:600}
+.hbar.hit:hover .ht>i{background:var(--accent-data)}
 /* SVG bars answer to the same rule: neutral until the pointer picks one out. */
 .daybar{transition:fill var(--d-fast) var(--ease)}
-.daycol:hover .daybar{fill:var(--accent)}
+.daycol:hover .daybar{fill:var(--accent-data)}
 
 table{width:100%;border-collapse:collapse;font-size:13.5px;min-width:660px}
 th,td{text-align:right;padding:7px 9px;border-bottom:1px solid var(--line);white-space:nowrap}
@@ -367,7 +398,7 @@ tbody tr:last-child td{border-bottom:none}
 td.n{font-variant-numeric:tabular-nums}
 .scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
 .bar{height:6px;border-radius:3px;background:var(--track);overflow:hidden;min-width:52px}
-.bar>i{display:block;height:100%;background:var(--accent);border-radius:3px}
+.bar>i{display:block;height:100%;background:var(--accent-data);border-radius:3px}
 .tag{display:inline-block;font-size:10.5px;letter-spacing:.04em;color:var(--muted);
   background:var(--track);border-radius:4px;padding:1px 5px;margin-left:5px}
 
@@ -404,7 +435,7 @@ code{font:12.5px ui-monospace,SFMono-Regular,Menlo,monospace;background:var(--tr
 .railmark{display:flex;align-items:center;justify-content:center;flex:none;
   width:40px;height:40px;border-radius:var(--r-data);
   transition:background var(--d-fast) var(--ease)}
-.railmark svg{width:22px;height:22px;fill:none;stroke:var(--accent);
+.railmark svg{width:22px;height:22px;fill:none;stroke:var(--accent-data);
   stroke-width:1.5;stroke-linecap:round}
 .railmark:hover{background:var(--rail-hover)}
 
@@ -441,7 +472,7 @@ code{font:12.5px ui-monospace,SFMono-Regular,Menlo,monospace;background:var(--tr
   stroke-linecap:round;stroke-linejoin:round}
 .railbtn .code{font-size:10px;font-weight:700;letter-spacing:.04em}
 .railbtn:focus-visible,.railnav a:focus-visible,.railmark:focus-visible{
-  outline:2px solid var(--accent);outline-offset:-2px}
+  outline:2px solid var(--accent-data);outline-offset:-2px}
 
 .menu{position:relative;width:100%}
 .menu>summary{list-style:none;user-select:none}
@@ -453,8 +484,8 @@ code{font:12.5px ui-monospace,SFMono-Regular,Menlo,monospace;background:var(--tr
   max-height:min(70vh,440px);overflow:auto}
 .sheet a{padding:6px var(--s3);border-radius:var(--r-data-sm);color:var(--muted);
   font-size:var(--t-sm);text-decoration:none}
-.sheet a:hover{background:var(--accent-soft);color:var(--ink)}
-.sheet a[aria-current="true"]{color:var(--accent);font-weight:600}
+.sheet a:hover{background:var(--accent-data-soft);color:var(--ink)}
+.sheet a[aria-current="true"]{color:var(--accent-data);font-weight:600}
 
 .pagehead{padding:var(--s5) 0 0}
 
@@ -468,7 +499,7 @@ code{font:12.5px ui-monospace,SFMono-Regular,Menlo,monospace;background:var(--tr
      the fill hugged the word, which read as cramped next to the rail items
      above it — those get their breathing room from the rail's own padding. */
   margin:6px 4px 0;padding:11px 10px;border-radius:var(--r-data);
-  color:var(--accent-ink);background:var(--accent);
+  color:var(--accent-data-ink);background:var(--accent-data);
   font-size:var(--t-cap-lg);font-weight:var(--cap-weight);
   letter-spacing:var(--cap-track);text-transform:var(--cap-case);
   line-height:var(--cap-lh);
@@ -534,18 +565,18 @@ code{font:12.5px ui-monospace,SFMono-Regular,Menlo,monospace;background:var(--tr
    and the ask renders on every dashboard, including somebody's own. */
 .starask[hidden]{display:none}
 .starask a{display:inline-flex;align-items:center;gap:6px;font-weight:600;
-  color:var(--accent);text-decoration:none}
+  color:var(--accent-data);text-decoration:none}
 .starask a:hover{text-decoration:underline}
-.starask .star{width:14px;height:14px;flex:none;fill:var(--accent);
-  stroke:var(--accent);stroke-width:1.2;stroke-linejoin:round}
+.starask .star{width:14px;height:14px;flex:none;fill:var(--accent-data);
+  stroke:var(--accent-data);stroke-width:1.2;stroke-linejoin:round}
 
 .demoflag{margin:0;display:flex;align-items:center;gap:9px;flex:none}
 .demoflag[hidden]{display:none}
 .demochip{font-size:var(--t-cap-lg);font-weight:var(--cap-weight);
   letter-spacing:var(--cap-track-lg);text-transform:var(--cap-case);
   padding:3px 8px;border-radius:999px;white-space:nowrap;
-  color:var(--accent-ink);background:var(--accent)}
-.demotry{font-size:12.5px;font-weight:600;color:var(--accent);white-space:nowrap}
+  color:var(--accent-data-ink);background:var(--accent-data)}
+.demotry{font-size:12.5px;font-weight:600;color:var(--accent-data);white-space:nowrap}
 .demotry:hover{text-decoration:underline}
 
 .fresh{display:flex;gap:14px;align-items:center;flex-wrap:wrap;
@@ -557,13 +588,13 @@ code{font:12.5px ui-monospace,SFMono-Regular,Menlo,monospace;background:var(--tr
 /* Version, not data. Accent for something waiting to happen, muted for
    something that already did — an update that landed overnight is a receipt,
    and a receipt should not shout. */
-.fresh.update{border-left-color:var(--accent)}
+.fresh.update{border-left-color:var(--accent-data)}
 .fresh.updated{border-left-color:var(--low)}
 /* Pinned to the first line rather than centred: once the text wraps to three
    lines on a phone, a vertically centred dot floats beside the middle of the
    paragraph and reads as a bullet for the wrong sentence. */
 .freshdot{width:8px;height:8px;border-radius:50%;flex:none;margin-top:6px;
-  align-self:flex-start;background:var(--accent)}
+  align-self:flex-start;background:var(--accent-data)}
 .fresh.aging .freshdot{background:var(--med)}
 .fresh.stale .freshdot{background:var(--high)}
 .freshtext{margin:0;flex:1 1 260px;font-size:13.5px;line-height:1.55;color:var(--muted)}
@@ -574,10 +605,10 @@ code{font:12.5px ui-monospace,SFMono-Regular,Menlo,monospace;background:var(--tr
   line-height:1.5;white-space:pre-wrap;overflow-wrap:anywhere;
   max-width:min(56vw,460px)}
 .freshbtn{flex:none;padding:6px 14px;font:inherit;font-size:12.5px;font-weight:650;
-  color:var(--accent-ink);background:var(--accent);border:0;
+  color:var(--accent-data-ink);background:var(--accent-data);border:0;
   border-radius:var(--r-data-sm);cursor:pointer}
 .freshbtn:hover{opacity:.9}
 @media print{.fresh{display:none}}
-.freshlink{flex:none;font-size:12.5px;font-weight:650;color:var(--accent);
+.freshlink{flex:none;font-size:12.5px;font-weight:650;color:var(--accent-data);
   text-decoration:underline;text-underline-offset:3px}
 .freshlink[hidden]{display:none}
