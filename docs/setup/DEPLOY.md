@@ -109,6 +109,19 @@ column is the only one that matters.
 Then project → **Custom domains** → **Set up a domain**. DNS is automatic if the
 domain is already in your Cloudflare account.
 
+### 1.6 Visitor analytics (optional, off by default)
+
+Nothing is counted unless you ask for it. Set the `ANALYTICS_ID` build variable
+to a GA4 measurement id and the marketing pages start counting visits; leave it
+unset — as every fork does — and the build makes zero external requests and says
+so. `/demo/` and the dashboard are never covered either way, and CI fails if
+they ever are.
+
+The whole procedure, the trade-offs, and the alternatives that cost less, are in
+**[ANALYTICS.md](ANALYTICS.md)**. Read §1 before you start: what analytics can
+tell you about an audience is narrower than most people expect, and the
+demographics half is the least reliable part.
+
 ---
 
 ## Part 2 — The community API (not yet)
@@ -189,6 +202,8 @@ Free tiers in this market are marketing, and marketing changes.
 | `python3: command not found` | Set the `PYTHON_VERSION` build variable (e.g. `3.12`) in the Cloudflare project's build settings. |
 | Build fails on "no external requests" | Something in `site/index.html` loads a remote asset. That check is deliberate — the page advertises zero external requests, so it must not make any. |
 | Site deploys but the demo 404s | `site/build.py` didn't produce `dist/demo/index.html`. Run it locally and look. |
+| `ANALYTICS_ID=… is not a GA4 measurement id` | The variable holds something other than `G-` plus 6–15 of `A-Z0-9`. The build refuses rather than shipping a tag that reaches nothing. |
+| Analytics set, but no tag on the page | The variable is on the wrong environment (Preview rather than Production), or the deploy predates it. Redeploy. See [ANALYTICS.md §5.4](ANALYTICS.md). |
 
 ## See also
 
@@ -196,3 +211,4 @@ Free tiers in this market are marketing, and marketing changes.
 - [ADR-011](../adr/ADR-011-Community-Layer.md) — why the community layer is gated
 - [server/README.md](../../server/README.md) — the API design sketch
 - [Community-Share-Protocol](../specs/Community-Share-Protocol.md) — exactly what a payload contains
+- [ANALYTICS.md](ANALYTICS.md) — visitor analytics on the public site, and the boundary it may not cross

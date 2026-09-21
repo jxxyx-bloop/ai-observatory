@@ -63,9 +63,85 @@ import i18n  # noqa: E402
 SITE = os.environ.get("SITE_URL", "https://aiobservatory.dev").rstrip("/")
 REPO = "https://github.com/jxxyx-bloop/ai-observatory"
 
-# Cloudflare Pages reads this file. The dashboard and this page both promise
-# zero external requests; the CSP is what makes that promise enforceable by the
-# browser rather than a claim in a README.
+# ── Visitor analytics ────────────────────────────────────────────────────────
+#
+# Off unless the deploy sets ANALYTICS_ID, and the id is never committed. Not
+# because a GA4 measurement id is a secret — it is in the source of every page
+# that runs one, and anybody can read it — but because this is a public repo
+# that people fork. An id in the file would follow every fork, and a stranger's
+# traffic would land in this project's property while the fork's owner had no
+# idea they were sending it. Reading it from the environment means the tag
+# exists on exactly one deployment: the one whose owner set the variable.
+#
+# What it may cover is the marketing pages — the landing page in its thirteen
+# locales, and the setup walkthrough. Never `/demo/`, and never the dashboard
+# `render.py` writes onto people's laptops. That boundary is the product's
+# whole claim, so it is structural rather than a rule someone has to remember:
+# the demo is built by the engine's own renderer, which this file cannot pass a
+# tag to, and `site/tools/check_no_remote.py` refuses to exempt anything under
+# `demo/` no matter what it is told to allow.
+ANALYTICS_ID = os.environ.get("ANALYTICS_ID", "").strip()
+
+# A typo'd id is worse than no id: the tag loads, the page looks fine, and the
+# property stays empty for however long it takes somebody to check.
+if ANALYTICS_ID and not re.fullmatch(r"G-[A-Z0-9]{6,15}", ANALYTICS_ID):
+    raise SystemExit(f"build: ANALYTICS_ID={ANALYTICS_ID!r} is not a GA4 "
+                     f"measurement id (expected G- followed by 6-15 A-Z0-9)")
+
+# Consent Mode v2 defaults. Storage is denied before the reader has said
+# anything in the EEA, the UK and Switzerland, which is where saying nothing is
+# not consent; GA4 then sends cookieless pings — a count and a country, no `_ga`
+# cookie, no returning-visitor identity. Everywhere else the default is granted.
+# Region-specific defaults are declared first and win over the global one that
+# follows, per Google's own ordering.
+CONSENT_DENIED_REGIONS = (
+    "AT", "BE", "BG", "HR", "CY", "CZ", "DK", "EE", "FI", "FR", "DE", "GR",
+    "HU", "IE", "IT", "LV", "LT", "LU", "MT", "NL", "PL", "PT", "RO", "SK",
+    "SI", "ES", "SE",                      # EU
+    "IS", "LI", "NO",                      # rest of the EEA
+    "GB", "CH",                            # UK and Switzerland
+)
+
+# Wildcards, reluctantly, and only here. Google collects on regional hostnames
+# (`region1.google-analytics.com` and siblings) that it adds without notice, so
+# an enumerated list is a policy that starts dropping hits on a Tuesday. The
+# wildcard is confined to `connect-src` and `img-src`; `script-src` names one
+# exact host, because that is the directive where a wildcard would matter.
+ANALYTICS_SCRIPT_SRC = ("https://www.googletagmanager.com",)
+ANALYTICS_CONNECT_SRC = ("https://*.google-analytics.com",
+                         "https://*.analytics.google.com",
+                         "https://*.googletagmanager.com")
+ANALYTICS_IMG_SRC = ("https://*.google-analytics.com",
+                     "https://*.googletagmanager.com")
+
+
+def analytics_tag() -> str:
+    """The gtag pair for the marketing pages, or nothing at all."""
+    if not ANALYTICS_ID:
+        return ""
+    regions = ",".join(f'"{c}"' for c in CONSENT_DENIED_REGIONS)
+    denied = ('ad_storage:"denied",ad_user_data:"denied",'
+              'ad_personalization:"denied"')
+    return (
+        f'<script async src="https://www.googletagmanager.com/gtag/js?id='
+        f'{ANALYTICS_ID}"></script>\n'
+        '<script>\n'
+        'window.dataLayer=window.dataLayer||[];'
+        'function gtag(){dataLayer.push(arguments);}\n'
+        f'gtag("consent","default",{{{denied},analytics_storage:"denied",'
+        f'region:[{regions}]}});\n'
+        f'gtag("consent","default",{{{denied},analytics_storage:"granted"}});\n'
+        'gtag("js",new Date());\n'
+        f'gtag("config","{ANALYTICS_ID}");\n'
+        '</script>'
+    )
+
+# Cloudflare Pages reads this file. The dashboard promises zero external
+# requests and the marketing pages promise it too unless ANALYTICS_ID is set;
+# the CSP is what makes whichever promise is in force enforceable by the browser
+# rather than a claim in a README. `csp()` below takes the one argument that
+# decides which, and `headers_file()` makes sure the demo never gets the wider
+# of the two.
 #
 # script-src carries SHA-256 hashes rather than 'unsafe-inline', and that is the
 # point of this whole block. With 'unsafe-inline' any HTML that reached a page —
@@ -129,18 +205,52 @@ def inline_script_hashes(root: Path) -> list[str]:
     return sorted(found)
 
 
-def headers_file(script_hashes: list[str]) -> str:
-    csp = "; ".join((
+def csp(script_hashes: list[str], analytics: bool) -> str:
+    """The policy for one group of pages.
+
+    `analytics` widens exactly three directives and nothing else. Every other
+    page — the demo above all — gets the same closed policy it always had, and
+    gets it from this one function, so the two can only differ where the
+    argument says they may.
+    """
+    script = list(script_hashes)
+    connect: list[str] = []
+    img = ["'self'", "data:"]
+    if analytics:
+        script += list(ANALYTICS_SCRIPT_SRC)
+        connect += list(ANALYTICS_CONNECT_SRC)
+        img += list(ANALYTICS_IMG_SRC)
+    parts = [
         "default-src 'none'",
-        "script-src " + " ".join(script_hashes),
+        "script-src " + " ".join(script),
         "style-src 'unsafe-inline'",
-        "img-src 'self' data:",
+        "img-src " + " ".join(img),
         "form-action 'none'",
         "frame-ancestors 'none'",
         "base-uri 'none'",
-    ))
-    return "\n".join((
-        "/*",
+    ]
+    if connect:
+        parts.insert(3, "connect-src " + " ".join(connect))
+    return "; ".join(parts)
+
+
+def headers_file(script_hashes: list[str]) -> str:
+    """`_headers` for Cloudflare: one block for everything, then the demo's.
+
+    The demo block only appears when analytics is on, and it exists to make the
+    page that carries the product's headline promise unreachable by the tag —
+    not as documentation of intent, but as a policy the browser enforces. Both
+    blocks match `/demo/*`, and two `Content-Security-Policy` headers on one
+    response are enforced as their intersection: the closed policy wins there
+    whether Cloudflare sends both or lets the later rule replace the earlier.
+    So the demo is strict under either reading, which is the only property
+    worth relying on.
+
+    Both blocks pin the same hashes — every inline script the build emitted —
+    because the alternative is two lists that drift, and a page whose scripts
+    were pinned by the block that did not match.
+    """
+    common = (
         "  Strict-Transport-Security: max-age=31536000; includeSubDomains",
         "  X-Frame-Options: DENY",
         "  X-Content-Type-Options: nosniff",
@@ -149,9 +259,14 @@ def headers_file(script_hashes: list[str]) -> str:
         "  Cross-Origin-Resource-Policy: same-origin",
         "  X-Permitted-Cross-Domain-Policies: none",
         f"  Permissions-Policy: {PERMISSIONS}",
-        f"  Content-Security-Policy: {csp}",
-        "",
-    ))
+    )
+    out = ["/*", *common,
+           f"  Content-Security-Policy: {csp(script_hashes, bool(ANALYTICS_ID))}"]
+    if ANALYTICS_ID:
+        out += ["", "/demo/*", *common,
+                f"  Content-Security-Policy: {csp(script_hashes, False)}"]
+    out.append("")
+    return "\n".join(out)
 
 
 ROBOTS = f"""User-agent: *
@@ -231,6 +346,11 @@ def render_landing(code: str, template: str, css: str, js: str) -> str:
         "langlinks": lang_links(code),
         "alternates": alternates(code),
         "findings": finding_cards(t),
+        "analytics": analytics_tag(),
+        # The privacy section is switched by the same variable that switches the
+        # tag, so the page cannot end up promising one thing while doing another.
+        # A deploy with no id keeps the original line, and it stays true.
+        "priv_3": esc(t["priv_3_analytics" if ANALYTICS_ID else "priv_3"]),
         "repo": REPO,
         # English is the site root; every other locale sits one directory down.
         "base": "" if code == "en" else "../",
@@ -263,7 +383,8 @@ def render_setup(template: str, css: str, js: str, setup_js: str) -> str:
     page = (template.replace("/*CSS*/", css)
                     .replace("/*SETUPJS*/", setup_js)
                     .replace("/*JS*/", js))
-    for key, value in {"repo": REPO, "site": SITE, "base": "../"}.items():
+    for key, value in {"repo": REPO, "site": SITE, "base": "../",
+                       "analytics": analytics_tag()}.items():
         page = page.replace("{{" + key + "}}", str(value))
     if "{{" in page:
         start = page.index("{{")
