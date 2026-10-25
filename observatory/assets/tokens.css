@@ -66,16 +66,12 @@
      the data surface uses, and they are separate tokens rather than an
      override of the scale above so that changing one surface cannot silently
      restyle the other. */
-  --r-data:4px;         /* panels, the KPI strip, chart wells */
-  --r-data-sm:3px;      /* chips, segmented controls, bar tracks */
-
-  /* Panels sit on a hairline, not a shadow. A dense grid of shadowed cards
-     reads as clutter at this size — the shadow is doing separation work the
-     1px rule already does, twice. */
-  --seam:1px;
+  --r-data:3px;         /* cards, the KPI strip, chips */
+  --r-data-sm:2px;      /* tags, inline code, buttons inside a card */
+  --r-data-bar:1px;     /* bar tracks and heatmap cells — a flat edge to measure against */
 
   /* ── Micro-labels, per script ───────────────────────────────────────────
-     A 9px uppercase caption is a Latin device. It works because capitals are
+     A 9.5px uppercase caption is a Latin device. It works because capitals are
      simple, open shapes the eye completes from very little ink, and because
      tracking them apart is what makes a run of capitals legible at all.
 
@@ -90,7 +86,7 @@
      So the scale is a token and the script picks its own value. Latin keeps
      the eyebrow it was designed for; everything else gets the size it needs
      and drops the two devices that were never doing it any good. */
-  --t-cap:9px;          /* rail tiles — the smallest label on the page */
+  --t-cap:9.5px;        /* rail tiles — the smallest label on the page */
   --t-cap-lg:10.5px;    /* panel headings, KPI keys, table headers */
   --cap-track:.05em;
   --cap-track-lg:.08em;
@@ -142,11 +138,12 @@
      changes weight with the theme stops being an anchor. Shopee navy, same
      reasoning as --accent-data above — dashboard-only, not shared with the
      landing page. */
-  --rail:#172b4d;
+  --navy:#172b4d;
+  --rail:var(--navy);
   --rail-ink:rgba(255,255,255,.62);
   --rail-ink-on:#ffffff;
   --rail-hover:rgba(255,255,255,.09);
-  --rail-on:rgba(255,255,255,.13);
+  --rail-on:rgba(255,255,255,.12);
 
   /* Semantic — severity in the dashboard, status everywhere else. */
   --high:#c2413a; --med:#9a7420; --low:#4f6f83; --info:#4f46e5;
@@ -243,7 +240,6 @@
     --accent-data:#ff7a52;
     --accent-data-ink:#101018;
     --accent-data-soft:rgba(255,122,82,.14);
-    --rail:#172b4d;
 
     --high:#e8836b; --med:#dcaa57; --low:#93b4c8; --info:#9b93ff;
     --ok:#63c194;
@@ -275,7 +271,6 @@
   --accent:#9b93ff; --accent-ink:#101018; --accent-soft:rgba(155,147,255,.14);
   --accent-data:#ff7a52; --accent-data-ink:#101018;
   --accent-data-soft:rgba(255,122,82,.14);
-  --rail:#172b4d;
   --high:#e8836b; --med:#dcaa57; --low:#93b4c8; --info:#9b93ff; --ok:#63c194;
   --grad:linear-gradient(100deg,#7aa6ff 0%,#a48cff 34%,#e08ad6 64%,#ffb86b 100%);
   --grad-soft:linear-gradient(100deg,rgba(122,166,255,.20),rgba(164,140,255,.17),
@@ -286,6 +281,52 @@
   --shadow-md:0 2px 6px rgba(0,0,0,.4),0 12px 32px rgba(0,0,0,.45);
   --shadow-lg:0 4px 12px rgba(0,0,0,.45),0 28px 70px rgba(0,0,0,.55);
   --ring:0 0 0 3px rgba(155,147,255,.34);
+}
+
+/* ── Dashboard palette — the Wingman Hangar port's, token for token ─────────
+   Scoped to `body.dash`, which only the dashboard page carries, so the landing
+   page that inlines this same file is untouched. It re-points the shared
+   neutral names rather than minting a second set: app.css keeps reading
+   --bg/--panel/--ink/--line, and the dashboard simply resolves them to Hangar's
+   values (page #f2f3f5, card #fff, hairline #e6e6e9, warm ink).
+
+   Hangar has no separate "faint" ink — every secondary line is one muted grey —
+   so --faint collapses onto --muted here. It is also what the text needed: the
+   landing page's #8b8b99 is under 4:1 on white.
+
+   Dark is Hangar's own warm dark (#151513 page, #1d1d1a card), not the landing
+   page's blue-black, which is what made the two products read as strangers. */
+body.dash{
+  --bg:#f2f3f5;
+  --panel:#ffffff;
+  --ink:#1a1a1e;
+  --muted:#6b6b75;
+  --faint:#6b6b75;
+  --line:#e6e6e9;
+  --line-strong:#cfd0d6;
+  --track:#f7f7f8;
+  --bar:#b9bcc6;
+  --sel:rgba(238,77,45,.14);
+  --accent:var(--accent-data);
+  --accent-soft:var(--accent-data-soft);
+  /* The left edge of a finding card — severity is carried there and nowhere
+     else, so these are edge colours, never text colours. */
+  --sev-high:var(--accent-data);
+  --sev-med:#fccd34;
+  --sev-low:var(--bar);
+  --sev-info:#0080c6;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]) body.dash{
+    --bg:#151513; --panel:#1d1d1a; --ink:#eceae5; --muted:#a49f96;
+    --faint:#a49f96; --line:#302f2b; --line-strong:#4a4842; --track:#2a2926;
+    --bar:#55524a; --sel:rgba(255,122,82,.22); --sev-info:#4aa8e0;
+  }
+}
+:root[data-theme="dark"] body.dash{
+  --bg:#151513; --panel:#1d1d1a; --ink:#eceae5; --muted:#a49f96;
+  --faint:#a49f96; --line:#302f2b; --line-strong:#4a4842; --track:#2a2926;
+  --bar:#55524a; --sel:rgba(255,122,82,.22); --sev-info:#4aa8e0;
 }
 
 /* ── Primitives shared by every surface ─────────────────────────────────── */

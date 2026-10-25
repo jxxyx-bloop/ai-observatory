@@ -23,8 +23,11 @@ from pathlib import Path
 ASSETS = Path(__file__).with_name("assets")
 REPO = "https://github.com/jxxyx-bloop/ai-observatory"
 
-SEV_COLOR = {"high": "var(--high)", "medium": "var(--med)",
-             "low": "var(--low)", "info": "var(--info)"}
+# The left edge of a finding card. These are the dashboard's own severity tokens
+# (tokens.css, `body.dash`), not the shared --high/--med/--low: those are text
+# colours chosen to pass contrast on a page, and an edge is not text.
+SEV_COLOR = {"high": "var(--sev-high)", "medium": "var(--sev-med)",
+             "low": "var(--sev-low)", "info": "var(--sev-info)"}
 
 
 # Inline <script> bodies, for the page's own Content-Security-Policy.
@@ -85,7 +88,10 @@ def usd(n) -> str:
         n = float(n)
     except (TypeError, ValueError):
         return "—"
-    return f"${n:,.0f}" if abs(n) >= 100 else f"${n:,.2f}"
+    # Cents only where they are still signal — the same rule as usd() in
+    # assets/app.js, so the English text rendered here and the text the client
+    # rewrites it to never disagree about a figure.
+    return f"${n:,.2f}" if abs(n) < 10 else f"${n:,.0f}"
 
 
 def _action_html(action) -> str:
@@ -98,8 +104,8 @@ def _action_html(action) -> str:
     """
     if isinstance(action, (list, tuple)):
         items = "".join(f"<li>{esc(step)}</li>" for step in action)
-        return f'<ol class="act acts">{items}</ol>'
-    return f'<p class="act">{esc(action)}</p>'
+        return f'<ol class="act acts" data-lead="Do this.">{items}</ol>'
+    return f'<p class="act" data-lead="Do this.">{esc(action)}</p>'
 
 
 def findings_html(d: dict) -> str:

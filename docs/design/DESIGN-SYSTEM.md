@@ -54,6 +54,18 @@ Indigo is the protagonist rather than the usual developer-tool green: green
 already means *passing* in every terminal, and this product's job is to be
 read, not scanned for pass/fail.
 
+**The dashboard resolves the same names to different values.** The dashboard
+page carries `body.dash`, which re-points `--bg`, `--panel`, `--ink`, `--muted`,
+`--faint`, `--line`, `--track` and `--bar` at the Wingman Hangar port's palette
+(page `#f2f3f5`, card `#fff`, hairline `#e6e6e9`, and a warm `#151513` /
+`#1d1d1a` dark rather than the landing page's blue-black), points `--accent` at
+the Shopee orange `--accent-data`, and defines `--sev-*` for the left edge of a
+finding card. `app.css` keeps reading the shared names, so no rule in it knows
+which palette it is drawing in; the landing page has no `.dash` and is
+untouched. Hangar has no tertiary ink — every secondary line is one muted grey —
+so `--faint` collapses onto `--muted` there, which is also why the dashboard's
+small text passes contrast where the landing page's `#8b8b99` does not.
+
 ### The gradient
 
 `--grad` runs cool→warm across blue, violet, magenta, amber. It is the one
@@ -94,7 +106,7 @@ One system sans, one system mono. **No webfont** — see §7.
 `--cap-lh`) are **redefined by the document's language**, and a caption must
 read them rather than hard-code a size.
 
-A 9px uppercase caption is a Latin device. It works because capitals are
+A 9.5px uppercase caption is a Latin device. It works because capitals are
 simple, open shapes the eye completes from very little ink, and because
 tracking them apart is what makes a run of capitals legible at all. None of
 that transfers: `text-transform:uppercase` is a no-op on CJK and Devanagari,
@@ -104,7 +116,7 @@ widths but hangs marks outside a 1.15 line-height.
 
 | Script | `--t-cap` | Case | Tracking |
 |---|---|---|---|
-| Latin (default) | 9px | uppercase | +.05em |
+| Latin (default) | 9.5px | uppercase | +.05em |
 | Latin, long section words (id, ms, fil, pt-BR, es, vi) | 9.5px | none | +.01em |
 | Thai, Devanagari | 10.5px | none | +.01em, `--cap-lh` 1.5 |
 | CJK (zh-Hans, zh-Hant, ja, ko) | 12px | none | 0, `--cap-lh` 1.35 |
@@ -118,8 +130,9 @@ the viewport is harder to read, not easier. Line length is capped at
 `--measure` (64ch). Numerals in any table, KPI, or chart label use
 `font-variant-numeric: tabular-nums`, so columns of figures align.
 
-Weights: 400 body, 500–600 UI, 650–700 display. Nothing heavier — the stack has
-no reliable 800.
+Weights: 400 body, 500–600 UI, 650–700 display. The dashboard's title and its
+scoreboard numbers are 800, as on the Hangar port — the one place a heavier
+weight earns its keep, because those are the figures a reader came for.
 
 ---
 
@@ -132,7 +145,7 @@ values are a bug.
 
 | | |
 |---|---|
-| `--r-data` (4px) / `--r-data-sm` (3px) | **The dashboard.** Panels, the KPI strip, chart wells, chips, segmented controls, bar tracks. |
+| `--r-data` (3px) / `--r-data-sm` (2px) / `--r-data-bar` (1px) | **The dashboard**, Hangar's own corners. Cards, the KPI strip and chips / tags and inline code / bar tracks and heatmap cells — a flat edge to measure against. |
 | `--r` (6px) | Dense data — table cells. Data reads wrong when rounded. |
 | `--r-sm` / `--r-md` | **Landing page** cards, inputs, code blocks |
 | `--r-lg` / `--r-xl` | Hero surfaces and full-bleed bands |
@@ -146,15 +159,22 @@ to read as one field. `--r-data` is a separate token rather than an override
 of the scale so that restyling one surface cannot silently restyle the other.
 
 **Width.** The landing page caps content at `--page` (1120px) to protect the
-measure of its prose. The dashboard caps at **1320px**, because it has no
-measure to protect — six KPIs, two-up panels and a 90-column chart were being
-squeezed into 1040px while a wide monitor showed 200px of empty page down each
-side.
+measure of its prose. The dashboard caps at **1560px**, because it has no
+measure to protect — the Hangar port does not cap at all, and this keeps that
+behaviour everywhere a laptop or desktop monitor is likely to be, stopping only
+where a chart stretched across an ultrawide becomes its own problem.
 
 **Seams, not moats.** Cells that share a scale and are meant to be read across
-(the KPI strip) get one border and 1px seams — `gap:1px` over a `--line`
-background, `overflow:hidden` to let the container's radius clip the ends —
-not one rounded box each with a gap between them.
+(the KPI strip) get one border and 1px seams, not one rounded box each with a
+gap between them. Each tile draws its own top and left hairline and a `-1px`
+margin on those two sides lets it cover its neighbour's last pixel; the first
+row's and column's land under the container's `overflow:hidden`, so the outer
+edge is the container's single border. (Hangar paints the seams with `gap:1px`
+over a `--line` background, which is the same picture at five across — but with
+five tiles in two or three columns, the unfilled cell shows up as a grey block.)
+The column count steps 5 → 3 → 2 on the section's own width and the last tile
+takes whatever is left of its row, because five never divides evenly and an
+orphan beside empty cells reads as a missing number.
 
 **One protagonist per chart.** Supporting marks take `--bar`; the single mark
 that answers the panel's question takes `--accent`. Colouring every bar in the
@@ -176,16 +196,17 @@ chart too, which *proportionally grew its height with it* — 20px cells
 rendering at ~30px, on a chart with no text of its own to make the distortion
 obvious the way axis labels did on the daily chart. The fix is the same
 measure-the-container rule, but the height in the viewBox this chart computes
-stays a **fixed pixel value** (16px cell, 3px gap) regardless of what the
+stays a **fixed pixel value** (16px cell, 2px gap) regardless of what the
 measured width comes out to — width and height are independent numbers here,
 not two sides of one ratio.
 
-16/3 is deliberate, not incidental: it is the exact density of the Wingman
+16/2 is deliberate, not incidental: it is the exact density of the Wingman
 Hangar port's `HeatmapStrip.svelte`, adopted because a 7×24 grid is a texture
 read at a glance, not 168 things read one at a time, and a texture can afford
 to be small. Precedent for this already existed in-repo before either chart
-was fixed — the "long view" GitHub-style calendar (`calendar()`) uses a 12px
-cell and was never stretched, because it renders at its own intrinsic size
+was fixed — the "long view" GitHub-style calendar (`calendar()`) uses a fixed
+cell (16px at an 18px pitch, so its seven rows line up with the grid beside it)
+and was never stretched, because it renders at its own intrinsic size
 (`#calendar svg{width:auto}`) rather than filling its container. `meter()` and
 `daily()` chose the opposite shape — filling the container is what makes the
 KPI-strip-style page rhythm work at the width this redesign settled on — so
@@ -196,15 +217,16 @@ a sparkline's viewBox is 220×46, and `svg{height:auto}` rendered it at ~71px
 inside a ~340px card. Unlike the two charts above, the fix is not to measure —
 nothing is read off a sparkline's x-axis, so it is *free* to stretch
 horizontally. What it may not do is derive its height from that stretch. So
-sparklines pin `height` in CSS and let width do what it likes, grid charts
-measure width and pin height in the viewBox, and full plots measure both.
+sparklines pin `height` in CSS and keep the viewBox's own aspect — the 220px
+line sits centred in a wider card, exactly as it does on the Hangar port — grid
+charts measure width and pin height in the viewBox, and full plots measure both.
 Three different answers, one question to ask first: **is this value read off
 an axis, or is it a shape?**
 
 **One card per question, sub-headed rather than split.** The three behavioral
 sparklines and the weekday×hour grid answer one question — how am I working,
 and is it changing — so they live in one panel under one section heading,
-with the grid introduced by a `.subhead` inside the card. They had been two
+with the grid introduced by an `<h3>` inside the card. They had been two
 sections with two rail stops, which made a reader treat them as unrelated and
 left the grid alone in a card tall enough to fill a screen. Splitting a
 question across two nav stops costs more than the scroll it saves. This is
@@ -213,6 +235,38 @@ an `<h3>` in the middle of it.
 
 **Elevation** is three shadows, and depth is only ever expressed as *one* of
 shadow, border, or fill — never two at once.
+
+### The dashboard is the Wingman Hangar port's design
+
+The company-wide Observatory on Hangar is the reference for how the dashboard
+looks, and the geometry in `app.css` is copied from that port's Svelte
+components on purpose — a 92px rail, 18px between cards, a 36px/800 scoreboard,
+15px/700 card titles, 9px bar tracks, chips instead of a joined control — so the
+two can be put side by side and differ only in what the data says. Its source
+is mirrored in the shopee-os repository under
+`projects/active/ai-observatory/hangar/frontend/src`; when the port changes,
+that is where to look.
+
+It is a port of the *look*, not of the stack: Hangar needs Svelte and a backend,
+and this project's pitch is that it needs neither. So where Hangar has a
+feature this tool does not have a source for (company comparison, app health,
+setup tour), nothing is faked. And where this tool has something Hangar does
+not, it is kept and drawn in Hangar's own vocabulary rather than a second one:
+
+| This page has | Hangar has | How it is reconciled |
+|---|---|---|
+| Provider / lane / repository filters, From–To dates | none | A **Filters** chip in the range row, same style; it lights an orange dot while anything narrows the page |
+| A metric switch on the daily chart, click-a-day drill-down | spend only | Chips in the card header; bars stay neutral until hovered |
+| "Inside <repo>" and "Named subagents" cards, the long-view calendar | none | Same card, same bar list; the calendar sits beside the heatmap |
+| Repository attribution ("Where the effort went") | workspace folder names | Same card and note; the data underneath is richer |
+| Heatmap peak-window rings for time-priced vendors | none | Drawn only when a time-priced vendor is in range |
+| A "This month" preset | 7 / 30 / 90 / All | Dropped from the row; the From–To dates take any range |
+
+Two things in the port are deliberately **not** copied. Its model-switch callout
+is a flex row, which collapses the spaces around the bold number ("in**18**% of
+sessions"); here it is a block, so the sentence keeps its spaces. And its KPI
+seams are painted with `gap:1px` over a `--line` background, which leaves a grey
+cell on a phone — see *Seams, not moats*.
 
 ---
 
@@ -250,8 +304,8 @@ there is no per-component opt-in to forget.
 glyphs with an `aria-label` and a `title`; a text label appears only where the
 glyph would be ambiguous.
 
-Every icon is **inline SVG** on a 24px grid, 1.6px stroke, `currentColor`, round
-caps and joins. No icon font, no sprite sheet, no package.
+Every icon is **inline SVG** on a 24px grid (the dashboard rail uses the Hangar
+port's 20px set), 1.6px stroke, `currentColor`, round caps and joins. No icon font, no sprite sheet, no package.
 
 That is not a preference, it is the product's promise made structural. The
 dashboard claims zero external requests; a landing page advertising that claim
