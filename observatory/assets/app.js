@@ -39,10 +39,21 @@ function usd(n) {
   n = (Number(n) || 0) * (CUR.per_usd || 1);
   var d = CUR.decimals == null ? 2 : CUR.decimals;
   if (Math.abs(n) >= 100000) return CUR.symbol + num(n);
+  /* Cents only where they are still signal. An estimate that is itself good to a
+     few percent has no business printing "$7,618.54" — the Hangar port rounds
+     everything from ten up to the dollar, and so does this. */
+  var f = Math.abs(n) < 10 ? d : 0;
   return CUR.symbol + n.toLocaleString(undefined,
-    {minimumFractionDigits: d, maximumFractionDigits: d});
+    {minimumFractionDigits: f, maximumFractionDigits: f});
+}
+function count(n) {
+  return (Number(n) || 0).toLocaleString(undefined, {maximumFractionDigits: 0});
 }
 function pctOf(a, b) { return b ? (100 * a / b) : 0; }
+/* OpenCode's Zen catalog suffixes every free community model's id with `-free`
+   — the same convention pricing.py keys off. Kept in sync with that rule, not
+   derived from it: the cube carries a cost, never a tier. */
+function isFree(model) { return /-free$/i.test(String(model || "")); }
 /* One-off lookup for strings used inside a chart, where re-rendering on a
    language switch is cheaper than tagging every generated node. */
 function t18(key, fallback) {
@@ -67,13 +78,11 @@ function tf(key, fallback, vals) {
    copy per metric, reused everywhere that metric appears so wording never
    drifts between the KPI tile and its trend sparkline. */
 var INFO = {
-  spend: "List-price estimate from token counts \u00d7 the rate card, at the rate in force when each turn ran. If you are on a flat monthly plan this is a shadow price \u2014 what the same work would have cost metered \u2014 not a bill you received.",
-  peak: "Share of your time-priced spend that landed inside a vendor's peak window. Vendors that bill one flat rate all day are excluded from both sides of this, so 0% here means \u201cnothing you use is time-priced\u201d, not \u201cperfectly scheduled\u201d.",
   turnsPerSession: "How many exchanges a typical task takes. Total turns ÷ sessions. Falling over time = you're resolving things in fewer round-trips.",
-  cache: "Share of read tokens served from cache instead of resent at full price. cache_read ÷ (input + cache_read + cache_create).",
   toolCallsPerTurn: "How often each turn actually does something vs. just talks. Total tool calls ÷ total turns. Near zero = chatbot-style use; higher = agentic use.",
   modelSwitchShare: "Share of sessions that used more than one model. Sessions with >1 distinct model ÷ all sessions. Subagent turns count, so a session where only a subagent ran a smaller model reads as a switch; zero-token `<synthetic>` placeholder turns do not. High and rising can mean you're matching model to task; high and flat can mean indecision.",
-  writeRead: "Edits made per file looked at. Write-tool calls ÷ read-tool calls. Low = mostly exploring; high = mostly producing."
+  writeRead: "Edits made per file looked at. Write-tool calls ÷ read-tool calls. Low = mostly exploring; high = mostly producing.",
+  heatmap: "When turns actually happen, by hour in " + CUR.tz_label + " \u2014 darker means more turns in that hour, on that weekday, across the selected range."
 };
 function info(key) {
   var t = INFO[key];
@@ -191,6 +200,11 @@ function translateFindings() {
     if (ttl) ttl.textContent = tf(key + "_title", f.title, vals);
     var body = el.querySelector(".body");
     if (body) body.textContent = tf(key + "_body", f.finding, vals);
+    // "Do this." leads the recommendation. It is an attribute the stylesheet
+    // reads, not a child node, because the two lines below overwrite this
+    // element's text and a child would go with it.
+    var lead = el.querySelector(".act");
+    if (lead) lead.setAttribute("data-lead", t18("f_dothis", "Do this."));
     var actP = el.querySelector(".act:not(.acts)");
     if (actP) actP.textContent = tf(key + "_action", f.action, vals);
     var items = el.querySelectorAll(".acts li");
@@ -249,15 +263,19 @@ function span(from, to) {
   return out;
 }
 function dayInfo(isoStr) {
-  var d = parse(isoStr), w = d.getUTCDay();
-  return {dow: dow(w), initial: dow(w).charAt(0), weekend: w === 0 || w === 6,
-          dom: String(d.getUTCDate()).padStart(2, "0"), mon: mon(d.getUTCMonth()),
-          first: d.getUTCDate() === 1};
+  var d = parse(isoStr);
+  return {dow: dow(d.getUTCDay()), dom: String(d.getUTCDate()).padStart(2, "0"),
+          mon: mon(d.getUTCMonth())};
 }
 function longDate(isoStr) {
   var p = dayInfo(isoStr);
   return p.dow + " " + p.dom + " " + p.mon + " " + isoStr.slice(0, 4);
 }
+/* Rows run Monday to Sunday, as they do on the Hangar port — a working week
+   reads top to bottom, and the weekend sits together at the bottom instead of
+   being split across both ends. Indices stay `getUTCDay()` (Sunday = 0), so
+   every lookup keyed that way is unchanged; only the drawing order moves. */
+var WEEK = [1, 2, 3, 4, 5, 6, 0];
 
 /* ---- cube query ---------------------------------------------------------
    Every cube is dictionary-encoded: a row is [dim codes…, metric values…].
@@ -338,18 +356,24 @@ function pickSessions(F) {
 // container, and in a half-width panel a 12.5px label renders at under 8px.
 // Real text stays the size it says it is, truncates with an ellipsis, and
 // keeps its full value in the title.
-function bars(rows, label, value, fmt, pickable) {
-  rows = rows.filter(function (r) { return (value(r) || 0) > 0; });
+/* Eight rows at most, so every card in a grid row is the same height. `fmt`
+   gets the row as well as the value: a free model has no cost to print, and the
+   honest word for it is "Free", not "$0". `keepZero` lets such a row through the
+   `value > 0` filter that otherwise drops empty ones. */
+function bars(rows, label, value, fmt, pickable, keepZero) {
+  rows = rows.filter(function (r) {
+    return (value(r) || 0) > 0 || (keepZero && keepZero(r));
+  }).slice(0, 8);
   if (!rows.length) return '<p class="empty">' + esc(t18("e_none", "Nothing in this range.")) + "</p>";
   var peak = Math.max.apply(null, rows.map(value)) || 1;
   return '<div class="hbars">' + rows.map(function (r) {
     var v = value(r) || 0, full = String(label(r));
     return '<div class="hbar' + (pickable ? " hit" : "") + '" data-pick="' + esc(full)
-      + '" data-tt="' + esc(full + " — " + fmt(v)) + '">'
+      + '" data-tt="' + esc(full + " — " + fmt(v, r)) + '">'
       + '<span class="hl">' + esc(full) + "</span>"
       + '<span class="ht"><i style="width:' + Math.max(1.5, 100 * v / peak).toFixed(1)
       + '%"></i></span>'
-      + '<span class="hv">' + esc(fmt(v)) + "</span></div>";
+      + '<span class="hv">' + esc(fmt(v, r)) + "</span></div>";
   }).join("") + "</div>";
 }
 
@@ -360,116 +384,91 @@ function daily(days, byDate, metric, fmt, picked) {
 
      A 720-wide viewBox stretched to fill a 1175px panel is a 1.63x scale, and
      an SVG scales everything — so the axis labels came out at 18px on a page
-     whose body text is 15px, and the gridline hairlines at 1.6px. The chart
-     read as a blown-up picture of a chart. Measuring the container instead
-     means more days fit in the same space at the type size the design
-     actually chose, which is also what makes the bars stop looking sparse.
+     whose body text is 15px, and the gridline hairlines at 1.6px. Measuring the
+     container instead means more days fit in the same space at the type size
+     the design actually chose.
 
-     720 stays as the floor: below it the panel scrolls horizontally, which is
-     what `#daily{overflow-x:auto}` and the svg's min-width have always done. */
+     560 is the floor: below it the card scrolls horizontally, which is what
+     `#daily{overflow-x:auto}` and the svg's min-width have always done.
+
+     The geometry is the Hangar port's TrendChart, number for number: 220 tall,
+     46px of axis on the left, bars no wider than 18px, five gridlines. */
   var host = $("daily");
   var avail = host ? host.clientWidth : 0;
-  var W = Math.max(720, Math.round(avail) || 720);
-  var L = 50, R = 8, TOP = 18, PH = 112, H = 218;
+  var W = Math.max(560, Math.round(avail) || 960);
+  var L = 46, R = 12, TOP = 16, H = 220, PH = H - TOP - 26;
   var base = TOP + PH, plotW = W - L - R, step = plotW / days.length;
-  var bw = Math.max(1.5, Math.min(step * 0.68, 26));
+  var bw = Math.max(1, Math.min(18, step - 1.5));
   var vals = days.map(function (d) { return (byDate[d] || 0); });
   var peak = Math.max.apply(null, vals) || 1;
   var s = '<svg viewBox="0 0 ' + W + ' ' + H + '" role="img" '
     + 'width="' + W + '" height="' + H + '" preserveAspectRatio="xMinYMin meet">';
 
-  // Weekend bands first, so every mark sits on top of them.
-  days.forEach(function (d, i) {
-    if (dayInfo(d).weekend) {
-      s += '<rect x="' + (L + i * step).toFixed(1) + '" y="' + TOP + '" width="'
-        + step.toFixed(1) + '" height="' + PH + '" fill="var(--track)" opacity=".45"/>';
-    }
-    if (d === picked) {
-      s += '<rect x="' + (L + i * step).toFixed(1) + '" y="' + TOP + '" width="'
+  if (picked) {
+    var pi = days.indexOf(picked);
+    if (pi >= 0) {
+      s += '<rect x="' + (L + pi * step).toFixed(1) + '" y="' + TOP + '" width="'
         + step.toFixed(1) + '" height="' + PH + '" fill="var(--sel)"/>';
     }
-  });
+  }
+
+  /* Five gridlines is enough to read a value off; more is ink without data. A
+     small integer maximum collapses quarter steps onto the same label once
+     formatted — a count axis topping out at 1 would read "0 0 1 1 1", which
+     looks like a rendering fault — so a gridline whose label repeats the one
+     below it is dropped. */
+  var seen = null;
   [0, 0.25, 0.5, 0.75, 1].forEach(function (f) {
+    var label = fmt(peak * f);
+    if (label === seen) return;
+    seen = label;
     var gy = TOP + PH * (1 - f);
-    s += '<line x1="' + L + '" y1="' + gy.toFixed(1) + '" x2="' + (W - R) + '" y2="'
-      + gy.toFixed(1) + '" stroke="var(--line)" stroke-width="1"/>'
+    s += '<line class="gridline" x1="' + L + '" y1="' + gy.toFixed(1) + '" x2="' + (W - R)
+      + '" y2="' + gy.toFixed(1) + '"/>'
       + '<text x="' + (L - 8) + '" y="' + (gy + 4).toFixed(1) + '" text-anchor="end" '
-      + 'class="axis">' + esc(fmt(peak * f)) + "</text>";
+      + 'class="axis">' + esc(label) + "</text>";
   });
 
   // Bars, each a click target (drill into that day) carrying its own tooltip.
+  var every = Math.max(1, Math.ceil(days.length / 8));
   days.forEach(function (d, i) {
     var v = vals[i], h = PH * (v / peak), isPicked = d === picked;
     var x = L + i * step + (step - bw) / 2;
     s += '<g class="daycol" data-day="' + d + '" data-tt="'
       + esc(longDate(d) + " — " + fmt(v) + " " + metric) + '">'
-      + '<rect x="' + x.toFixed(1) + '" y="' + (base - h).toFixed(1) + '" width="' + bw.toFixed(1)
-      + '" height="' + Math.max(h, v ? 1.2 : 0).toFixed(1) + '" rx="1" class="daybar" fill="var(' + (isPicked ? "--accent-data" : "--bar") + ')"'
-      + (isPicked ? ' stroke="var(--ink)" stroke-width="1.2"' : '') + '/>'
-      + '<rect class="hitcol" x="' + (L + i * step).toFixed(1) + '" y="' + TOP + '" width="'
+      + '<rect class="daybar' + (isPicked ? " picked" : "") + '" x="' + x.toFixed(1)
+      + '" y="' + (base - h).toFixed(1) + '" width="' + bw.toFixed(1)
+      + '" height="' + Math.max(h, v ? 1.2 : 0).toFixed(1) + '"/>'
+      + '<rect x="' + (L + i * step).toFixed(1) + '" y="' + TOP + '" width="'
       + step.toFixed(1) + '" height="' + PH + '" fill="transparent"/></g>';
+    if (i % every === 0) {
+      var p = dayInfo(d);
+      s += '<text x="' + (x + bw / 2).toFixed(1) + '" y="' + (H - 8)
+        + '" text-anchor="middle" class="axis">' + esc(String(+p.dom) + " " + p.mon) + "</text>";
+    }
   });
   s += rollingMean(vals, L, step, base, PH, peak);
-  s += dayAxis(days, L, step, base, W, R);
   return s + "</svg>";
 }
 
-// Seven-day trailing mean — the trend under the weekday sawtooth.
+/* Seven-day trailing mean — the trend under the weekday sawtooth. Early days
+   average over the days there are, so the line starts with the first bar rather
+   than a week in, which is how the Hangar port draws it. */
 function rollingMean(vals, L, step, base, PH, peak) {
-  if (vals.length < 7) return "";
-  var pts = [];
-  for (var i = 6; i < vals.length; i++) {
-    var sum = 0;
-    for (var j = i - 6; j <= i; j++) sum += vals[j];
-    var y = base - PH * ((sum / 7) / peak);
+  if (vals.length < 2) return "";
+  var pts = [], sum = 0;
+  for (var i = 0; i < vals.length; i++) {
+    sum += vals[i];
+    if (i >= 7) sum -= vals[i - 7];
+    var y = base - PH * ((sum / Math.min(i + 1, 7)) / peak);
     pts.push((L + i * step + step / 2).toFixed(1) + "," + y.toFixed(1));
   }
   // The accent lives on the mean, not on the bars. Ninety bars drawn in the
   // accent are ninety equally loud marks; the trend under them is the only
-  // thing on this chart that answers "is this going up?", and it was the one
-  // mark rendered in a muted gold behind them. One protagonist per chart.
+  // thing on this chart that answers "is this going up?". One protagonist per
+  // chart.
   return '<polyline points="' + pts.join(" ") + '" fill="none" stroke="var(--accent-data)" '
     + 'stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>';
-}
-/* Per-day axis: a weekday initial under every column, and a dated label on as
-   many as will fit without touching. Month starts always keep their label and
-   get a divider, so "which day of which month" is never ambiguous. */
-function dayAxis(days, L, step, base, PH) {
-  var n = days.length, every = Math.max(1, Math.ceil(17 / step));
-  var minGap = Math.max(1, Math.ceil(15 / step)), want = {}, s = "";
-  for (var i = 0; i < n; i += every) want[i] = 1;
-  days.forEach(function (d, k) { if (dayInfo(d).first) want[k] = 1; });
-  want[n - 1] = 1;
-
-  var shown = [];
-  Object.keys(want).map(Number).sort(function (a, b) { return a - b; })
-    .forEach(function (k) {
-      if (!shown.length || k - shown[shown.length - 1] >= minGap) shown.push(k);
-      else if (k === n - 1) shown[shown.length - 1] = k;  // the last day wins its slot
-    });
-  var label = {};
-  shown.forEach(function (k) { label[k] = 1; });
-
-  days.forEach(function (d, k) {
-    var p = dayInfo(d), cx = L + k * step + step / 2;
-    if (step >= 9) {
-      s += '<text x="' + cx.toFixed(1) + '" y="' + (base + 14) + '" text-anchor="middle" '
-        + 'class="axis" style="font-size:9.5px' + (p.weekend ? ";fill:var(--med)" : "")
-        + '">' + p.initial + "</text>";
-    }
-    if (label[k]) {
-      var y = base + (step >= 9 ? 26 : 16);
-      s += '<text x="' + cx.toFixed(1) + '" y="' + y + '" text-anchor="end" class="axis" '
-        + 'transform="rotate(-55 ' + cx.toFixed(1) + " " + y + ')" style="font-size:10px">'
-        + esc(p.dom + " " + p.mon) + "</text>";
-    }
-    if (p.first && k > 0) {
-      var mx = (L + k * step).toFixed(1);
-      s += '<line x1="' + mx + '" y1="' + (base - PH) + '" x2="' + mx + '" y2="' + (base + 4)
-        + '" stroke="var(--line)" stroke-width="1" stroke-dasharray="2 3"/>';
-    }
-  });
-  return s;
 }
 
 /* ---- the meter: your hours against your vendors' clocks -------------------
@@ -578,10 +577,10 @@ function meter(F) {
      one by one. */
   var host = $("meter");
   var avail = host ? host.clientWidth : 0;
-  var W = Math.max(560, Math.round(avail) || 760), L = 38;
-  var TOP = hasPeak ? 34 : 20, CH = 16, GAP = 3;
-  var cw = (W - L - 10) / 24;
-  var H = TOP + 7 * (CH + GAP) + 34;
+  var W = Math.max(480, Math.round(avail) || 760), L = 36;
+  var TOP = hasPeak ? 30 : 18, CH = 16, GAP = 2;
+  var cw = (W - L - 2) / 24;
+  var H = TOP + 7 * (CH + GAP) + 22;
   var s = '<svg viewBox="0 0 ' + W + ' ' + H + '" role="img" '
     + 'width="' + W + '" height="' + H + '" '
     + 'preserveAspectRatio="xMinYMin meet" aria-label="'
@@ -593,12 +592,12 @@ function meter(F) {
     // weekdays only, so a column band would wash Saturday and Sunday in a
     // premium they were never charged. Adjacent tints touch, so where a window
     // does run all week it still reads as one band.
-    for (var d0 = 0; d0 < 7; d0++) {
+    for (var r0 = 0; r0 < 7; r0++) {
       for (var h0 = 0; h0 < 24; h0++) {
-        if (!pk.mask[d0][h0]) continue;
-        s += '<rect x="' + (L + h0 * cw - 0.75).toFixed(1) + '" y="'
-          + (TOP + d0 * (CH + GAP) - 2) + '" width="' + (cw + 0.5).toFixed(1)
-          + '" height="' + (CH + 4) + '" fill="var(--high)" opacity="0.10"/>';
+        if (!pk.mask[WEEK[r0]][h0]) continue;
+        s += '<rect x="' + (L + h0 * cw - 1).toFixed(1) + '" y="'
+          + (TOP + r0 * (CH + GAP) - 1) + '" width="' + (cw + 0).toFixed(1)
+          + '" height="' + (CH + 2) + '" fill="var(--high)" opacity="0.10"/>';
       }
     }
     s += '<text x="' + L + '" y="' + (TOP - 12) + '" class="axis" '
@@ -606,13 +605,12 @@ function meter(F) {
       + pk.vendors.join(", ")) + "</text>";
   }
 
-  for (var w2 = 0; w2 < 7; w2++) {
-    var y = TOP + w2 * (CH + GAP);
+  for (var r2 = 0; r2 < 7; r2++) {
+    var w2 = WEEK[r2], y = TOP + r2 * (CH + GAP);
     s += '<text x="' + (L - 8) + '" y="' + (y + CH / 2 + 3.5).toFixed(1)
       + '" text-anchor="end" class="axis">' + dow(w2) + "</text>";
     for (var h2 = 0; h2 < 24; h2++) {
       var v = grid[w2][h2], x = L + h2 * cw, hot = pk.mask[w2][h2];
-      var op = v ? Math.max(0.16, v / peak).toFixed(2) : "1";
       var tip = dow(w2) + " " + String(h2).padStart(2, "0") + ":00 " + CUR.tz_label
         + " — " + num(v) + " turns";
       // No phase suffix at all when nothing you use is time-priced: labelling
@@ -622,27 +620,31 @@ function meter(F) {
           ? " · " + t18("m_at_peak", "at peak rate") + " (" + hot.join(", ") + ")"
           : " · " + t18("m_off", "off-peak");
       }
-      s += '<rect class="heatcell" data-tt="' + esc(tip) + '" x="' + x.toFixed(1)
-        + '" y="' + y.toFixed(1) + '" width="' + Math.max(1, cw - 1.5).toFixed(1)
-        + '" height="' + CH + '" rx="3" fill="' + (v ? "var(--accent-data)" : "var(--track)")
-        + '" opacity="' + op + '"/>';
+      // A single hue, darker for more: ordered data gets ordered colour. Empty
+      // cells stay a visible neutral square so the grid's shape always reads,
+      // even on a quiet week.
+      s += '<rect class="heatcell' + (v ? "" : " empty0") + '" data-tt="' + esc(tip)
+        + '" x="' + x.toFixed(1) + '" y="' + y.toFixed(1) + '" width="'
+        + Math.max(1, cw - 2).toFixed(1) + '" height="' + CH + '" rx="1"'
+        + (v ? ' opacity="' + Math.max(0.15, v / peak).toFixed(2) + '"' : "") + "/>";
       // The ring, not a second fill: volume stays encoded by opacity alone, so
       // "busy" and "expensive" never compete for the same visual channel.
       if (hot && v) {
         s += '<rect x="' + x.toFixed(1) + '" y="' + y.toFixed(1) + '" width="'
-          + Math.max(1, cw - 1.5).toFixed(1) + '" height="' + CH
-          + '" rx="3" fill="none" stroke="var(--high)" stroke-width="1.6" '
+          + Math.max(1, cw - 2).toFixed(1) + '" height="' + CH
+          + '" rx="1" fill="none" stroke="var(--high)" stroke-width="1.6" '
           + 'pointer-events="none"/>';
       }
     }
   }
-  var by = TOP + 7 * (CH + GAP) + 14;
-  for (var h3 = 0; h3 < 24; h3 += 3) {
-    s += '<text x="' + (L + h3 * cw + cw / 2).toFixed(1) + '" y="' + by.toFixed(1)
+  // 00 06 12 18 23, as on the Hangar port: enough to read an hour off, and the
+  // last cell is named rather than left to be counted.
+  var by = TOP + 7 * (CH + GAP) + 12;
+  [0, 6, 12, 18, 23].forEach(function (h3) {
+    s += '<text x="' + (L + h3 * cw + (cw - 2) / 2).toFixed(1) + '" y="' + by.toFixed(1)
       + '" text-anchor="middle" class="axis">' + String(h3).padStart(2, "0") + "</text>";
-  }
-  s += '<text x="' + (W - 4) + '" y="' + by.toFixed(1) + '" text-anchor="end" '
-    + 'class="axis">' + esc(CUR.tz_label) + "</text></svg>";
+  });
+  s += "</svg>";
 
   if (!hasPeak) {
     // Worth saying out loud rather than leaving a plain grid to be read as a
@@ -688,10 +690,11 @@ function calendar() {
   var days = {}, maxv = 0;
   D.by_day.forEach(function (r) { days[r.date] = r.turns; });
   var first = parse(FIRST), last = parse(LAST);
-  // Start on the Sunday on or before the first day, so every column is a full
-  // week and the weekday rows line up down the whole grid.
+  // Start on the Monday on or before the first day, so every column is a full
+  // week and the weekday rows line up down the whole grid — and with the
+  // weekday x hour grid beside it, which also runs Monday to Sunday.
   var start = new Date(first.getTime());
-  start.setUTCDate(start.getUTCDate() - start.getUTCDay());
+  start.setUTCDate(start.getUTCDate() - (start.getUTCDay() + 6) % 7);
   var weeks = Math.ceil((last - start) / 6048e5) + 1;
   if (weeks < 1) return "";
 
@@ -705,7 +708,7 @@ function calendar() {
      counting rows to work out whether a dark square is a Tuesday or a
      Thursday — which is the one question this chart exists to answer. We take
      the extra 3px of pitch instead and label all seven. */
-  var L = 34, TOP = 26, G = 4;
+  var L = 34, TOP = 18, G = 2;
   /* Measured, not intrinsic — the same rule as daily()/meter() (see
      "Charts are measured, never scaled" in DESIGN-SYSTEM.md), applied a
      third way. Those two stretch width only and pin a fixed cell height,
@@ -726,7 +729,7 @@ function calendar() {
   // actually below the floor.
   var avail = host ? host.clientWidth : 0;
   var fitPitch = ((Math.round(avail) || 300) - L - 10) / weeks;
-  var PITCH = Math.max(13, Math.min(22, fitPitch));
+  var PITCH = Math.max(13, Math.min(18, fitPitch));
   var CELL = PITCH - G;
   var W = Math.max(L + weeks * PITCH + 10, 300);
   var H = TOP + 7 * PITCH + 26;
@@ -781,18 +784,19 @@ function calendar() {
       cd.setUTCDate(cd.getUTCDate() + w2 * 7 + d2);
       if (cd < first || cd > last) continue;
       var key = cd.toISOString().slice(0, 10), v = days[key] || 0;
-      s += '<rect class="calcell" data-tt="' + esc(dow(d2) + " " + key + " — "
-        + num(v) + " turns") + '" data-day="' + key + '" x="' + (L + w2 * PITCH)
+      s += '<rect class="calcell' + (v ? "" : " empty0") + '" data-tt="'
+        + esc(dow(WEEK[d2]) + " " + key + " — " + num(v) + " turns")
+        + '" data-day="' + key + '" x="' + (L + w2 * PITCH)
         + '" y="' + (TOP + d2 * PITCH) + '" width="' + CELL + '" height="' + CELL
-        + '" rx="2.5" fill="' + (v ? "var(--accent-data)" : "var(--track)")
-        + '" opacity="' + (v ? Math.max(0.18, v / maxv).toFixed(2) : "1") + '"/>';
+        + '" rx="1"' + (v ? ' opacity="' + Math.max(0.15, v / maxv).toFixed(2) + '"' : "")
+        + "/>";
     }
   }
 
   // All seven, aligned to the middle of their own row.
   for (var d3 = 0; d3 < 7; d3++) {
     s += '<text x="' + (L - 7) + '" y="' + (TOP + d3 * PITCH + CELL - 2)
-      + '" text-anchor="end" class="axis dow">' + dow(d3) + "</text>";
+      + '" text-anchor="end" class="axis dow">' + dow(WEEK[d3]) + "</text>";
   }
 
   // Ramp legend. Without it a pale square is ambiguous between "a quiet day"
@@ -802,10 +806,9 @@ function calendar() {
     + esc(t18("c_less", "less")) + "</text>";
   lx += 30;
   [0, 0.25, 0.5, 0.75, 1].forEach(function (v) {
-    s += '<rect x="' + lx + '" y="' + (ly - CELL + 2) + '" width="' + CELL
-      + '" height="' + CELL + '" rx="2.5" fill="'
-      + (v ? "var(--accent-data)" : "var(--track)") + '" opacity="'
-      + (v ? Math.max(0.18, v).toFixed(2) : "1") + '"/>';
+    s += '<rect class="calcell' + (v ? "" : " empty0") + '" x="' + lx + '" y="'
+      + (ly - CELL + 2) + '" width="' + CELL + '" height="' + CELL + '" rx="1"'
+      + (v ? ' opacity="' + Math.max(0.15, v).toFixed(2) + '"' : "") + "/>";
     lx += PITCH;
   });
   s += '<text x="' + (lx + 4) + '" y="' + ly + '" class="axis">'
@@ -859,19 +862,21 @@ function sparkline(vals) {
   vals.forEach(function (v, i) { if (v != null) idx.push(i); });
   if (idx.length < 2) return '<p class="empty">Not enough days yet.</p>';
   var W = 220, H = 46, PAD = 3;
+  /* Anchored at zero and at least 1 tall, as on the Hangar port. Scaled to its
+     own min and max, a metric that drifts between 0.84 and 0.88 fills the whole
+     card and reads as a mountain range; anchored, it reads as the flat line it
+     is. */
   var ys = idx.map(function (i) { return vals[i]; });
-  var lo = Math.min.apply(null, ys), hi = Math.max.apply(null, ys);
-  if (hi === lo) { hi += 1; lo -= 1; }
+  var lo = Math.min.apply(null, ys.concat(0)), hi = Math.max.apply(null, ys.concat(1));
   var step = (W - PAD * 2) / Math.max(1, idx.length - 1);
   var pts = idx.map(function (i, k) {
     var x = PAD + k * step, y = H - PAD - (vals[i] - lo) / (hi - lo) * (H - PAD * 2);
     return x.toFixed(1) + "," + y.toFixed(1);
   });
   var last = pts[pts.length - 1].split(",");
-  return '<svg viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="xMinYMin meet" role="img">'
-    + '<polyline points="' + pts.join(" ") + '" fill="none" stroke="var(--accent-data)" '
-    + 'stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/>'
-    + '<circle cx="' + last[0] + '" cy="' + last[1] + '" r="2.6" fill="var(--accent-data)"/></svg>';
+  return '<svg viewBox="0 0 ' + W + ' ' + H + '" role="img">'
+    + '<polyline points="' + pts.join(" ") + '"/>'
+    + '<circle cx="' + last[0] + '" cy="' + last[1] + '" r="2.6"/></svg>';
 }
 function lastWindowBasis(vals, counts, window) {
   /* Days and sessions behind the final rolling value — the same trailing slots
@@ -940,24 +945,27 @@ var selectedDay = null;  // click a bar in "Daily rhythm" to drill every panel i
 function kpiCards(t, totalDays) {
   var days = Math.max(1, t.days);
   var read = t.cache_read + t.cache_create + t.input;
-  var ratio = (t.writes || t.reads)
-    ? (t.writes / Math.max(t.reads, 1)).toFixed(2) + "×" : "—";
+  var wr = t.reads ? t.writes / t.reads : (t.writes ? t.writes : null);
   var tcpt = toolCallsPerTurn(t);
   // Five numbers, not six — turns/session and model-switch share still get
   // their own trend sparklines in behavioralTrends() below, so dropping them
   // here loses no view of the data, only the redundant top-of-page tile.
-  // Matches the Hangar port's scoreboard (design.md, "Metrics: behavioral
-  // over volume": both demoted for the same reason, in favor of a number
-  // that says how much of the synced window was actually active).
+  // The Hangar port's scoreboard exactly (design.md, "Metrics: behavioral over
+  // volume"): spend, how much context was reused, whether you are producing or
+  // exploring, whether use is agentic, and how many days it was actually used.
+  // Only the two behavioral ratios carry an info mark, because they are the two
+  // whose formula is not obvious from the label.
   var cards = [
-    [usd(t.cost), esc(t18("k_spend", "Estimated spend")) + info("spend"),
-     tf("n_spend", "~%V%/active day · notional on a seat plan",
-        {V: usd(t.cost / days)}), true],
-    [pctOf(t.cache_read, read).toFixed(1) + "%",
-     esc(t18("k_cache", "Served from cache")) + info("cache"),
-     t18("n_cache", "the share of read tokens that cost 0.1× instead of 1×")],
-    [ratio, esc(t18("k_wr", "Write / read")) + info("writeRead"),
-     tf("n_wr", "%W% edits per %R% lookups", {W: num(t.writes), R: num(t.reads)})],
+    [usd(t.cost), esc(t18("k_spend", "Estimated spend")),
+     tf("n_spend", "%V% on an active day", {V: usd(t.cost / days)}), true],
+    [pctOf(t.cache_read, read).toFixed(0) + "%",
+     esc(t18("k_cache", "Context reuse")),
+     tf("n_cache", "of %V% tokens read", {V: num(read)})],
+    [wr == null ? "—" : wr.toFixed(2) + "×",
+     esc(t18("k_wr", "Write / read")) + info("writeRead"),
+     wr == null ? t18("n_noreads", "not enough reads yet")
+       : wr >= 1 ? t18("n_producing", "mostly producing")
+                 : t18("n_exploring", "mostly exploring")],
     [tcpt.toFixed(2), esc(t18("k_tcpt", "Tool calls / turn")) + info("toolCallsPerTurn"),
      tcpt >= 0.5 ? t18("n_agentic", "agentic use")
                  : t18("n_conversational", "mostly conversational")],
@@ -967,8 +975,7 @@ function kpiCards(t, totalDays) {
   ];
   return cards.map(function (c) {
     // Label, then number, then the gloss. A number is only a fact once you
-    // know what it counts, and the old order landed the eye on "$3,576.65"
-    // and made it hunt downward for the noun.
+    // know what it counts.
     return '<div class="kpi' + (c[3] ? " lead" : "") + '"><div class="k">' + c[1]
       + '</div><div class="v">' + c[0] + '</div><div class="n">' + esc(c[2]) + "</div></div>";
   }).join("");
@@ -987,7 +994,7 @@ function sessionsTable(rows) {
   var body = rows.map(function (r) {
     var ratio = (r.writes || r.reads) ? r.writes + "/" + r.reads : "—";
     var tag = r.surface ? ' <span class="tag">' + esc(r.surface) + "</span>" : "";
-    return "<tr><td>" + esc(r.repo || "unattributed") + tag + '<br><span class="axis">'
+    return "<tr><td>" + esc(r.repo || "unattributed") + tag + '<br><span class="sid">'
       + esc(r.session) + " · " + esc((r.start || "").slice(0, 10)) + " · "
       + esc(r.provider) + "</span></td>"
       + '<td class="n">' + esc(num(r.turns)) + "</td>"
@@ -995,7 +1002,7 @@ function sessionsTable(rows) {
       + '<td class="n">' + esc(usd(r.cost)) + "</td>"
       + '<td class="n">' + esc(ratio) + "</td>"
       + '<td><div class="bar"><i style="width:' + pctOf(r.peak_context, peak).toFixed(0)
-      + '%"></i></div><span class="axis">' + esc(num(r.peak_context)) + "</span></td></tr>";
+      + '%"></i></div><span class="sid">' + esc(num(r.peak_context)) + "</span></td></tr>";
   }).join("");
   var head = [t18("w_session", "Session"), t18("d_turns", "Turns"),
               t18("d_output", "Output"), t18("d_cost", "Est. cost"),
@@ -1106,6 +1113,8 @@ function draw() {
   })[0];
 
   $("kpis").innerHTML = kpiCards(t, span(F.from, F.to).length);
+  $("filtersBtn").classList.toggle("active", F.provider !== "All" || F.lane !== "All"
+    || F.repo !== "All" || !!F.day || presetId === null);
   // "All" is the filter's sentinel value, never shown; the words beside it are
   // copy and translate. A provider or repo name is data and stays as written.
   var slice = [F.provider === "All" ? t18("f_scope_providers", "all providers") : F.provider,
@@ -1127,11 +1136,11 @@ function draw() {
   $("daily").innerHTML = daily(span(F.from, F.to), byDate,
                               dailyLabel(spec).toLowerCase(), spec.f, F.day);
   $("dailyLegend").innerHTML = '<i></i>'
-    + esc(tf("d_per_day", "%M% per day", {M: dailyLabel(spec)}))
-    + "<i class='avg'></i>" + esc(t18("d_mean7", "7-day mean"));
+    + esc(tf("d_per_day", "per day", {M: dailyLabel(spec)}))
+    + "<i class='avg'></i>" + esc(t18("d_mean7", "7-day average"));
 
   var repos = agg(D.cube, CUBE, DF, ["repo"], "repo").sort(byCost);
-  $("repos").innerHTML = bars(repos.slice(0, 12), function (r) { return r.repo; },
+  $("repos").innerHTML = bars(repos, function (r) { return r.repo; },
                               function (r) { return r.cost; }, usd, true);
 
   var focus = F.repo !== "All" ? F.repo : (repos[0] || {}).repo;
@@ -1140,36 +1149,54 @@ function draw() {
   $("surfaceTitle").textContent = focus
     ? tf("s_inside", "Inside %R%", {R: focus})
     : tf("s_inside", "Inside %R%", {R: ""}).trim();
-  $("surfaces").innerHTML = bars(inside.slice(0, 12), function (r) { return r.surface; },
+  $("surfaces").innerHTML = bars(inside, function (r) { return r.surface; },
                                  function (r) { return r.cost; }, usd);
   $("surfaceNote").textContent = F.repo === "All" && focus
-    ? t18("n_surface", "Showing the busiest repository. Pick one on the left to hold it.")
+    ? t18("n_surface", "Showing the busiest repository. Click a repository to hold it.")
     : "";
 
-  $("models-chart").innerHTML = bars(agg(D.cube, CUBE, DF, ["model"]).sort(byOutput),
-    function (r) { return r.model; }, function (r) { return r.output; }, num);
+  /* Ranked by what each model cost, not by what it wrote: the card answers
+     "which models did the work", and the work is paid for in dollars. A model
+     that is free has no cost to rank by, so it sits last and says "Free". */
+  $("models-chart").innerHTML = bars(agg(D.cube, CUBE, DF, ["model"]).sort(byCost),
+    function (r) { return r.model; }, function (r) { return r.cost; },
+    function (v, r) { return isFree(r.model) ? t18("l_free", "Free") : usd(v); },
+    false, function (r) { return isFree(r.model); });
+  var switched = ses.filter(function (x) { return (x.models || []).length > 1; }).length;
+  $("modelCallout").innerHTML = ses.length
+    ? tf("n_switch", "Switched models in <strong>%P%</strong> of sessions",
+         {P: Math.round(pctOf(switched, ses.length)) + "%"}) + info("modelSwitchShare")
+    : "";
+  $("providers").innerHTML = bars(agg(D.cube, CUBE, DF, ["provider"]).sort(byCost),
+    function (r) { return r.provider; }, function (r) { return r.cost; }, usd);
   $("efforts").innerHTML = bars(agg(D.cube, CUBE, DF, ["effort"])
     .sort(function (a, b) { return b.turns - a.turns; }),
-    function (r) { return r.effort; }, function (r) { return r.turns; }, num);
+    function (r) { return r.effort; }, function (r) { return r.turns; },
+    function (v) { return tf("c_turns", "%V% turns", {V: count(v)}); });
   var mt = meter(DF);
   $("meter").innerHTML = mt.svg;
   $("meterNote").textContent = mt.note;
   // The panel is two panels depending on the reader's vendors: a priced meter,
   // or a plain picture of when they work. Promising "peak windows drawn over
   // them" to someone who uses none is worse than saying nothing.
-  $("meterTitle").textContent = mt.hasPeak
-    ? t18("s_meter", "Your week against the meter")
-    : t18("s_hours", "Working hours");
+  $("meterTitle").innerHTML = esc(mt.hasPeak
+      ? t18("s_meter", "Your week against the meter")
+      : t18("s_hours", "When you work"))
+    + ' <span class="tz">' + esc(CUR.tz_label) + "</span>" + info("heatmap");
   $("meterHint").textContent = mt.hasPeak
     ? t18("n_meter", "Your own hours, with every vendor's peak window drawn over them.")
-    : t18("n_hours", "Weekday \u00d7 hour, in your configured timezone.");
+    : "";
   $("tools").innerHTML = bars(agg(D.tools, TOOLS, DF, ["tool"])
-    .sort(function (a, b) { return b.calls - a.calls; }).slice(0, 10),
-    function (r) { return r.tool; }, function (r) { return r.calls; }, num);
+    .sort(function (a, b) { return b.calls - a.calls; }),
+    function (r) { return r.tool; }, function (r) { return r.calls; }, count);
+  $("toolCallout").innerHTML = t.reads
+    ? tf("n_wr_call", "<strong>%V%</strong>× write / read", {V: (t.writes / t.reads).toFixed(2)})
+      + info("writeRead")
+    : "";
   drawPhase(DF);
   $("agents").innerHTML = bars(agg(D.cube, CUBE, DF, ["agent"]).filter(function (r) {
     return r.agent !== "main thread" && r.agent !== "unattributed";
-  }).sort(byOutput).slice(0, 8), function (r) { return r.agent; },
+  }).sort(byOutput), function (r) { return r.agent; },
     function (r) { return r.output; }, num);
   $("agentsNote").textContent = t.sub_turns
     ? tf("n_agents", "%P% of output came from %N% delegated turns.",
@@ -1186,13 +1213,17 @@ function draw() {
 var FIRST = (D.window.first || "").slice(0, 10), LAST = (D.window.last || "").slice(0, 10);
 function later(a, b) { return a > b ? a : b; }
 
+/* The Hangar port's four. "This month" used to sit between 30 and 90 days; it
+   is still one step away — the From/To dates under Filters take any range —
+   but a fifth chip made this row a different control from the one it is
+   copied from. */
 var PRESETS = [
-  {id: "7d",  i: "p_7d",  label: "7 days",     from: function () { return later(shift(LAST, -6), FIRST); }},
-  {id: "30d", i: "p_30d", label: "30 days",    from: function () { return later(shift(LAST, -29), FIRST); }},
-  {id: "mtd", i: "p_mtd", label: "This month", from: function () { return later(LAST.slice(0, 8) + "01", FIRST); }},
-  {id: "90d", i: "p_90d", label: "90 days",    from: function () { return later(shift(LAST, -89), FIRST); }},
-  {id: "all", i: "p_all", label: "All",        from: function () { return FIRST; }}
+  {id: "7d",  i: "p_7d",  label: "7 days",  from: function () { return later(shift(LAST, -6), FIRST); }},
+  {id: "30d", i: "p_30d", label: "30 days", from: function () { return later(shift(LAST, -29), FIRST); }},
+  {id: "90d", i: "p_90d", label: "90 days", from: function () { return later(shift(LAST, -89), FIRST); }},
+  {id: "all", i: "p_all", label: "All",     from: function () { return FIRST; }}
 ];
+var presetId = null;   // which chip is lit; null once the range is custom
 
 /* The preset row and the range line under the title are written once at start,
    outside draw(), so a language switch would leave them in the old language.
@@ -1212,15 +1243,45 @@ function relabelChrome() {
         if (m) b.textContent = dailyLabel(m);
       });
   }
+  /* The line under the title is the Hangar port's: how fresh, how current the
+     rate card, and the one caveat that applies to every dollar on the page.
+     What this line used to say — the span collected, the active days, the
+     vendors — moves to the foot of the page, where it is a fact about the data
+     rather than the first thing a reader has to get past. */
   var el = $("span");
-  if (el && typeof D !== "undefined" && D.window) {
-    el.textContent = FIRST + " → " + LAST + " · " + D.window.days + " "
+  if (el) {
+    el.textContent = tf("h_stamp",
+      "Updated %S% · list prices verified %V% · dollar figures are estimates, not an invoice",
+      {S: sinceLabel(D.generated_at), V: D.pricing_verified_on || "—"});
+  }
+  var cov = $("coverage");
+  if (cov && D.window) {
+    cov.textContent = FIRST + " → " + LAST + " · " + D.window.days + " "
       + t18("h_active_days", "active days") + " · "
       + D.by_provider.map(function (p) { return p.provider; }).join(" + ");
   }
 }
 
+/* "3 hours ago" — relative time is the honest read for a freshness stamp. The
+   day-and-longer words are the ones the freshness strip already translates. */
+function sinceLabel(stamp) {
+  var then = Date.parse(stamp || "");
+  var mins = isFinite(then) ? Math.max(0, Math.round((Date.now() - then) / 6e4)) : 0;
+  if (mins < 2) return t18("ago_now", "just now");
+  if (mins < 60) return tf("ago_min", "%N% minutes ago", {N: mins});
+  var hrs = Math.round(mins / 60);
+  if (hrs < 24) {
+    return hrs === 1 ? t18("ago_hour", "an hour ago")
+                     : tf("ago_hours", "%N% hours ago", {N: hrs});
+  }
+  var days = Math.round(hrs / 24);
+  if (days < 2) return t18("fresh_yesterday", "yesterday");
+  return days < 14 ? t18("fresh_days", "{n} days ago").replace("{n}", days)
+                   : t18("fresh_weeks", "{n} weeks ago").replace("{n}", Math.round(days / 7));
+}
+
 function markPreset(id) {
+  presetId = id;
   PRESETS.forEach(function (p) {
     $("p-" + p.id).setAttribute("aria-pressed", String(p.id === id));
   });
@@ -1272,7 +1333,7 @@ function initCalendar() {
     if (!c) return;
     var d = parse(c.getAttribute("data-day"));
     var mon = new Date(d.getTime());
-    mon.setUTCDate(mon.getUTCDate() - mon.getUTCDay());
+    mon.setUTCDate(mon.getUTCDate() - (mon.getUTCDay() + 6) % 7);
     var sun = new Date(mon.getTime());
     sun.setUTCDate(sun.getUTCDate() + 6);
     $("from").value = mon.toISOString().slice(0, 10);
@@ -1382,10 +1443,18 @@ function init() {
     applyPreset(PRESETS[1]);
   });
 
+  // Filters open and close from the chip beside the range — same row, same
+  // style — rather than from a bar of their own.
+  $("filtersBtn").addEventListener("click", function () {
+    var open = this.getAttribute("aria-expanded") !== "true";
+    this.setAttribute("aria-expanded", String(open));
+    $("filterPanel").hidden = !open;
+  });
+
   initTooltip();
 
   // A month is the default view; fall back to everything when there is less.
-  applyPreset(span(FIRST, LAST).length > 30 ? PRESETS[1] : PRESETS[4]);
+  applyPreset(span(FIRST, LAST).length > 30 ? PRESETS[1] : PRESETS[3]);
 }
 
 /* ---- hover tooltip ------------------------------------------------------

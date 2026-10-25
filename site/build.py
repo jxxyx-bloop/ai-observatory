@@ -288,6 +288,10 @@ def build_demo() -> str:
     prices = pricing.load_pricing()
     digest = analyze.build_digest(normalize.read_events(data), prices)
     digest["findings"] = insights.generate(digest, prices)
+    # `observe.py digest` stamps this; the demo does not go through it. Without
+    # it the line under the title reads "list prices verified —" on the one copy
+    # of the dashboard most people see first.
+    digest["pricing_verified_on"] = prices.get("_verified_on")
     # The published demo is deliberately USD/UTC+8 with no plan configured, so
     # it shows the shape of the product rather than one person's settings.
     digest["settings"] = {

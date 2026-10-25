@@ -18,76 +18,67 @@ r.setAttribute("data-theme",t);
 var l=localStorage.getItem("observatory-lang");if(l)r.setAttribute("data-lang",l);
 }catch(e){}r.className+=" js";})();
 </script>
-</head><body>
+</head><body class="dash">
 
 <div class="shell">
 
 <!-- ── Side rail ───────────────────────────────────────────────────────────
-     One persistent surface for the whole page. This dashboard scrolls a long
-     way; without it, reaching "what to change" from the top means a scroll
-     with no landmarks and no way back. The rail also holds the two settings
-     that belong to the page rather than to any section — theme and language —
-     so nothing floats over the content. -->
+     The Wingman Hangar port's rail: five destinations on top, the page-level
+     settings (theme, language) pinned to the foot, so nothing floats over the
+     content. This dashboard scrolls a long way; without a persistent surface,
+     reaching "insights" from the top is a scroll with no landmarks. -->
 <nav class="rail noprint" aria-label="Sections">
   <a class="railmark" href="<!--HOME-->" id="crumbHome"<!--HOMEATTR-->
      data-i18n-title="<!--HOMEKEY-->" data-i18n-aria="<!--HOMEKEY-->"
      title="<!--HOMELABEL-->" aria-label="<!--HOMELABEL-->">
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <circle cx="12" cy="12" r="8.5"></circle><circle cx="12" cy="12" r="3"></circle>
-      <path d="M12 3.5v3M12 17.5v3M3.5 12h3M17.5 12h3"></path>
-    </svg>
+    <span></span><span></span><span></span>
   </a>
 
   <ul class="railnav" id="railnav">
     <li><a href="#overview" data-sec="overview">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19V10M9.3 19V5M14.7 19v-6M20 19v-9"></path></svg>
+      <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3.5 16V9M8.5 16V4M13.5 16v-5M18 16h-16"></path></svg>
       <span data-i18n="nav_overview">Overview</span></a></li>
-    <li><a href="#rhythm" data-sec="rhythm">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 14.5c2.6 0 2.6-7 5.2-7s2.6 7 5.2 7 2.6-7 5.2-7 2.6 4 2.6 4"></path></svg>
-      <span data-i18n="nav_rhythm">Rhythm</span></a></li>
-    <li><a href="#effort" data-sec="effort">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h11M4 18h7"></path></svg>
-      <span data-i18n="nav_effort">Effort</span></a></li>
+    <li><a href="#patterns" data-sec="patterns">
+      <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M2.5 13.5c2.5 0 2.5-7 5-7s2.5 7 5 7 2.5-7 5-7"></path></svg>
+      <span data-i18n="nav_patterns">Patterns</span></a></li>
     <li><a href="#trends" data-sec="trends">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 16l5-5 3.5 3.5L20 7m0 0h-4.5M20 7v4.5"></path></svg>
+      <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M2.5 14.5l5-5 3.2 3.2 6.3-6.7m0 0h-3.8m3.8 0v3.8"></path></svg>
       <span data-i18n="nav_trends">Trends</span></a></li>
     <li><a href="#work" data-sec="work">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4H5a1 1 0 0 0-1 1v4M15 4h4a1 1 0 0 1 1 1v4M9 20H5a1 1 0 0 1-1-1v-4M15 20h4a1 1 0 0 0 1-1v-4M9 9h6v6H9z"></path></svg>
+      <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 5h14M3 10h14M3 15h9"></path></svg>
       <span data-i18n="nav_work">Sessions</span></a></li>
     <li><a href="#change" data-sec="change">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l2.4 5.3 5.6.7-4.2 3.9 1.2 5.6L12 15.7 6.9 18.5l1.2-5.6L4 9l5.6-.7Z"></path></svg>
-      <span data-i18n="nav_change">To change</span></a></li>
+      <svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="9" cy="9" r="5.5"></circle><path d="M13.2 13.2L17.5 17.5"></path></svg>
+      <span data-i18n="nav_change">Insights</span></a></li>
   </ul>
 
-  <!-- The one action the rail offers that is not navigation. Present only on
-       the hosted demo: a dashboard rendered on your own laptop has nothing to
-       set up and no site next to it to point at, so render.py leaves this out
-       entirely rather than shipping a dead link. Sits above the settings so it
-       reads as the end of the list, which is where someone who has finished
-       scrolling the demo actually is. -->
-  <!--RAILSETUP-->
-
   <div class="railfoot">
-    <details class="menu" id="langmenu">
-      <summary class="railbtn" data-i18n-title="lang_label" title="Language"
-               data-i18n-aria="lang_label" aria-label="Language">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle>
-          <path d="M3 12h18M12 3c2.6 2.7 2.6 15.3 0 18M12 3c-2.6 2.7-2.6 15.3 0 18"></path></svg>
-        <span class="code" id="langcode">EN</span>
-      </summary>
-      <div class="sheet" id="langsheet" role="menu"></div>
-    </details>
-    <button class="railbtn" id="themeToggle" type="button"
-            data-i18n-title="theme_label" title="Light / dark"
-            data-i18n-aria="theme_label" aria-label="Light / dark">
-      <svg class="ico-sun" viewBox="0 0 24 24" aria-hidden="true">
-        <circle cx="12" cy="12" r="4.2"></circle>
-        <path d="M12 2v2.4M12 19.6V22M2 12h2.4M19.6 12H22M4.9 4.9l1.7 1.7M17.4 17.4l1.7 1.7M19.1 4.9l-1.7 1.7M6.6 17.4l-1.7 1.7"></path>
-      </svg>
-      <svg class="ico-moon" viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M20 14.2A8.4 8.4 0 1 1 9.8 4a6.6 6.6 0 0 0 10.2 10.2Z"></path>
-      </svg>
-    </button>
+    <!-- The one action the rail offers that is not navigation. Present only on
+         the hosted demo: a dashboard rendered on your own laptop has nothing to
+         set up and no site next to it to point at, so render.py leaves this out
+         entirely rather than shipping a dead link. -->
+    <!--RAILSETUP-->
+
+    <ul class="railutil">
+      <li><button class="railbtn ghost" id="themeToggle" type="button"
+              data-i18n-title="theme_label" title="Light / dark"
+              data-i18n-aria="theme_label" aria-label="Light / dark">
+        <svg class="ico-sun" viewBox="0 0 20 20" aria-hidden="true">
+          <circle cx="10" cy="10" r="3.4"></circle>
+          <path d="M10 3v1.8M10 15.2V17M3 10h1.8M15.2 10H17M5.2 5.2l1.3 1.3M13.5 13.5l1.3 1.3M14.8 5.2l-1.3 1.3M6.5 13.5l-1.3 1.3"></path>
+        </svg>
+        <svg class="ico-moon" viewBox="0 0 20 20" aria-hidden="true">
+          <path d="M15.5 12.3A6.5 6.5 0 018 3.3a6.5 6.5 0 109 9z"></path>
+        </svg>
+      </button></li>
+      <li><details class="menu" id="langmenu">
+        <summary class="railbtn ghost lang" data-i18n-title="lang_label" title="Language"
+                 data-i18n-aria="lang_label" aria-label="Language">
+          <span class="code" id="langcode">EN</span>
+        </summary>
+        <div class="sheet" id="langsheet" role="menu"></div>
+      </details></li>
+    </ul>
   </div>
 </nav>
 
@@ -110,46 +101,35 @@ var l=localStorage.getItem("observatory-lang");if(l)r.setAttribute("data-lang",l
     </div>
   </div>
 
+  <!-- Title left, range right — the Hangar port's header. The one addition is
+       the Filters chip, which sits in the same row in the same style: Hangar
+       dropped repository / lane / provider drill-down entirely (it serves
+       people who are not all engineers; this tool still does), so the
+       capability stays but takes a click rather than a permanent bar. -->
   <header class="pagehead">
-    <!-- The sample-data disclosure lives on the title line rather than in a
-         banner above it. The banner carried a `git clone` command with a
-         scrollbar, which is the least useful thing it could offer a reader who
-         is looking at a hosted page and is not in a terminal. A chip and a link
-         say the same thing in a tenth of the space, and the link goes where the
-         command was trying to send them anyway. -->
-    <div class="pageheadrow">
-      <div class="pageheadid">
-        <h1 data-i18n="title">Where your AI effort went</h1>
-        <p class="sub" id="span">Loading…</p>
-      </div>
+    <div class="pageheadid">
+      <h1 data-i18n="title">Where your AI effort went</h1>
+      <p class="stamp" id="span">Loading…</p>
+    </div>
+    <div class="topctl">
+      <!-- The sample-data disclosure lives beside the controls rather than in a
+           banner above the title: a chip and a link say what the banner's
+           `git clone` command was trying to, in a tenth of the space. -->
       <p class="demoflag" id="demoFlag" hidden>
         <span class="demochip" id="demoChip">Sample data</span>
         <a class="demotry" id="demoTry" href="#">Try it yourself</a>
       </p>
-      <!-- The range presets sit on the title line, not in the filter row.
-           They are the question the whole page answers ("over what period?"),
-           and they were the one control a reader touches on nearly every
-           visit — filed alongside five they touch on almost none. Its own
-           labelled group rather than a slice of "Filters", which is what it
-           always was. -->
-      <div class="seg" id="presets" role="group"
+      <button type="button" class="chip filterbtn" id="filtersBtn"
+              aria-expanded="false" aria-controls="filterPanel">
+        <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 5h14M6 10h8M8.5 15h3"></path></svg>
+        <span data-i18n="f_group">Filters</span>
+      </button>
+      <div class="chips" id="presets" role="group"
            data-i18n-aria="f_range" aria-label="Range"></div>
     </div>
   </header>
 
-  <!-- Provider/lane/repo drill-down and the explicit date inputs have no
-       Hangar equivalent — the company-wide port dropped per-repo filtering
-       entirely (it serves people who are not all engineers; this tool still
-       does). So the capability stays, but collapsed behind one disclosure
-       rather than a permanently-visible bar: the default view is then just
-       the range toggle above, matching Hangar's shape, and the whole
-       row — dates, three selects, reset, and the scope recap that only ever
-       described *this* row's state — opens together on one click. -->
-  <details class="filters" id="filtersToggle">
-    <summary class="filterbtn">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M7 12h10M10 18h4"></path></svg>
-      <span data-i18n="f_group">Filters</span>
-    </summary>
+  <div class="filterpanel" id="filterPanel" hidden>
     <div class="controls" role="group" data-i18n-aria="f_group" aria-label="Filters">
       <div class="dates">
         <input type="date" id="from" data-i18n-aria="f_from" aria-label="From">
@@ -166,104 +146,111 @@ var l=localStorage.getItem("observatory-lang");if(l)r.setAttribute("data-lang",l
       </button>
     </div>
     <p class="scope" id="scope"></p>
-  </details>
+  </div>
 
+  <!-- Overview: the scoreboard and the one chart under it, as one section so
+       the rail's first stop covers both. The chart's heading is written by
+       draw(), not the translator: it names whichever metric the control beside
+       it has selected, so it stays true to what the chart is showing. -->
   <section id="overview">
     <div class="kpis" id="kpis"></div>
-  </section>
 
-  <!-- Heading is written by draw(), not the translator: it names whichever
-       metric the segmented control below has selected, so it stays true to
-       what the chart is actually showing when the reader switches metrics. -->
-  <section id="rhythm"><h2 id="dailyTitle">Loading…</h2>
-    <div class="panel">
-      <div class="chartbar"><div class="seg small" id="dailyMetric"></div>
-        <span class="legend" id="dailyLegend"></span></div>
+    <div class="card wide" id="rhythm">
+      <div class="cardhead">
+        <h2 id="dailyTitle">Loading…</h2>
+        <div class="chips small" id="dailyMetric"></div>
+      </div>
       <div id="daily"></div>
+      <p class="legend" id="dailyLegend"></p>
     </div>
   </section>
 
-  <!-- Repo/folder, model/effort, and tool/agent breakdowns all read from the
-       same date-range-filtered set (DF in app.js) — none of them is actually
-       whole-window, unlike the calendar above or the findings below, which
-       genuinely are. So all six share one grid rather than the four-panel
-       version splitting three-and-one at the dashboard's width: six panels
-       in the same 340px-minimum grid (app.css) pack a clean two rows of
-       three, instead of a lone fourth panel stretching a half-empty row. -->
-  <section id="effort"><h2 data-i18n="s_invest">Where the effort goes</h2>
-    <div class="grid2">
-      <div class="panel"><h2 data-i18n="s_byrepo">By repository</h2><div id="repos"></div></div>
-      <div class="panel"><h2 id="surfaceTitle" data-i18n="s_inside">Inside</h2><div id="surfaces"></div>
-        <p class="sub foot" id="surfaceNote"></p></div>
-      <div class="panel"><h2 data-i18n="s_output_model">Output by model</h2><div id="models-chart"></div></div>
-      <div class="panel"><h2 data-i18n="s_efforts">Turns by reasoning effort</h2><div id="efforts"></div></div>
-      <div class="panel"><h2 data-i18n="s_toolcalls">Tool calls</h2><div id="tools"></div></div>
-      <div class="panel"><h2 data-i18n="s_agents">Named subagents</h2><div id="agents"></div>
-        <p class="sub foot" id="agentsNote"></p></div>
+  <!-- Every breakdown reads from the same date-range-filtered set (DF in
+       app.js), so they share one grid and read as one question: where did it
+       go. Order follows the Hangar port — models, where, what — then the rest. -->
+  <div class="grid" id="patterns">
+    <div class="card">
+      <h2 data-i18n="s_models">Which models did the work</h2>
+      <p class="callout" id="modelCallout"></p>
+      <div id="models-chart"></div>
     </div>
-  </section>
+    <div class="card">
+      <h2 data-i18n="s_invest">Where the effort went</h2>
+      <div id="repos"></div>
+      <p class="note" data-i18n="n_workspaces">Folder names only. Full paths never leave your machine.</p>
+    </div>
+    <div class="card">
+      <h2 data-i18n="s_toolcalls">What you reach for</h2>
+      <p class="callout" id="toolCallout"></p>
+      <div id="tools"></div>
+    </div>
+    <div class="card">
+      <h2 data-i18n="s_providers">Which tool you drove it from</h2>
+      <div id="providers"></div>
+    </div>
+    <div class="card">
+      <h2 data-i18n="s_efforts">How hard you asked it to think</h2>
+      <div id="efforts"></div>
+    </div>
+    <div class="card">
+      <h2 id="surfaceTitle" data-i18n="s_inside">Inside</h2>
+      <div id="surfaces"></div>
+      <p class="note" id="surfaceNote"></p>
+    </div>
+    <div class="card">
+      <h2 data-i18n="s_agents">Named subagents</h2>
+      <div id="agents"></div>
+      <p class="note" id="agentsNote"></p>
+    </div>
+  </div>
 
   <!-- One card for two views of the same question. The rolling means say
        whether the way you work is changing; the grid says when the work
-       actually happens. They were two sections with two nav stops, which
-       made the reader treat them as unrelated — and left the heatmap alone
-       in a card tall enough to fill a screen. Sub-headed rather than split,
-       the way the Hangar port arranges the same pair. -->
-  <section id="trends"><h2 data-i18n="s_trends">Are you getting better at this?</h2>
-    <p class="sub note" data-i18n="n_trends">7-day rolling mean across the whole
-      range.</p>
+       actually happens. The calendar sits beside the grid because it is the
+       same seven rows over a different slice of time. -->
+  <section class="card wide" id="trends">
+    <h2 data-i18n="s_trends">Behavioral trends</h2>
+    <p class="scope" data-i18n="n_trends">7-day rolling mean of each metric, and when turns
+      actually happen — both follow the selected range.</p>
+    <div id="trends-charts"></div>
 
-    <div class="panel">
-      <div id="trends-charts"></div>
-
-      <!-- Heading and hint are written by draw(), not by the translator: which
-           of the two this sub-panel is depends on whether the reader uses a
-           time-priced vendor at all. -->
-      <h2 class="subhead" id="meterTitle">Your week against the meter</h2>
-      <p class="sub note" id="meterHint">Your own hours, with every vendor's peak
-        window drawn over them.</p>
-      <!-- Same seven rows, two different slices of time: the meter is
-           weekday x hour over the selected range, the calendar beside it is
-           day x week since collection began. Side by side rather than
-           stacked, since they answer a shared question and a few months of
-           history never needed a full-width panel of its own to show it —
-           that panel was mostly the blank space to the right of a much
-           narrower chart. Wraps to stacked below the width both need. -->
-      <div class="heatpair">
-        <div class="heatcol" id="meterCol">
-          <div id="meter"></div>
-          <p class="sub foot" id="meterNote"></p>
-        </div>
-        <div class="heatcol" id="calCol">
-          <h2 class="subhead" data-i18n="s_calendar">The long view</h2>
-          <div id="calendar"></div>
-        </div>
+    <div class="heatpair">
+      <div class="heatcol" id="meterCol">
+        <!-- Heading and hint are written by draw(), not by the translator: which
+             of the two this is depends on whether the reader uses a
+             time-priced vendor at all. -->
+        <h3 id="meterTitle">When you work</h3>
+        <p class="scope" id="meterHint"></p>
+        <div id="meter"></div>
+        <p class="note" id="meterNote"></p>
+      </div>
+      <div class="heatcol" id="calCol">
+        <h3 data-i18n="s_calendar">The long view</h3>
+        <div id="calendar"></div>
       </div>
     </div>
+  </section>
 
-    <div class="panel" id="phaseSection" hidden><h2><span data-i18n="s_phase">Peak and off-peak</span><span class="info" tabindex="0"
+  <section class="card wide" id="phaseSection" hidden>
+    <h2><span data-i18n="s_phase">Peak and off-peak</span><span class="info" tabindex="0"
           role="img" aria-label="What this measures" data-tt="Some vendors price tokens by the
           hour — DeepSeek bills full rate 01:00-04:00 and 06:00-10:00 UTC and half rate the rest
           of the day; Z.ai's GLM peaks only 14:00-18:00 UTC+8 on weekdays. Flat-priced vendors are
           excluded from both bars: they were never time-priced, so there is nothing to shift.">i</span></h2>
-      <div id="phase"></div>
-      <p class="sub foot" id="phaseNote"></p>
-    </div>
+    <div id="phase"></div>
+    <p class="note" id="phaseNote"></p>
   </section>
 
-  <!-- Tool calls and Named subagents moved up into #effort's grid — same
-       date-range scope, and it filled the empty half of that grid's last
-       row. What's left here is one panel, so the section needs no heading
-       of its own beyond the panel's — same reasoning as #overview above. -->
-  <section id="work">
-    <div class="panel"><h2 data-i18n="s_sessions">Heaviest sessions</h2>
-      <p class="sub note" data-i18n="n_sessions">Writes/reads is the produce-to-explore
-        ratio. Peak context is the largest single-turn context.</p>
-      <div id="sessions"></div></div>
+  <section class="card wide" id="work">
+    <h2 data-i18n="s_sessions">Your heaviest sessions</h2>
+    <p class="scope" data-i18n="n_sessions">Writes/reads is the produce-to-explore
+      ratio. Peak context is the largest single-turn context.</p>
+    <div id="sessions"></div>
   </section>
 
-  <section id="change"><h2 data-i18n="s_change">What to change</h2>
-    <p class="sub note" data-i18n="n_change">Ordered by severity, then by what it is
+  <section class="card wide" id="change">
+    <h2 data-i18n="s_change">What the numbers suggest you change</h2>
+    <p class="scope" data-i18n="n_change">Ordered by severity, then by what it is
       worth. Computed over the whole window — the filters above do not change it.</p>
     <!--FINDINGS-->
 
@@ -283,6 +270,7 @@ var l=localStorage.getItem("observatory-lang");if(l)r.setAttribute("data-lang",l
   </section>
 
   <footer>
+    <p class="coverage" id="coverage"></p>
     <h2 data-i18n="meth_h2">How this was measured</h2>
     <ol class="method">
       <li data-i18n-html="meth_1"><strong>No prompt, completion, file, command, or
