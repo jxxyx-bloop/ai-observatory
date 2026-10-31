@@ -277,7 +277,7 @@ def render_setup(template: str, css: str, js: str, setup_js: str) -> str:
 def build_demo() -> str:
     """Render the dashboard from the demo fixture, in a scratch data dir."""
     sys.path.insert(0, str(ENGINE))
-    import analyze, demo, insights, normalize, pricing, render  # noqa: E402
+    import analyze, demo, insights, normalize, pricing, render, trends  # noqa: E402
 
     data = OUT / ".scratch"
     if data.exists():
@@ -288,6 +288,7 @@ def build_demo() -> str:
     prices = pricing.load_pricing()
     digest = analyze.build_digest(normalize.read_events(data), prices)
     digest["findings"] = insights.generate(digest, prices)
+    digest["price_trends"] = trends.build(prices, digest["totals"])
     # `observe.py digest` stamps this; the demo does not go through it. Without
     # it the line under the title reads "list prices verified —" on the one copy
     # of the dashboard most people see first.

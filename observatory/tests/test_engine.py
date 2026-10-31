@@ -31,6 +31,7 @@ import insights         # noqa: E402
 import normalize        # noqa: E402
 import paths as topo    # noqa: E402
 import pricing          # noqa: E402
+import render           # noqa: E402
 import share            # noqa: E402
 import launcher         # noqa: E402
 import observe          # noqa: E402
@@ -102,6 +103,198 @@ def test_cost():
     check("an alias hop resolves", pricing.canonical_model("deepseek-v3"), "deepseek-chat")
     unknown = {"model": "some-model-nobody-has-heard-of", "output": 1_000_000}
     ok("an unknown model falls back rather than crashing", pricing.cost_of(unknown, p) > 0)
+
+
+def test_dated_rates():
+    """A turn is priced at the rate in force when it happened, with every price
+    change written in Singapore time (+08:00)."""
+    import copy
+    from datetime import datetime, timezone
+    print("\ndated rates")
+    p = pricing.load_pricing()
+    check("the shipped card is well-formed", pricing.validate_card(p), [])
+    check("nothing is overdue for review today",
+          pricing.review_due(p, datetime(2026, 10, 31, tzinfo=timezone.utc)), [])
+    check("GPT-5.6 Sol is flagged once its promotion window has passed",
+          [m for m, _ in pricing.review_due(p, datetime(2026, 11, 22, tzinfo=timezone.utc))],
+          ["gpt-5.6-sol"])
+
+    bad = copy.deepcopy(p)
+    bad["history"]["gpt-5.6-terra"][0]["until"] = "2026-07-30T00:00"       # no offset
+    ok("a boundary with no +08:00 is rejected",
+       any("+08:00" in x for x in pricing.validate_card(bad)))
+    bad = copy.deepcopy(p)
+    bad["history"]["gpt-5.6-terra"][0]["until"] = "2026-07-31T00:00+08:00"  # leaves a gap
+    ok("a boundary that does not meet the current rate is rejected",
+       any("does not meet" in x for x in pricing.validate_card(bad)))
+    try:
+        pricing.instant("2026-07-30T00:00")
+        ok("a naive boundary is refused, not read as UTC", False)
+    except ValueError:
+        ok("a naive boundary is refused, not read as UTC", True)
+
+    def rate(model, at, key="input"):
+        return pricing.rates_for(model, p, at=at)[key]
+
+    # Terra's cut is 2026-07-30 00:00 SGT == 2026-07-29 16:00 UTC.
+    check("terra, last second before the cut (SGT)", rate("gpt-5.6-terra", "2026-07-29T23:59:59+08:00"), 2.5)
+    check("terra, the cut itself is the new price (from is inclusive)", rate("gpt-5.6-terra", "2026-07-30T00:00:00+08:00"), 2.0)
+    check("terra, same instant written in UTC", rate("gpt-5.6-terra", "2026-07-29T16:00:00Z"), 2.0)
+    check("terra, one second earlier in UTC", rate("gpt-5.6-terra", "2026-07-29T15:59:59Z"), 2.5)
+    check("luna, before and after", (rate("gpt-5.6-luna", "2026-07-20T00:00:00Z"), rate("gpt-5.6-luna", "2026-08-02T00:00:00Z")), (1.0, 0.2))
+    check("sol before its promotion", (rate("gpt-5.6-sol", "2026-08-10T00:00:00Z"), rate("gpt-5.6-sol", "2026-08-10T00:00:00Z", "output")), (5.0, 30.0))
+    check("sol under the promotion", (rate("gpt-5.6-sol", "2026-08-21T00:00:00+08:00"), rate("gpt-5.6-sol", "2026-08-21T00:00:00+08:00", "output")), (4.0, 20.0))
+    check("sol keeps pricing past its recheck date — no invented successor",
+          rate("gpt-5.6-sol", "2027-01-01T00:00:00+08:00"), 4.0)
+    check("sonnet 5.5 cache reads, before 2026-10-07 SGT", rate("claude-sonnet-5-5", "2026-10-06T23:59:59+08:00", "cache_read_mult"), 0.1)
+    check("sonnet 5.5 cache reads, from then", rate("claude-sonnet-5-5", "2026-10-07T00:00:00+08:00", "cache_read_mult"), 0.05)
+    check("a superseded version keeps the model's other fields",
+          pricing.rates_for("gpt-5.6-sol", p, at="2026-08-01T00:00:00Z")["tier"], "frontier")
+    check("an instant before launch uses the earliest version", rate("gpt-5.6-terra", "2026-01-01T00:00:00Z"), 2.5)
+    ok("a model that never changed is the same entry at any time",
+       pricing.rates_for("claude-opus-5-5", p, at="2026-09-30T00:00:00Z") is pricing.rates_for("claude-opus-5-5", p))
+    check("no timestamp means the current rate", pricing.rates_for("gpt-5.6-terra", p)["input"], 2.0)
+    check("an unusable timestamp means the current rate, not a crash",
+          pricing.rates_for("gpt-5.6-terra", p, at="not a time")["input"], 2.0)
+
+    # The same tokens, either side of the change, through the real cost function.
+    before = {"model": "gpt-5.6-terra", "ts": "2026-07-20T00:00:00Z", "input": 1_000_000}
+    after = {"model": "gpt-5.6-terra", "ts": "2026-08-05T00:00:00Z", "input": 1_000_000}
+    check("1M terra input before the cut", round(pricing.cost_of(before, p), 4), 2.5)
+    check("1M terra input after the cut", round(pricing.cost_of(after, p), 4), 2.0)
+    cr = lambda ts: round(pricing.cost_of({"model": "claude-sonnet-5-5", "ts": ts, "cache_read": 1_000_000}, p), 4)
+    check("1M sonnet 5.5 cache reads cost $0.20 before the cut and $0.10 after",
+          (cr("2026-10-01T00:00:00Z"), cr("2026-10-20T00:00:00Z")), (0.2, 0.1))
+    check("an event stamp in +08:00 is the same instant as in UTC",
+          pricing.cost_of(dict(before, ts="2026-07-30T07:59:00+08:00"), p),
+          pricing.cost_of(dict(before, ts="2026-07-29T23:59:00Z"), p))
+
+    # Gateways wrap the model id; the wrapper must not hide a model from the card.
+    check("a gateway prefix is stripped", pricing.canonical_model("llm-gateway--gpt-5.6-sol"), "gpt-5.6-sol")
+    check("a vendor/ prefix is stripped", pricing.canonical_model("openai/gpt-5.6-terra"), "gpt-5.6-terra")
+    check("prefix and date snapshot together", pricing.canonical_model("llm-gateway--claude-sonnet-5-5-20261001"), "claude-sonnet-5-5")
+    # Only KNOWN wrappers go: a pattern would rename a real id on every turn's label.
+    for keep in ("some--model", "my-proxy--gpt-5.6-sol", "llm-gateway--", "gpt-oss-120b"):
+        check("strip_gateway leaves %r alone" % keep, pricing.strip_gateway(keep), keep)
+    ok("an unknown wrapper is disclosed as unpriced rather than guessed at",
+       not pricing.is_priced("my-proxy--gpt-5.6-sol", p))
+    ok("a gateway-wrapped model is priced, not guessed", pricing.is_priced("llm-gateway--gpt-5.6-sol", p))
+    ok("a gateway prefix does not escape the history",
+       pricing.rates_for("llm-gateway--gpt-5.6-terra", p, at="2026-07-20T00:00:00Z")["input"] == 2.5)
+    check("gpt-5.5 is $5/$30 (it read $1.25/$10 by mistake)",
+          (p["models"]["gpt-5.5"]["input"], p["models"]["gpt-5.5"]["output"]), (5.0, 30.0))
+    for m in ("gpt-5.6-sol", "gpt-5.6-terra", "gpt-5.6-luna", "gpt-5.3-codex", "gpt-5.4",
+              "claude-opus-5-5", "claude-sonnet-5-5", "claude-haiku-5-5", "claude-fable-5-1"):
+        ok("%s is on the card" % m, pricing.is_priced(m, p))
+
+    check("strip_gateway leaves the vendor's own spelling alone",
+          (pricing.strip_gateway("llm-gateway--gpt-5.6-sol"), pricing.strip_gateway("kimi-for-coding"),
+           pricing.strip_gateway("claude-haiku-4-5-20251001"), pricing.strip_gateway(None)),
+          ("gpt-5.6-sol", "kimi-for-coding", "claude-haiku-4-5-20251001", None))
+    twins = [dict(e, model="gpt-5.6-sol", provider="codex") for e in demo.generate()[:2]]
+    twins[1]["model"] = "llm-gateway--gpt-5.6-sol"
+    d = analyze.build_digest(iter(twins), p)
+    check("a gateway-wrapped model groups with the bare one, not as a second model",
+          [r["model"] for r in d["by_model"]], ["gpt-5.6-sol"])
+
+    # `doctor` is where somebody already asking "what is wrong?" will see it.
+    row = lambda: next(r for r in launcher.doctor(Path(tempfile.mkdtemp()))
+                       if r["title"] == "The rate card is current")
+    ok("doctor says the card is current today", row()["ok"])
+    real_due = pricing.review_due
+    try:
+        pricing.review_due = lambda card, now=None: real_due(
+            card, datetime(2026, 11, 22, tzinfo=timezone.utc))
+        stale = row()
+        ok("and flags an overdue promotional rate once its window has passed", not stale["ok"])
+        ok("naming the model and the date", "gpt-5.6-sol" in stale["detail"] and "2026-11-21" in stale["detail"])
+    finally:
+        pricing.review_due = real_due
+
+
+def test_price_trends():
+    """The Prices page's numbers, checked against arithmetic done by hand."""
+    import copy, json
+    import trends
+    print("\nprice trends")
+    p = pricing.load_pricing()
+    t = trends.build(p, today="2026-10-31")
+    ids = [l["id"] for l in t["lines"]]
+    check("seven lines across two labs", (len(ids), [l["id"] for l in t["labs"]]), (7, ["anthropic", "openai"]))
+    ok("every line's change points run oldest to newest",
+       all([x["date"] for x in l["points"]] == sorted(x["date"] for x in l["points"]) for l in t["lines"]))
+    line = {l["id"]: l for l in t["lines"]}
+    check("a line starts on its first model's launch (Opus 4.5, Singapore time)",
+          line["anthropic-premium"]["points"][0]["date"], "2025-11-24")
+    check("and nothing is drawn before a model existed", line["openai-frontier"]["points"][0]["date"], "2026-03-05")
+
+    # The arithmetic, by hand, from the mix in pricing.json:
+    #   eff = in*i + cw*i*1.25 + cr*i*cr_mult + out*o
+    m = p["reference_mix"]
+    def by_hand(i, o, crm):
+        return m["input"] * i + m["cache_write"] * i * 1.25 + m["cache_read"] * i * crm + m["output"] * o
+    opus5 = by_hand(5.0, 25.0, 0.1)
+    opus55 = by_hand(4.0, 20.0, 0.05)
+    pts = {x["date"]: x for x in line["anthropic-premium"]["points"]}
+    check("Opus 5 for a typical session, by hand", round(pts["2026-07-24"]["eff_ref"], 6), round(opus5, 6))
+    check("Opus 5.5 for a typical session, by hand", round(pts["2026-09-22"]["eff_ref"], 6), round(opus55, 6))
+    ev = [e for e in t["events"] if e["line"] == "anthropic-premium" and e["date"] == "2026-09-22"][0]
+    check("Opus 5 -> 5.5 is a succession", ev["kind"], "succession")
+    check("-20% on list price becomes about -46% for a cache-heavy session",
+          round(ev["delta_pct"], 1), round((opus55 / opus5 - 1) * 100, 1))
+    ok("which is a bigger cut than the headline price alone", ev["delta_pct"] < -40)
+    check("only the prices that moved are listed",
+          sorted(c["component"] for c in ev["changed"]), ["cache_read", "cache_write", "input", "output"])
+
+    son = [e for e in t["events"] if e["line"] == "anthropic-workhorse" and e["date"] == "2026-10-07"][0]
+    check("Sonnet 5.5's cache-read cut is a price cut of the same model, not a new model", (son["kind"], son["model"], son["from_model"]),
+          ("cut", "claude-sonnet-5-5", "claude-sonnet-5-5"))
+    check("and only the cache-read price moved",
+          [(c["component"], round(c["from"], 4), round(c["to"], 4)) for c in son["changed"]], [("cache_read", 0.2, 0.1)])
+    sol = [e for e in t["events"] if e["line"] == "openai-frontier" and e["date"] == "2026-08-21"][0]
+    check("Sol's promotion is a cut", (sol["kind"], round(sol["delta_pct"], 1)),
+          ("cut", round((by_hand(4.0, 20.0, 0.1) / by_hand(5.0, 30.0, 0.1) - 1) * 100, 1)))
+    gpt = [e for e in t["events"] if e["line"] == "openai-frontier" and e["date"] == "2026-04-24"][0]
+    ok("GPT-5.4 -> 5.5 is a rise, not only good news", gpt["kind"] == "succession" and gpt["delta_pct"] > 90)
+    check("a rate with a documented end is on the watch list",
+          [(w["model"], w["recheck_after"], w["days_left"]) for w in t["watch"]], [("gpt-5.6-sol", "2026-11-21", 21)])
+    ok("vendors without traced history are listed as such, not drawn",
+       "google" in [u["vendor"] for u in t["untraced"]] and "anthropic" not in [u["vendor"] for u in t["untraced"]])
+
+    early = trends.build(p, today="2026-01-15")
+    check("a model not yet launched is not drawn", [l["id"] for l in early["lines"]],
+          ["anthropic-premium", "anthropic-workhorse", "anthropic-light"])
+    ok("nor is an event from the future", all(e["date"] <= "2026-01-15" for e in early["events"]))
+
+    # The reader's own mix.
+    cached = trends.build(p, {"cache_read": 1000, "input": 0, "output": 0, "cache_create": 0}, today="2026-10-31")
+    onl = {l["id"]: l for l in cached["lines"]}["anthropic-premium"]["points"][-1]
+    check("a workload that is all cache reads costs exactly the cache-read price", round(onl["eff_you"], 6), round(onl["cache_read"], 6))
+    ok("and with no usage there is no 'your mix'", trends.build(p, {}, today="2026-10-31")["mixes"]["yours"] is None)
+    ok("the payload is plain JSON and small", len(json.dumps(t)) < 40_000)
+
+    # The card refuses a line that would draw a wrong chart.
+    bad = copy.deepcopy(p)
+    bad["lines"][0]["models"][0]["model"] = "no-such-model"
+    ok("a line naming a model that is not on the card is rejected",
+       any("not on the card" in x for x in pricing.validate_card(bad)))
+    bad = copy.deepcopy(p)
+    bad["lines"][1]["models"][1]["from"] = bad["lines"][1]["models"][0]["from"]
+    ok("a line whose models do not move forward in time is rejected",
+       any("not after" in x for x in pricing.validate_card(bad)))
+    bad = copy.deepcopy(p)
+    bad["reference_mix"]["output"] = 0.5
+    ok("a reference mix that is not a whole is rejected", any("reference_mix" in x for x in pricing.validate_card(bad)))
+
+    # It travels to the page inside the digest and is drawn there.
+    d = analyze.build_digest(iter(demo.generate(days=10)), p)
+    d["findings"] = insights.generate(d, p)
+    d["price_trends"] = trends.build(p, d["totals"])
+    d["settings"] = {"tz_label": "UTC+8", "symbol": "$", "per_usd": 1, "decimals": 2,
+                     "currency": "USD", "plan": "none"}
+    page = render.render(d)
+    ok("the digest carries it into the rendered page", '"price_trends"' in page and 'id="pricesView"' in page)
+    ok("and the reader's own mix comes from their own totals", d["price_trends"]["mixes"]["yours"] is not None)
 
 
 def test_plan_value():
@@ -895,7 +1088,7 @@ def test_duplicate_disclosure():
 
 
 def main():
-    for fn in (test_window_phase, test_cost, test_plan_value, test_paths,
+    for fn in (test_window_phase, test_cost, test_dated_rates, test_price_trends, test_plan_value, test_paths,
                test_share_payload, test_pipeline, test_hidden_guards,
                test_findings_i18n_coverage,
                test_updater, test_sync_integrity, test_unpriced_disclosure,

@@ -54,6 +54,7 @@ import pricing as price  # noqa: E402
 import render  # noqa: E402
 import settings  # noqa: E402
 import share as share_mod  # noqa: E402
+import trends as trends_mod  # noqa: E402
 import updater  # noqa: E402
 
 ROOT = home.root()
@@ -247,6 +248,7 @@ def cmd_digest(argv) -> int:
         print("digest: no events found — run `observe.py sync` first")
         return 1
     digest["findings"] = insights_mod.generate(digest, pricing)
+    digest["price_trends"] = trends_mod.build(pricing, digest["totals"])
     digest["settings"] = _display_settings(digest)
     digest["generated_at"] = datetime.now(timezone.utc).isoformat(timespec="seconds")
     digest["pricing_verified_on"] = pricing.get("_verified_on")

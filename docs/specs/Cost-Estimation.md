@@ -45,11 +45,37 @@ Break-even on the 1h TTL is roughly three reads per written token (2.0 + 0.2×n 
 
 When a provider reports `cache_create` but not the TTL split, the whole write is priced at the cheaper **5m** rate. Overstating cost would make every finding look more valuable than it is, so the guard deliberately errs low.
 
+## Dated rates
+
+A price is only right for a moment in time. A flat card makes every month before a price cut look as cheap as the month after it, and every month before a rise look dearer. So `cost_of` prices each turn at the rate in force **at that turn's own timestamp**.
+
+`pricing.json` keeps the current rate in `models` and the superseded ones in `history`:
+
+```json
+"models":  { "gpt-5.6-terra": { "input": 2.0, "output": 12.0, "from": "2026-07-30T00:00+08:00", ... } },
+"history": { "gpt-5.6-terra": [ { "from": "2026-07-09T00:00+08:00",
+                                  "until": "2026-07-30T00:00+08:00",
+                                  "input": 2.5, "output": 15.0 } ] }
+```
+
+- **One benchmark: Singapore time.** Every boundary is an ISO instant ending `+08:00`. `validate_card` rejects anything else, and `instant()` refuses a time with no offset, so a boundary can never be read as UTC by accident. Event timestamps are UTC; the comparison is between instants, so no one has to convert.
+- `from` is inclusive, `until` exclusive, and a version's `until` is the next version's `from`. No gaps, no overlaps — `validate_card` checks it.
+- Each history entry overrides only the fields it lists (`input`, `output`, `cache_read_mult`, ...); tier, vendor and window carry over.
+- **Vendors publish dates, not hours.** A date-only source is recorded as 00:00 SGT on that date with `"precision": "date"`. That is good to about a day, which is below what a dollar estimate resolves anyway. Write the real instant, and drop `precision`, when a source gives one.
+- **An introductory or promotional rate with no published successor** gets `recheck_after` (the earliest it might end). It keeps pricing — there is nothing better to use, and inventing the successor would be worse — and `review_due` reports it once the date passes. `doctor` shows it as a failed check, so it is seen. Example: `gpt-5.6-sol`'s $4/$20 is "available at least through November 21, 2026".
+- The first history entry's `from` is the model's launch and also applies to anything earlier.
+
+What changed and what did not, as of 2026-10-31 (from each vendor's own release notes and pricing page): GPT-5.6 launched 2026-07-09; Terra and Luna were cut on 2026-07-30; Sol went to the promotional $4/$20 on 2026-08-21; Claude Sonnet 5.5's cache reads went from 0.1× to 0.05× on 2026-10-07. Opus 5.5 and Fable 5.1 launched at today's price. `claude-sonnet-5`'s introductory $2/$10 was made permanent on 2026-08-10 and the planned $3/$15 never took effect, so it has no history. `gpt-5.5` has been $5/$30 since its 2026-04-23 launch — this card carried $1.25/$10 until 2026-10-31, which was a plain error, not a change.
+
+The dashboard's **Prices** page draws this history, per lab and per model line: see [Price-Trends](Price-Trends.md).
+
+**Not modelled:** what a *gateway* (LiteLLM, OpenRouter, a company's own) bills, which can differ from the vendor's list and take effect at its own time; the vendor's long-prompt tiers (GPT-5.6 above 272K input, Haiku 5.5 above 100K) and Fast mode, which a transcript does not record.
+
 ## Maintaining the price list
 
-`pricing.json` is meant to be edited. On update, set `_verified_on` — the dashboard footer surfaces that date so a stale model is visible rather than silently wrong.
+`pricing.json` is meant to be edited. On update, set `_verified_on` — the dashboard footer surfaces that date so a stale model is visible rather than silently wrong. `_verified_on` is the *oldest* check; `_verified_by_vendor` records the vendors that were checked more recently, so adding Anthropic's rates does not make Moonshot's look fresh.
 
-Verified 2026-08-02 against the Anthropic public price list. Note `claude-sonnet-5` carries an introductory rate through 2026-08-31; the entry records both, and the reverted rate must be applied after that date.
+Verified 2026-10-31 against Anthropic's and OpenAI's own pricing pages and release notes; every other vendor as of `_verified_on`.
 
 ## Confidence levels
 

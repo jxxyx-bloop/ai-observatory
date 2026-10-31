@@ -13,10 +13,17 @@ rate card makes every number on the page confidently wrong, which is worse than
 silent.
 
 1. Edit the entry in [`observatory/pricing.json`](observatory/pricing.json).
-2. Move `_verified_on` to today.
+2. Move `_verified_on` to today (and the vendor's line in `_verified_by_vendor`).
 3. In the PR body, link the vendor's public pricing page.
 
-That is the whole review. No tests to run, no code to touch.
+If the rate was simply **wrong**, that is the whole review. If the vendor
+**changed** it, the old rate still applies to everything before the change, so
+move it into `history` instead of overwriting it: give it a `from` and an `until`
+written in Singapore time (`2026-07-30T00:00+08:00`), and set the same instant as
+the entry's `from`. A vendor that publishes only a date gets `T00:00+08:00` on
+that date and `"precision": "date"`. `python3 observatory/tests/test_engine.py`
+checks the dates are well-formed; `doctor` flags a promotional rate that has
+passed its documented end.
 
 ### 2. Add a plan (10 minutes)
 

@@ -21,6 +21,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import paths as topo  # noqa: E402
+import pricing as price  # noqa: E402
 
 from .base import Collector, blank_event  # noqa: E402
 
@@ -164,7 +165,7 @@ class CodexCollector(Collector):
         ev["ts"] = rec.get("timestamp")
         ev["session"] = (meta.get("id") or "")[:8] or None
         ev["workspace"] = os.path.basename(cwd.rstrip("/")) or None
-        ev["model"] = ctx.get("model")
+        ev["model"] = price.strip_gateway(ctx.get("model"))
         ev["effort"] = ctx.get("effort")
         ev["entrypoint"] = _ENTRYPOINT.get(source) if isinstance(source, str) else None
         ev["sidechain"] = agent is not None

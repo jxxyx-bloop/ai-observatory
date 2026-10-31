@@ -50,6 +50,12 @@ var l=localStorage.getItem("observatory-lang");if(l)r.setAttribute("data-lang",l
     <li><a href="#change" data-sec="change">
       <svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="9" cy="9" r="5.5"></circle><path d="M13.2 13.2L17.5 17.5"></path></svg>
       <span data-i18n="nav_change">Insights</span></a></li>
+    <!-- Not a section of this page: a page of its own, switched in by the hash.
+         Hidden by script when the digest predates it, so an older dashboard file
+         never shows a link to nothing. -->
+    <li id="railPrices" hidden><a href="#prices" data-view="prices">
+      <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 10.6V4h6.6l7 7-6.6 6.6z"></path><circle cx="6.6" cy="7.6" r="1"></circle></svg>
+      <span data-i18n="nav_prices">Prices</span></a></li>
   </ul>
 
   <div class="railfoot">
@@ -268,6 +274,78 @@ var l=localStorage.getItem("observatory-lang");if(l)r.setAttribute("data-lang",l
       </a>
     </p>
   </section>
+
+  <!-- ── Prices ───────────────────────────────────────────────────────────
+       What the models cost, and which way each is moving. Switched in by
+       `#prices`; every other panel above is hidden while it is showing. The
+       numbers are computed in trends.py and arrive in the digest - this page
+       only draws them, so it and the tests cannot disagree about a price.
+
+       Read top to bottom in the order the questions come: a glance (three
+       counts, one bar per line), one line in focus (a single clean chart and
+       why it moved), then everything else on demand. -->
+  <div id="pricesView" data-v="px" hidden>
+    <header class="pagehead">
+      <div class="pageheadid">
+        <h1 data-i18n="px_title">What the models cost, over time</h1>
+        <p class="stamp" id="pxStamp"></p>
+      </div>
+      <div class="topctl">
+        <div class="chips" id="pxRange" role="group" data-i18n-aria="px_range" aria-label="Range"></div>
+      </div>
+    </header>
+
+    <section class="card wide" id="pxGlance">
+      <div class="pxkpis" id="pxKpis"></div>
+      <div class="pxwatch" id="pxWatch" hidden></div>
+      <div class="pxbasis">
+        <span class="pxk" data-i18n="px_basis">Price basis</span>
+        <div class="chips small" id="pxBasis" role="group"></div>
+        <div class="chips small" id="pxComp" role="group" data-i18n-aria="px_component" aria-label="Price of" hidden></div>
+      </div>
+      <p class="scope" id="pxBasisNote"></p>
+      <div class="cardhead pxghead">
+        <h2 data-i18n="px_g_h">What changed</h2>
+        <div class="chips small" id="pxZoom" role="group" data-i18n-aria="px_zoom" aria-label="Level of detail"></div>
+      </div>
+      <p class="scope" data-i18n="px_g_n">Each bar is how far a line&#8217;s price moved over the range. Click a row to see why.</p>
+      <div class="pxlist" id="pxList"></div>
+      <p class="pxper" data-i18n="px_g_per">per 1M tokens</p>
+    </section>
+
+    <section class="card wide" id="pxFocus"></section>
+
+    <details class="card wide pxcmp" id="pxCmp">
+      <summary><h2 data-i18n="px_cmp_h">Compare all lines on one chart</h2></summary>
+      <div class="pxctl">
+        <div class="pxgroup"><span class="pxk" data-i18n="px_scale">Scale</span>
+          <div class="chips small" id="pxScale" role="group"></div></div>
+        <div class="pxgroup"><span class="pxk" data-i18n="px_show">Show</span>
+          <div class="chips small" id="pxToggles" role="group"></div></div>
+        <p class="scope pxgrow" data-i18n="px_cmp_n">Hover a name to isolate its line.</p>
+      </div>
+      <div id="pxChart"></div>
+      <div class="pxlegend" id="pxLegend"></div>
+    </details>
+
+    <section class="card wide" id="pxModelsCard" hidden>
+      <h2 data-i18n="px_models_h">Every model, and when each price applied</h2>
+      <p class="scope" data-i18n="px_models_n">Prices are list prices per 1M tokens. Dates are Singapore time; a date-only source is read as the start of that day, good to about a day.</p>
+      <div id="pxModels"></div>
+    </section>
+
+    <section class="card wide" id="pxEventsCard">
+      <h2 data-i18n="px_events_h">What changed, newest first</h2>
+      <div id="pxEvents"></div>
+      <button type="button" class="chip pxmore" id="pxEvMore" hidden></button>
+    </section>
+
+    <section class="card wide" id="pxNotesCard">
+      <h2 data-i18n="px_notes_h">What this does not show</h2>
+      <div id="pxUntraced"></div>
+      <ul class="pxnotes" id="pxNotes"></ul>
+    </section>
+  </div>
 
   <footer>
     <p class="coverage" id="coverage"></p>

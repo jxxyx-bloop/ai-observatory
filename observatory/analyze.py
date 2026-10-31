@@ -249,6 +249,11 @@ def build_digest(events, pricing: dict) -> dict:
         # make the page right and the store still wrong, and nothing would ever
         # send anyone to `dedupe`. The digest reports what the store holds,
         # plus what is wrong with it.
+        # A gateway can wrap the model id (`llm-gateway--gpt-5.6-sol`); stored
+        # events from before the collector stripped it would otherwise group as a
+        # second model that is really the first.
+        if isinstance(ev.get("model"), str):
+            ev["model"] = price.strip_gateway(ev["model"]) or ev["model"]
         key = normalize.event_key(ev)
         if key in seen_keys:
             duplicate_turns += 1

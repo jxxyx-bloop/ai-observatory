@@ -1089,6 +1089,7 @@ function onResize() {
     // Now that its cell size is measured from #calendar's width too, a
     // resize has to repaint it the same way it repaints daily()/meter().
     $("calendar").innerHTML = calendar();
+    if (pxVisible) drawPrices();
   }, 150);
 }
 window.addEventListener("resize", onResize);
@@ -1356,6 +1357,12 @@ function initRail() {
       var el = document.getElementById(a.getAttribute("data-sec"));
       if (!el) return;
       e.preventDefault();
+      // From the Prices page, the dashboard has to be back before there is
+      // anything to scroll to.
+      if (pxVisible) {
+        try { history.replaceState({}, "", "#" + a.getAttribute("data-sec")); } catch (err) {}
+        setView("dash");
+      }
       el.scrollIntoView({behavior: "smooth", block: "start"});
       try { history.replaceState({}, "", "#" + a.getAttribute("data-sec")); } catch (err) {}
     });
@@ -1368,6 +1375,7 @@ function initRail() {
     });
   }
   light(links[0] && links[0].getAttribute("data-sec"));
+  railLight = function () { light(links[0] && links[0].getAttribute("data-sec")); };
 
   if (!("IntersectionObserver" in window)) return;
   var seen = {};
@@ -1601,6 +1609,7 @@ function initLang() {
     // to be drawn again. Guarded because initLang runs before the first draw
     // on a cold load, and drawing twice there is just wasted work.
     if (drawn) { draw(); $("calendar").innerHTML = calendar(); }
+    if (pxVisible) drawPrices();
 
     if (code) {
       I18N.LOCALES.forEach(function (l) { if (l[0] === lang) code.textContent = l[2]; });
@@ -1769,10 +1778,891 @@ function initFreshness() {
   }
 }
 
+/* ---- prices ---------------------------------------------------------------
+   A page of its own, switched in by `#prices`. trends.py has already done the
+   arithmetic and put it in the digest as `price_trends`: each lab's model
+   lines as a handful of change points (a price is constant until it changes,
+   so a line is steps, not a daily series), the events between them, and the
+   rates a vendor has said will end. This only draws it, which is the point:
+   the tests assert those numbers, and a second copy of the formula here would
+   be a second place for them to disagree.
+
+   Read in the order a person asks the questions:
+     1. AT A GLANCE   how many model lines got cheaper, dearer or stayed put,
+                      and one bar per line saying by how much. Nothing to
+                      decode, no legend.
+     2. ONE LINE      click a row and ONE line is drawn properly, each model
+        IN FOCUS      named where it took over, with the reason it moved.
+                      Seven lines on one chart cannot be labelled without
+                      collisions; one can.
+     3. THE REST      the all-lines chart, the table of every model and the
+                      full change log, tucked away until someone wants them.
+
+   The headline price is an EFFECTIVE price: the cost of 1M tokens of a typical
+   coding session, not a list price. A model has four prices and for an agentic
+   session the cache read is ~97% of the tokens, so a cache discount moves the
+   real price far more than the headline does (Opus 5 -> 5.5 is -20% on list
+   price and -46% for that workload). The "why" panel says which of the four
+   did the work. ----------------------------------------------------------- */
+var PT = D.price_trends || null;
+var PX = {zoom: "lines", basis: "ref", comp: "input", scale: "abs", range: "90",
+          markers: true, off: {}, sel: null, evAll: false};
+var pxVisible = false;
+var railLight = function () {};
+
+function pxLoad() {
+  try {
+    var saved = JSON.parse(window.localStorage.getItem("obs.px") || "null");
+    if (saved && typeof saved === "object") {
+      var ok = {zoom: ["labs", "lines", "models"], basis: ["ref", "you", "list"],
+                comp: ["input", "output", "cache_read", "cache_write"],
+                scale: ["abs", "index"], range: ["90", "180", "all"]};
+      Object.keys(ok).forEach(function (k) {
+        if (ok[k].indexOf(saved[k]) >= 0) PX[k] = saved[k];
+      });
+      if (typeof saved.markers === "boolean") PX.markers = saved.markers;
+    }
+  } catch (e) {}
+}
+function pxSave() {
+  try {
+    window.localStorage.setItem("obs.px", JSON.stringify({zoom: PX.zoom, basis: PX.basis,
+      comp: PX.comp, scale: PX.scale, range: PX.range, markers: PX.markers}));
+  } catch (e) {}
+}
+
+var PX_MINUS = "−";
+function pxPct(v) {
+  if (v == null || !isFinite(v)) return "—";
+  var r = Math.round(v * 10) / 10, a = Math.abs(r);
+  return (r < 0 ? PX_MINUS : r > 0 ? "+" : "") + (a >= 10 || a === Math.round(a) ? a.toFixed(0) : a.toFixed(1)) + "%";
+}
+function pxMoney(v) {
+  if (v == null || !isFinite(v)) return "—";
+  var a = Math.abs(v);
+  return "$" + (a >= 100 ? v.toFixed(0) : a >= 10 ? v.toFixed(1) : a >= 1 ? v.toFixed(2)
+                : a >= 0.1 ? v.toFixed(3) : v.toFixed(4));
+}
+/* `claude-opus-5-5` -> "Opus 5.5", `gpt-5.6-sol` -> "GPT-5.6 Sol". Display only:
+   nothing here is ever the key for anything. */
+function pxName(m) {
+  var s = String(m || "");
+  if (/^gpt-/i.test(s)) {
+    return s.replace(/^gpt-/i, "GPT-").replace(/-([a-z]+)$/i, function (_, w) {
+      return " " + w.charAt(0).toUpperCase() + w.slice(1);
+    });
+  }
+  return s.replace(/^claude-/, "").replace(/-(\d)-(\d)(?=$|-)/, " $1.$2")
+    .replace(/-(\d+)$/, " $1").replace(/^(\w)/, function (c) { return c.toUpperCase(); });
+}
+function pxDay(isoStr) {
+  var p = dayInfo(isoStr);
+  return String(+p.dom) + " " + p.mon + " " + isoStr.slice(0, 4);
+}
+/* A ceiling whose quarters are clean numbers, so four gridlines read as
+   $0.25 / $0.50 / $0.75 and not as fractions of whatever the maximum was. */
+function pxNice(max) {
+  var e = Math.pow(10, Math.floor(Math.log(max) / Math.LN10)), f = max / e;
+  var steps = [1, 1.2, 1.6, 2, 2.4, 3, 4, 5, 6, 8, 10];
+  for (var i = 0; i < steps.length; i++) if (f <= steps[i] + 1e-9) return steps[i] * e;
+  return 10 * e;
+}
+function pxAxis(v) {
+  if (v === 0) return "$0";
+  return "$" + (v >= 10 ? v.toFixed(0) : v >= 1 ? String(+v.toFixed(2)) : String(+v.toFixed(3)));
+}
+function pxDays(a, b) { return (parse(b) - parse(a)) / 864e5; }
+
+function pxKey() {
+  if (PX.basis === "list") return PX.comp;
+  return PX.basis === "you" && PT.mixes.yours ? "eff_you" : "eff_ref";
+}
+function pxAt(line, day, key) {
+  var v = null;
+  for (var i = 0; i < line.points.length; i++) {
+    if (line.points[i].date <= day) v = line.points[i][key]; else break;
+  }
+  return v;
+}
+function pxStart() {
+  if (PX.range === "all") {
+    var first = null;
+    PT.lines.forEach(function (l) { if (first === null || l.points[0].date < first) first = l.points[0].date; });
+    return first || PT.as_of;
+  }
+  return shift(PT.as_of, -parseInt(PX.range, 10));
+}
+/* The change over [from, to]. A line that began inside the window is measured
+   from its own first price, so a launch last month still has a number. */
+function pxChange(line, key, from, to) {
+  var base = pxAt(line, from, key);
+  if (base == null && line.points[0].date <= to) base = line.points[0][key];
+  var cur = pxAt(line, to, key);
+  return base && cur != null ? (cur / base - 1) * 100 : null;
+}
+function pxDir(pct) {
+  if (pct == null) return "none";
+  return pct < -1 ? "down" : pct > 1 ? "up" : "flat";
+}
+function pxColor(line) {
+  return "var(--px-" + line.lab + "-" + line.tier + ",var(--accent-data))";
+}
+function pxLabName(id) {
+  for (var i = 0; i < PT.labs.length; i++) if (PT.labs[i].id === id) return PT.labs[i].label;
+  return id;
+}
+function pxLineName(l) { return pxLabName(l.lab) + " " + l.label; }
+function pxLine(id) {
+  for (var i = 0; i < PT.lines.length; i++) if (PT.lines[i].id === id) return PT.lines[i];
+  return null;
+}
+function pxRangeWords() {
+  return PX.range === "all" ? t18("px_r_all", "since each line began")
+    : tf("px_r_days", "in the last %N% days", {N: PX.range});
+}
+function pxModelAt(line, day) {
+  var m = line.points[0].model;
+  for (var i = 0; i < line.points.length; i++) if (line.points[i].date <= day) m = line.points[i].model;
+  return m;
+}
+function pxMixText(m) {
+  return tf("px_mix", "%CR%% cache reads, %CW%% cache writes, %IN%% new input, %OUT%% output", {
+    CR: (m.cache_read * 100).toFixed(m.cache_read > 0.995 ? 1 : 0),
+    CW: (m.cache_write * 100).toFixed(1), IN: (m.input * 100).toFixed(1),
+    OUT: (m.output * 100).toFixed(1)});
+}
+function pxBasisWords() {
+  if (PX.basis === "list") {
+    return tf("px_b_list", "Showing the list price per 1M tokens of %C%.",
+      {C: t18("px_c_" + PX.comp, PX.comp)});
+  }
+  if (PX.basis === "you" && PT.mixes.yours) {
+    return tf("px_b_you", "Priced for your own mix of tokens (%M%).", {M: pxMixText(PT.mixes.yours)});
+  }
+  return tf("px_b_ref", "Priced for a typical coding session (%M%).", {M: pxMixText(PT.mixes.reference)});
+}
+
+/* ---- 1. at a glance ------------------------------------------------------- */
+
+/* How many lines moved which way, and the two biggest moves with the event
+   behind each. */
+function pxSummary(key, from, to) {
+  var rows = [], down = 0, up = 0, flat = 0;
+  PT.lines.forEach(function (l) {
+    var c = pxChange(l, key, from, to);
+    if (c == null) return;
+    rows.push({line: l, pct: c});
+    var d = pxDir(c);
+    if (d === "down") down++; else if (d === "up") up++; else flat++;
+  });
+  var sorted = rows.slice().sort(function (a, b) { return a.pct - b.pct; });
+  function because(r) {
+    var hit = null;
+    PT.events.some(function (e) {
+      if (e.line === r.line.id && e.date > from && e.date <= to && e.delta_pct != null && e.delta_pct !== 0) {
+        hit = e; return true;
+      }
+      return false;
+    });
+    return hit;
+  }
+  var drop = sorted.length && sorted[0].pct < -1 ? sorted[0] : null;
+  var rise = sorted.length && sorted[sorted.length - 1].pct > 1 ? sorted[sorted.length - 1] : null;
+  return {n: rows.length, down: down, up: up, flat: flat,
+          drop: drop && {line: drop.line, pct: drop.pct, event: because(drop)},
+          rise: rise && {line: rise.line, pct: rise.pct, event: because(rise)}};
+}
+
+/* The bar list: one row per model line, grouped by lab, each with how far its
+   price moved over the range and what it costs now. `maxAbs` scales the bars so
+   the biggest move fills its half and the rest read against it. */
+function pxGlance(key, from, to) {
+  var lines = PX.zoom === "labs" ? PT.lines.filter(function (l) { return l.headline; }) : PT.lines;
+  var rows = lines.map(function (l) {
+    var p = pxChange(l, key, from, to);
+    return {line: l, pct: p, dir: pxDir(p), now: pxAt(l, to, key)};
+  });
+  var groups = [];
+  PT.labs.forEach(function (lab) {
+    var mine = rows.filter(function (r) { return r.line.lab === lab.id; });
+    if (mine.length) groups.push({lab: lab, rows: mine});
+  });
+  var max = 0;
+  rows.forEach(function (r) { if (r.pct != null && Math.abs(r.pct) > max) max = Math.abs(r.pct); });
+  return {groups: groups, rows: rows, maxAbs: pxNice(Math.max(10, max))};
+}
+/* Zero sits in the middle: cheaper grows left, dearer grows right. */
+function pxBarSpan(pct, maxAbs) {
+  if (pct == null) return {left: 50, width: 0};
+  var w = Math.min(50, Math.abs(pct) / maxAbs * 50);
+  return {left: pct < 0 ? 50 - w : 50, width: Math.max(w, Math.abs(pct) > 1 ? 1.5 : 0)};
+}
+/* The line the page opens on: the biggest mover among each lab's headline lines
+   (the flagships people mean), falling back to any line. A -90% on a model that
+   costs a cent and a half is true and a poor first impression. */
+function pxBiggest(rows) {
+  function pick(list) {
+    var best = null;
+    list.forEach(function (r) {
+      if (r.pct != null && (!best || Math.abs(r.pct) > Math.abs(best.pct))) best = r;
+    });
+    return best;
+  }
+  var best = pick(rows.filter(function (r) { return r.line.headline; })) || pick(rows);
+  return best ? best.line : (rows[0] && rows[0].line);
+}
+/* A tiny step line for a row: its own shape over the range, scaled to itself
+   (the bar already says how much; this says when). */
+function pxSpark(line, key, from, to) {
+  var W = 84, H = 24, PAD = 3;
+  var carry = pxAt(line, from, key);
+  var start = carry != null ? from : line.points[0].date;
+  var pts = [{date: start, v: carry != null ? carry : line.points[0][key]}];
+  line.points.forEach(function (p) {
+    if (p.date > start && p.date <= to) pts.push({date: p.date, v: p[key]});
+  });
+  var vs = pts.map(function (p) { return p.v; });
+  var lo = Math.min.apply(null, vs), hi = Math.max.apply(null, vs);
+  var span = Math.max(1, pxDays(from, to));
+  function X(d) { return PAD + (W - PAD * 2) * Math.max(0, pxDays(from, d)) / span; }
+  function Y(v) { return hi === lo ? H / 2 : PAD + (H - PAD * 2) * (1 - (v - lo) / (hi - lo)); }
+  var path = "";
+  pts.forEach(function (p, i) {
+    path += i ? "H" + X(p.date).toFixed(1) + "V" + Y(p.v).toFixed(1)
+              : "M" + X(p.date).toFixed(1) + "," + Y(p.v).toFixed(1);
+  });
+  return {W: W, H: H, path: path + "H" + (W - PAD).toFixed(1), flat: hi === lo};
+}
+
+function pxKpis(sm) {
+  var moves = [];
+  function why(r) {
+    return r.event ? " (" + pxName(r.event.model) + ", " + pxDay(r.event.date) + ")" : "";
+  }
+  if (sm.drop) moves.push(tf("px_h_drop", "Biggest drop: %L% %P%%W%.",
+    {L: pxLineName(sm.drop.line), P: pxPct(sm.drop.pct), W: why(sm.drop)}));
+  if (sm.rise) moves.push(tf("px_h_rise", "Biggest rise: %L% %P%%W%.",
+    {L: pxLineName(sm.rise.line), P: pxPct(sm.rise.pct), W: why(sm.rise)}));
+  function tile(cls, n, key, fb) {
+    return '<div class="pxkpi ' + cls + '"><b>' + n + "</b><span>" + esc(t18(key, fb)) + "</span></div>";
+  }
+  return tile("down", sm.down, "px_k_down", "got cheaper") + tile("up", sm.up, "px_k_up", "got dearer")
+    + tile("flat", sm.flat, "px_k_flat", "unchanged")
+    + '<p class="pxkof">' + esc(tf("px_k_of", "of %N% model lines, %R%", {N: sm.n, R: pxRangeWords()})
+      + (moves.length ? " · " + moves.join(" ") : "")) + "</p>";
+}
+
+function pxWatch() {
+  var el = $("pxWatch");
+  if (!el) return;
+  if (!PT.watch.length) { el.hidden = true; el.innerHTML = ""; return; }
+  el.hidden = false;
+  el.innerHTML = PT.watch.map(function (w) {
+    var line = pxLine(w.line);
+    var when = w.days_left >= 0
+      ? tf("px_w_left", "%D% days left", {D: w.days_left})
+      : tf("px_w_over", "%D% days overdue", {D: -w.days_left});
+    return '<p><span class="pxwtag">' + esc(t18("px_w_tag", "Watch")) + "</span> "
+      + esc(tf("px_w_text",
+        "%L% is on a promotional price (%M%) the vendor has not said will last. Re-check after %D% — %W%.",
+        {L: pxLineName(line), M: pxName(w.model), D: pxDay(w.recheck_after), W: when}))
+      + "</p>";
+  }).join("");
+}
+
+function pxList(g, selId) {
+  var head = '<div class="pxlhead" aria-hidden="true"><span></span><span class="pxaxis"><i>'
+    + esc(t18("px_g_cheaper", "← cheaper")) + "</i><i>" + esc(t18("px_g_dearer", "dearer →"))
+    + '</i></span><span></span><span class="r">' + esc(t18("px_th_now", "Now"))
+    + '</span><span class="c">' + esc(t18("px_g_trend", "Trend")) + "</span></div>";
+  var key = pxKey(), from = pxStart(), to = PT.as_of;
+  return head + g.groups.map(function (grp) {
+    return '<div class="pxlab"><i class="pxsw" style="background:var(--px-' + esc(grp.lab.id)
+      + '-premium,var(--px-' + esc(grp.lab.id) + '-frontier))"></i>' + esc(grp.lab.label) + "</div>"
+      + grp.rows.map(function (r) {
+        var span = pxBarSpan(r.pct, g.maxAbs), sp = pxSpark(r.line, key, from, to);
+        var on = r.line.id === selId;
+        return '<button type="button" class="pxrow' + (on ? " sel" : "") + '" data-line="' + esc(r.line.id)
+          + '" aria-pressed="' + on + '">'
+          + '<span class="pxnm"><i class="pxsw" style="background:' + pxColor(r.line) + '"></i>' + esc(r.line.label)
+          + " <small>" + esc(t18("px_tier_" + r.line.tier, r.line.tier)) + "</small></span>"
+          + '<span class="pxbar" aria-hidden="true"><i class="pxzero"></i>'
+          + (r.pct != null ? '<b class="pxfill ' + r.dir + '" style="left:' + span.left.toFixed(2)
+            + "%;width:" + span.width.toFixed(2) + '%"></b>' : "") + "</span>"
+          + '<span class="pxpcw"><span class="pxpc ' + r.dir + '">' + esc(pxPct(r.pct)) + "</span>"
+          + (r.dir === "flat" ? "<small>" + esc(t18("px_g_nochg", "no change")) + "</small>" : "") + "</span>"
+          + '<span class="pxnowv">' + esc(pxMoney(r.now)) + "</span>"
+          + '<svg class="pxsp" viewBox="0 0 ' + sp.W + " " + sp.H + '" width="' + sp.W + '" height="' + sp.H
+          + '" aria-hidden="true"><path d="' + sp.path + '" style="stroke:' + pxColor(r.line) + '"'
+          + (sp.flat ? ' class="flatline"' : "") + "/></svg></button>";
+      }).join("");
+  }).join("");
+}
+
+/* ---- 2. one line in focus ------------------------------------------------- */
+
+/* A single line, drawn properly: the one chart where every model can be named
+   without anything colliding, because there is only one line to name. Each model
+   is written to the RIGHT of its point, over the flat stretch that follows it
+   (no step of this line passes through the text), above or below when the label
+   before it is in the way, or left off (its tooltip stays) when neither fits. */
+function pxLineChart(line, key, from, to, width) {
+  var W = Math.max(320, Math.round(width) || 640);
+  var L = 52, R = 18, TOP = 30, H = 250, PH = H - TOP - 30;
+  var span = Math.max(1, pxDays(from, to));
+  function X(d) { return L + (W - L - R) * Math.max(0, pxDays(from, d)) / span; }
+  var carry = pxAt(line, from, key);
+  var start = carry != null ? from : line.points[0].date;
+  var pts = [{date: start, v: carry != null ? carry : line.points[0][key], model: pxModelAt(line, from),
+              carried: carry != null}];
+  line.points.forEach(function (p) {
+    if (p.date > start && p.date <= to) pts.push({date: p.date, v: p[key], model: p.model, point: p});
+  });
+  var peak = pxNice(Math.max.apply(null, pts.map(function (p) { return p.v; })) || 1);
+  function Y(v) { return TOP + PH * (1 - v / peak); }
+
+  var ticks = [], seen = null;
+  [0, 0.5, 1].forEach(function (f) {
+    var label = pxAxis(peak * f);
+    if (label !== seen) ticks.push({y: Y(peak * f), label: label});
+    seen = label;
+  });
+  var months = [], d0 = parse(from);
+  var d = new Date(Date.UTC(d0.getUTCFullYear(), d0.getUTCMonth() + 1, 1));
+  while (iso(d) <= to) {
+    months.push({date: iso(d), x: X(iso(d)), jan: d.getUTCMonth() === 0});
+    d = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 1));
+  }
+  var every = Math.max(1, Math.ceil(months.length / Math.max(2, Math.floor((W - L - R) / 64))));
+
+  var path = "";
+  pts.forEach(function (p, i) {
+    path += i ? "H" + X(p.date).toFixed(1) + "V" + Y(p.v).toFixed(1)
+              : "M" + X(p.date).toFixed(1) + "," + Y(p.v).toFixed(1);
+  });
+  path += "H" + X(to).toFixed(1);
+
+  var taken = {up: -Infinity, down: -Infinity};
+  var dots = pts.map(function (p, i) {
+    var x = X(p.date), y = Y(p.v), w = pxName(p.model).length * 6.6 + 10;
+    var named = i === 0 ? true : (p.point && p.model !== pts[i - 1].model);
+    var x0 = Math.min(x + 7, W - R - w), where = null;
+    if (named) {
+      if (x0 >= taken.up) where = "up";
+      else if (x0 >= taken.down) where = "down";
+      if (where) taken[where] = x0 + w + 4;
+    }
+    return {x: x, y: y, date: p.date, model: p.model, value: p.v, carried: !!p.carried,
+            label: where ? pxName(p.model) : null, labelY: where === "down" ? y + 20 : y - 10, anchorX: x0};
+  });
+  return {W: W, H: H, L: L, R: R, TOP: TOP, PH: PH, ticks: ticks, months: months.filter(function (_, i) { return i % every === 0; }),
+          path: path, dots: dots};
+}
+
+function pxLineSvg(g, line) {
+  var s = '<svg viewBox="0 0 ' + g.W + " " + g.H + '" width="' + g.W + '" height="' + g.H
+    + '" role="img" aria-label="' + esc(t18("px_chart_aria", "Price by model line over time")) + '">';
+  g.ticks.forEach(function (tk) {
+    s += '<line class="gridline" x1="' + g.L + '" y1="' + tk.y.toFixed(1) + '" x2="' + (g.W - g.R)
+      + '" y2="' + tk.y.toFixed(1) + '"/><text x="' + (g.L - 8) + '" y="' + (tk.y + 4).toFixed(1)
+      + '" text-anchor="end" class="axis">' + esc(tk.label) + "</text>";
+  });
+  g.months.forEach(function (m) {
+    var p = dayInfo(m.date);
+    s += '<text x="' + m.x.toFixed(1) + '" y="' + (g.H - 8) + '" text-anchor="middle" class="axis">'
+      + esc(p.mon + (m.jan ? " " + m.date.slice(0, 4) : "")) + "</text>";
+  });
+  s += '<path class="pxmain" d="' + g.path + '" style="stroke:' + pxColor(line) + '"/>';
+  g.dots.forEach(function (d) {
+    if (!d.carried) {
+      s += '<circle class="pxdot" cx="' + d.x.toFixed(1) + '" cy="' + d.y.toFixed(1) + '" r="4.5" style="fill:'
+        + pxColor(line) + '" data-tt="' + esc(pxName(d.model) + " · " + pxDay(d.date) + " · " + pxMoney(d.value)) + '"/>';
+    }
+    if (d.label) {
+      s += '<text class="pxmname" x="' + d.anchorX.toFixed(1) + '" y="' + d.labelY.toFixed(1) + '">' + esc(d.label) + "</text>";
+    }
+  });
+  return s + "</svg>";
+}
+
+/* Why a price moved. The page's headline number is for a typical session, and a
+   session is ~97% cache reads, so a change to cache reads can be most of what you
+   feel even when it is the smallest line on the vendor's price list. Each of the
+   four prices gets its old and new value and its share of the effect on the
+   displayed number (price change x how many tokens of that kind a session has).
+   `share` is null on the list-price basis, where there is nothing to weigh. */
+function pxExplain(event, key) {
+  if (!event) return null;
+  var mix = key === "eff_you" && PT.mixes.yours ? PT.mixes.yours : PT.mixes.reference;
+  var by = {};
+  (event.changed || []).forEach(function (c) { by[c.component] = c; });
+  var effect = {}, total = 0;
+  PT.components.forEach(function (c) {
+    effect[c] = by[c] ? mix[c] * (by[c].to - by[c].from) : 0;
+    total += effect[c];
+  });
+  var weighs = key === "eff_ref" || key === "eff_you";
+  var rows = PT.components.map(function (c) {
+    var ch = by[c];
+    return {component: c, changed: !!ch, from: ch ? ch.from : null, to: ch ? ch.to : null,
+            pct: ch && ch.from ? (ch.to / ch.from - 1) * 100 : null,
+            share: weighs && ch && total ? Math.round(effect[c] / total * 100) : null};
+  });
+  var lead = null;
+  if (weighs) {
+    rows.forEach(function (r) { if (r.share != null && (!lead || r.share > lead.share)) lead = r; });
+  }
+  return {rows: rows, lead: lead && lead.share >= 50 ? lead : null};
+}
+function pxEventsFor(line, from, to) {
+  return PT.events.filter(function (e) {
+    return e.line === line.id && e.date > from && e.date <= to && e.kind !== "launch";
+  });
+}
+
+function pxEventText(e) {
+  var line = pxLine(e.line), who = pxLabName(e.lab) + " " + (line ? line.label : e.line);
+  var pct = e.delta_pct == null ? "—" : pxPct(e.delta_pct);
+  var parts = (e.changed || []).map(function (c) {
+    return t18("px_c_" + c.component, c.component).toLowerCase() + " " + pxMoney(c.from) + " → " + pxMoney(c.to);
+  }).join(", ");
+  if (e.kind === "launch") {
+    return tf("px_e_launch", "%W%: %M% launched at %P% for a typical session",
+      {W: who, M: pxName(e.model), P: pxMoney(line ? pxAt(line, e.date, "eff_ref") : null)});
+  }
+  if (e.kind === "succession") {
+    return tf("px_e_succ", "%W%: %M% replaced %F% — %P% for a typical session (%C%)",
+      {W: who, M: pxName(e.model), F: pxName(e.from_model), P: pct,
+       C: parts || t18("px_e_same", "same prices")});
+  }
+  return tf(e.kind === "cut" ? "px_e_cut" : "px_e_rise", e.kind === "cut"
+    ? "%W%: %M% got cheaper — %P% for a typical session (%C%)"
+    : "%W%: %M% got dearer — %P% for a typical session (%C%)",
+    {W: who, M: pxName(e.model), P: pct, C: parts});
+}
+function pxEventItems(list) {
+  return '<ul class="pxevents">' + list.map(function (e) {
+    var d = e.delta_pct == null ? "none" : pxDir(e.delta_pct);
+    return '<li class="px' + d + '"><span class="pxevd">' + esc(pxDay(e.date)) + "</span> "
+      + esc(pxEventText(e)) + "</li>";
+  }).join("") + "</ul>";
+}
+
+/* The focus chart is drawn at the width of the column it sits in, which is the
+   page's layout talking (it shares a row with the "why" panel above 900px and
+   stacks under it below that). Guessing that from the CSS would be a second copy
+   of a rule, so it is measured: draw, read the real column, and draw again if
+   they differ. */
+var pxFocusW = 0;
+function pxFitFocus(line, key, from, to) {
+  var col = document.querySelector("#pxFocus .pxfchart");
+  if (!col || !col.clientWidth || Math.abs(col.clientWidth - pxFocusW) < 8) return;
+  pxFocusW = col.clientWidth;
+  col.innerHTML = pxLineSvg(pxLineChart(line, key, from, to, pxFocusW), line);
+}
+
+function pxFocus(line, key, from, to) {
+  var pct = pxChange(line, key, from, to), dir = pxDir(pct), now = pxAt(line, to, key);
+  var g = pxLineChart(line, key, from, to, pxFocusW || 640);
+  var evs = pxEventsFor(line, from, to);
+  var last = null;
+  evs.some(function (e) { if (e.changed && e.changed.length) { last = e; return true; } return false; });
+  var why = last ? pxExplain(last, key) : null;
+
+  var s = '<div class="pxfhead"><div><p class="pxfk">' + esc(t18("px_selected", "Selected")) + "</p>"
+    + '<h2><i class="pxsw" style="background:' + pxColor(line) + '"></i>' + esc(pxLineName(line))
+    + ' <span class="tag">' + esc(t18("px_tier_" + line.tier, line.tier)) + "</span></h2>"
+    + '<p class="scope">' + esc(pxName(line.models[line.models.length - 1])) + "</p></div>"
+    + '<div class="pxbig"><b>' + esc(pxMoney(now)) + '</b><span class="pxpc ' + dir + '">'
+    + (pct == null ? "—" : (dir === "down" ? "▼" : dir === "up" ? "▲" : "●") + " " + esc(pxPct(pct)))
+    + "</span><small>" + esc(t18("px_g_per", "per 1M tokens") + " · " + pxRangeWords()) + "</small></div></div>";
+
+  s += '<div class="pxfbody"><div class="pxfchart">' + pxLineSvg(g, line) + "</div>";
+  s += '<div class="pxwhy">';
+  if (why && last) {
+    s += "<h3>" + esc(tf("px_d_moved", "What moved on %D%", {D: pxDay(last.date)})) + "</h3>"
+      + '<p class="scope">' + esc(pxName(last.from_model || last.model) + " → " + pxName(last.model)) + "</p><ul>";
+    why.rows.forEach(function (r) {
+      var lead = why.lead && why.lead.component === r.component;
+      s += '<li class="' + (r.changed ? "moved" : "") + (lead ? " lead" : "") + '"><span class="pxcn">'
+        + esc(t18("px_c_" + r.component, r.component)) + "</span>";
+      if (r.changed) {
+        s += '<span class="pxcv">' + esc(pxMoney(r.from) + " → " + pxMoney(r.to)) + ' <em class="pxpc '
+          + pxDir(r.pct) + '">' + esc(pxPct(r.pct)) + "</em></span>";
+        if (r.share != null) {
+          s += '<span class="pxshare"><i style="width:' + Math.max(2, Math.abs(r.share)) + '%"></i></span>'
+            + '<span class="pxsh">' + esc(tf("px_d_share", "%S% of the change", {S: r.share})) + "</span>";
+        }
+      } else {
+        s += '<span class="pxcv quiet">' + esc(t18("px_g_nochg", "no change")) + "</span>";
+      }
+      s += "</li>";
+    });
+    s += "</ul>";
+    if (why.lead) {
+      s += '<p class="pxlead">' + esc(tf("px_d_why",
+        "%C% accounts for %S%% of the change, because most tokens in a session are of that kind.",
+        {C: t18("px_c_" + why.lead.component, why.lead.component), S: why.lead.share})) + "</p>";
+    }
+  } else {
+    s += "<h3>" + esc(t18("px_d_nomove", "No price change in this range.")) + "</h3><ul>";
+    var cur = line.points[line.points.length - 1];
+    PT.components.forEach(function (c) {
+      s += '<li><span class="pxcn">' + esc(t18("px_c_" + c, c)) + '</span><span class="pxcv">'
+        + esc(pxMoney(cur[c])) + "</span></li>";
+    });
+    s += "</ul>";
+  }
+  s += "</div></div>";
+  if (evs.length) {
+    s += '<h3 class="pxhist">' + esc(t18("px_d_hist", "Every change to this line")) + "</h3>" + pxEventItems(evs);
+  }
+  return s;
+}
+
+/* ---- 3. everything else, on demand ---------------------------------------- */
+
+/* Steps, because a price holds until it changes. Lines that end at the same
+   price (Opus and the GPT flagship both sat at $5; Sonnet and Terra at $2) would
+   print their names on top of each other, so they share ONE label
+   ("Opus · GPT flagship"); the rest are nudged until no two are closer than
+   a line of text. No model names here: at seven lines they cannot all fit, and
+   the focus chart above is where they are. */
+function pxAllChart(lines, key, from, to, width) {
+  var W = Math.max(560, Math.round(width) || 960);
+  var L = 56, R = 168, TOP = 16, H = 320, PH = H - TOP - 28;
+  var span = Math.max(1, pxDays(from, to)), idx = PX.scale === "index";
+  function X(d) { return L + (W - L - R) * Math.max(0, pxDays(from, d)) / span; }
+  var series = [];
+  lines.forEach(function (l) {
+    if (PX.off[l.id]) return;
+    var carry = pxAt(l, from, key);
+    var base = carry != null ? carry : l.points[0][key];
+    if (base == null) return;
+    var start = carry != null ? from : l.points[0].date;
+    var pts = [{date: start, v: base, model: pxModelAt(l, from), carried: carry != null}];
+    l.points.forEach(function (p) {
+      if (p.date > start && p.date <= to) pts.push({date: p.date, v: p[key], model: p.model, point: p});
+    });
+    pts.forEach(function (p) { p.y = idx ? p.v / base * 100 : p.v; });
+    series.push({line: l, pts: pts});
+  });
+  if (!series.length) return {empty: true};
+  var peak = 0;
+  series.forEach(function (s) { s.pts.forEach(function (p) { if (p.y > peak) peak = p.y; }); });
+  peak = pxNice(peak || 1);
+  function Y(v) { return TOP + PH * (1 - v / peak); }
+
+  var ticks = [], seen = null;
+  [0, 0.25, 0.5, 0.75, 1].forEach(function (f) {
+    var label = idx ? String(+(peak * f).toFixed(0)) : pxAxis(peak * f);
+    if (label === seen) return;
+    seen = label;
+    ticks.push({y: Y(peak * f), label: label});
+  });
+  var months = [], d0 = parse(from);
+  var d = new Date(Date.UTC(d0.getUTCFullYear(), d0.getUTCMonth() + 1, 1));
+  while (iso(d) <= to) {
+    months.push({date: iso(d), x: X(iso(d)), jan: d.getUTCMonth() === 0});
+    d = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 1));
+  }
+  var every = Math.max(1, Math.ceil(months.length / Math.max(2, Math.floor((W - L - R) / 70))));
+
+  var out = series.map(function (s) {
+    var path = "";
+    s.pts.forEach(function (p, i) {
+      path += i ? "H" + X(p.date).toFixed(1) + "V" + Y(p.y).toFixed(1)
+                : "M" + X(p.date).toFixed(1) + "," + Y(p.y).toFixed(1);
+    });
+    path += "H" + X(to).toFixed(1);
+    return {line: s.line, path: path, pts: s.pts, last: s.pts[s.pts.length - 1].y, endY: Y(s.pts[s.pts.length - 1].y)};
+  });
+  var byY = out.slice().sort(function (a, b) { return a.endY - b.endY; });
+  var labels = [];
+  byY.forEach(function (o) {
+    var prev = labels[labels.length - 1];
+    if (prev && Math.abs(o.endY - prev.y) < 6) { prev.names.push(o.line.label); prev.ids.push(o.line.id); }
+    else labels.push({y: o.endY, names: [o.line.label], ids: [o.line.id], line: o.line});
+  });
+  for (var i = 1; i < labels.length; i++) if (labels[i].y - labels[i - 1].y < 15) labels[i].y = labels[i - 1].y + 15;
+  return {empty: false, W: W, H: H, L: L, R: R, TOP: TOP, PH: PH, ticks: ticks, X: X, Y: Y, idx: idx,
+          months: months.filter(function (_, i) { return i % every === 0; }), series: out, labels: labels};
+}
+
+function pxAllSvg(g, X, Y) {
+  var s = '<svg viewBox="0 0 ' + g.W + " " + g.H + '" role="img" width="' + g.W + '" height="' + g.H
+    + '" preserveAspectRatio="xMinYMin meet" aria-label="' + esc(t18("px_chart_aria", "Price by model line over time")) + '">';
+  g.ticks.forEach(function (tk) {
+    s += '<line class="gridline" x1="' + g.L + '" y1="' + tk.y.toFixed(1) + '" x2="' + (g.W - g.R)
+      + '" y2="' + tk.y.toFixed(1) + '"/><text x="' + (g.L - 8) + '" y="' + (tk.y + 4).toFixed(1)
+      + '" text-anchor="end" class="axis">' + esc(tk.label) + "</text>";
+  });
+  g.months.forEach(function (m) {
+    var p = dayInfo(m.date);
+    s += '<line class="gridline" x1="' + m.x.toFixed(1) + '" y1="' + (g.TOP + g.PH) + '" x2="' + m.x.toFixed(1)
+      + '" y2="' + (g.TOP + g.PH + 4) + '"/><text x="' + m.x.toFixed(1) + '" y="' + (g.H - 8)
+      + '" text-anchor="middle" class="axis">' + esc(p.mon + (m.jan ? " " + m.date.slice(0, 4) : "")) + "</text>";
+  });
+  g.series.forEach(function (o) {
+    var l = o.line, color = pxColor(l);
+    s += '<g class="pxs" data-line="' + esc(l.id) + '">'
+      + '<path class="pxl pxt-' + esc(l.tier) + '" d="' + o.path + '" style="stroke:' + color + '"/>'
+      + '<path class="pxhit" d="' + o.path + '" data-tt="' + esc(pxLineName(l) + " — "
+      + (g.idx ? o.last.toFixed(0) + " (" + t18("px_sc_idx", "Index").toLowerCase() + ")" : pxMoney(o.last))) + '"/>';
+    if (PX.markers) {
+      o.pts.forEach(function (p, i) {
+        if (!i && p.carried) return;
+        var tip = pxName(p.model) + " · " + pxDay(p.date) + " · " + (g.idx ? p.y.toFixed(0) : pxMoney(p.y));
+        var ev = null;
+        if (p.point) PT.events.some(function (e) { if (e.line === l.id && e.date === p.date) { ev = e; return true; } return false; });
+        if (ev && ev.delta_pct != null) tip += " (" + pxPct(ev.delta_pct) + ")";
+        s += '<circle class="pxdot" cx="' + X(p.date).toFixed(1) + '" cy="' + Y(p.y).toFixed(1)
+          + '" r="3.4" style="fill:' + color + '" data-tt="' + esc(tip) + '"/>';
+      });
+    }
+    s += "</g>";
+  });
+  g.labels.forEach(function (lb) {
+    s += '<text class="pxend" data-ids="' + esc(lb.ids.join(",")) + '" x="' + (g.W - g.R + 8) + '" y="'
+      + (lb.y + 4).toFixed(1) + '" style="fill:' + pxColor(lb.line) + '">' + esc(lb.names.join(" · ")) + "</text>";
+  });
+  return s + "</svg>";
+}
+
+/* Hovering a name, or a line, dims the others. Classes on the existing nodes
+   rather than a redraw: redrawing the legend under the pointer would fire
+   mouseout the instant it was replaced. */
+function pxIsolate(id) {
+  var host = $("pxChart");
+  if (!host) return;
+  [].forEach.call(host.querySelectorAll("[data-line],[data-ids]"), function (el) {
+    var ids = (el.getAttribute("data-line") || el.getAttribute("data-ids") || "").split(",");
+    el.classList.toggle("dim", !!id && ids.indexOf(id) < 0);
+  });
+}
+
+function drawCompare() {
+  var key = pxKey(), from = pxStart(), to = PT.as_of;
+  var lines = PX.zoom === "labs" ? PT.lines.filter(function (l) { return l.headline; }) : PT.lines;
+  var host = $("pxChart");
+  var g = pxAllChart(lines, key, from, to, host ? host.clientWidth : 0);
+  if (host) {
+    host.innerHTML = g.empty ? '<p class="empty">' + esc(t18("px_none", "Nothing to draw with these choices.")) + "</p>"
+                             : pxAllSvg(g, g.X, g.Y);
+  }
+  if ($("pxLegend")) {
+    $("pxLegend").innerHTML = PX.zoom === "labs" ? "" : lines.map(function (l) {
+      return '<button type="button" class="pxleg" data-line="' + esc(l.id) + '" aria-pressed="' + !PX.off[l.id] + '">'
+        + '<i class="pxsw" style="background:' + pxColor(l) + '"></i>' + esc(pxLineName(l)) + "</button>";
+    }).join("");
+  }
+}
+
+/* The table of every model and the window each price applied for. */
+function pxModels() {
+  var eff = PX.basis === "you" && PT.mixes.yours ? "eff_you" : "eff_ref", rows = "";
+  PT.lines.forEach(function (l) {
+    l.points.forEach(function (p, i) {
+      var next = l.points[i + 1];
+      rows += "<tr><td>" + esc(pxLineName(l)) + "</td><td><strong>" + esc(pxName(p.model))
+        + "</strong></td><td>" + esc(pxDay(p.date)) + "</td><td>"
+        + (next ? esc(pxDay(next.date)) : esc(t18("px_now", "now"))) + "</td>"
+        + '<td class="n">' + esc(pxMoney(p.input)) + '</td><td class="n">' + esc(pxMoney(p.output))
+        + '</td><td class="n">' + esc(pxMoney(p.cache_read)) + '</td><td class="n">' + esc(pxMoney(p.cache_write))
+        + '</td><td class="n"><strong>' + esc(pxMoney(p[eff])) + "</strong></td></tr>";
+    });
+  });
+  var head = [t18("px_th_line2", "Line"), t18("px_th_model2", "Model"), t18("px_th_from", "From"),
+              t18("px_th_until", "Until"), t18("px_c_input", "Input"), t18("px_c_output", "Output"),
+              t18("px_c_cache_read", "Cache read"), t18("px_c_cache_write", "Cache write"),
+              PX.basis === "you" && PT.mixes.yours ? t18("px_th_eff_you", "Your mix") : t18("px_th_eff", "Typical session")];
+  return '<div class="scroll"><table class="pxtable"><thead><tr>'
+    + head.map(function (h) { return "<th>" + esc(h) + "</th>"; }).join("")
+    + "</tr></thead><tbody>" + rows + "</tbody></table></div>";
+}
+
+function pxNotes() {
+  var notes = [
+    tf("px_n_mix", "A typical session is a measured mix: %M%. Cache reads are nearly all of it, so a change in cache price moves the figure far more than a change in headline input or output price. Use “List price” to see each price alone.",
+       {M: pxMixText(PT.mixes.reference)}),
+    t18("px_n_list", "These are the vendors’ list prices. A gateway or reseller can bill differently, and apply a vendor’s change at its own time."),
+    t18("px_n_dates", "Vendors publish a date, not an hour. A date-only change is shown from the start of that day in Singapore time, so it can be off by about a day."),
+    t18("px_n_tok", "A price per token is not a price per task: Anthropic says Fable 5 and Sonnet 5 turn the same text into about 30% more tokens than earlier models, which is not reflected here."),
+    t18("px_n_tiers", "Long-prompt surcharges and Fast mode are not modelled; a transcript does not record them.")
+  ];
+  return notes.map(function (n) { return "<li>" + esc(n) + "</li>"; }).join("");
+}
+function pxUntraced() {
+  if (!PT.untraced.length) return "";
+  var names = PT.untraced.map(function (u) { return u.vendor + " (" + u.models + ")"; }).join(", ");
+  return '<p class="pxuntraced"><strong>' + esc(t18("px_u_h", "Not traced yet")) + "</strong> "
+    + esc(tf("px_u_text", "We have today’s prices for %V% but not their history, so no trend is drawn for them rather than a flat line that would read as “never changed”. Adding a line to pricing.json is how one joins this page.",
+             {V: names})) + "</p>";
+}
+
+/* ---- controls ------------------------------------------------------------- */
+function pxChips(id, items, current, attr) {
+  var el = $(id);
+  if (!el) return;
+  el.innerHTML = items.map(function (it) {
+    return '<button type="button" ' + attr + '="' + esc(it[0]) + '" aria-pressed="' + (it[0] === current)
+      + '"' + (it[2] ? " disabled" : "") + ">" + esc(it[1]) + "</button>";
+  }).join("");
+}
+function pxChipsBool(id, items) {
+  var el = $(id);
+  if (!el) return;
+  el.innerHTML = items.map(function (it) {
+    return '<button type="button" data-flag="' + it[0] + '" aria-pressed="' + it[2] + '">' + esc(it[1]) + "</button>";
+  }).join("");
+}
+
+function drawPrices() {
+  if (!PT || !PT.lines || !PT.lines.length) return;
+  if (PX.basis === "you" && !PT.mixes.yours) PX.basis = "ref";
+  var key = pxKey(), from = pxStart(), to = PT.as_of;
+  var sm = pxSummary(key, from, to), g = pxGlance(key, from, to);
+
+  if ($("pxStamp")) {
+    $("pxStamp").textContent = tf("px_stamp",
+      "Prices as of %D% · history traced for %L% · list prices, not an invoice",
+      {D: PT.as_of, L: PT.labs.map(function (l) { return l.label; }).join(" + ")});
+  }
+  pxChips("pxRange", [["90", t18("px_r90", "90 days")], ["180", t18("px_r180", "180 days")],
+                      ["all", t18("px_rall", "All")]], PX.range, "data-range");
+
+  // 1. at a glance
+  $("pxKpis").innerHTML = pxKpis(sm);
+  pxWatch();
+  pxChips("pxBasis", [["ref", t18("px_bs_ref", "Typical session")],
+                      ["you", t18("px_bs_you", "Your mix"), !PT.mixes.yours],
+                      ["list", t18("px_bs_list", "List price")]], PX.basis, "data-basis");
+  pxChips("pxComp", [["input", t18("px_c_input", "Input")], ["output", t18("px_c_output", "Output")],
+                     ["cache_read", t18("px_c_cache_read", "Cache read")],
+                     ["cache_write", t18("px_c_cache_write", "Cache write")]], PX.comp, "data-comp");
+  $("pxComp").hidden = PX.basis !== "list";
+  $("pxBasisNote").textContent = pxBasisWords();
+  pxChips("pxZoom", [["labs", t18("px_z_labs", "Labs")], ["lines", t18("px_z_lines", "Lines")],
+                     ["models", t18("px_z_models", "Models")]], PX.zoom, "data-zoom");
+
+  // 2. one line in focus: the one asked for, else the biggest mover
+  var chosen = null;
+  g.rows.forEach(function (r) { if (r.line.id === PX.sel) chosen = r.line; });
+  var focus = chosen || pxBiggest(g.rows);
+  $("pxList").innerHTML = pxList(g, focus ? focus.id : null);
+  $("pxFocus").hidden = !focus;
+  if (focus) { $("pxFocus").innerHTML = pxFocus(focus, key, from, to); pxFitFocus(focus, key, from, to); }
+
+  // 3. the rest
+  pxChips("pxScale", [["abs", t18("px_sc_abs", "Dollars")], ["index", t18("px_sc_idx", "Index")]], PX.scale, "data-scale");
+  pxChipsBool("pxToggles", [["markers", t18("px_t_markers", "Change markers"), PX.markers]]);
+  drawCompare();
+  $("pxModelsCard").hidden = PX.zoom !== "models";
+  if (PX.zoom === "models") $("pxModels").innerHTML = pxModels();
+  var shown = PX.evAll ? PT.events : PT.events.slice(0, 8);
+  $("pxEvents").innerHTML = pxEventItems(shown);
+  var more = $("pxEvMore");
+  if (more) {
+    more.hidden = PT.events.length <= 8;
+    more.textContent = PX.evAll ? t18("px_ev_less", "Show fewer") : tf("px_ev_more", "Show all %N%", {N: PT.events.length});
+  }
+  $("pxUntraced").innerHTML = pxUntraced();
+  $("pxNotes").innerHTML = pxNotes();
+}
+
+/* ---- the page switch ------------------------------------------------------ */
+function setView(name) {
+  var main = document.querySelector("main.wrap");
+  pxVisible = name === "prices" && !!PT;
+  if (main) {
+    main.classList.toggle("on-prices", pxVisible);
+    // Tag what is the dashboard once, so the switch is a class and not a pass
+    // over elements that each manage their own `hidden`.
+    if (!main.getAttribute("data-tagged")) {
+      main.setAttribute("data-tagged", "1");
+      [].forEach.call(main.children, function (el) {
+        var tag = (el.tagName || "").toLowerCase();
+        if (tag !== "footer" && el.id !== "pricesView" && el.id !== "fresh") el.setAttribute("data-v", "dash");
+      });
+    }
+  }
+  var pv = $("pricesView");
+  if (pv) pv.hidden = !pxVisible;
+  var links = document.querySelectorAll("#railnav a");
+  [].forEach.call(links, function (a) {
+    if (a.getAttribute("data-view") === "prices") {
+      if (pxVisible) a.setAttribute("aria-current", "true"); else a.removeAttribute("aria-current");
+    } else if (pxVisible) a.removeAttribute("aria-current");
+  });
+  if (pxVisible) {
+    drawPrices();
+    try { window.scrollTo(0, 0); } catch (e) {}
+  } else {
+    railLight();
+  }
+}
+
+function initPrices() {
+  if (!PT || !PT.lines || !PT.lines.length) return;   // an older digest: no link, no page
+  pxLoad();
+  var rail = $("railPrices");
+  if (rail) rail.hidden = false;
+
+  function on(id, attr, fn) {
+    var el = $(id);
+    if (!el) return;
+    el.addEventListener("click", function (e) {
+      var b = ancestor(e.target, "button[" + attr + "]");
+      if (!b || b.disabled) return;
+      fn(b.getAttribute(attr));
+      pxSave();
+      drawPrices();
+    });
+  }
+  on("pxRange", "data-range", function (v) { PX.range = v; });
+  on("pxZoom", "data-zoom", function (v) { PX.zoom = v; });
+  on("pxBasis", "data-basis", function (v) { PX.basis = v; });
+  on("pxComp", "data-comp", function (v) { PX.comp = v; });
+  on("pxScale", "data-scale", function (v) { PX.scale = v; });
+  on("pxToggles", "data-flag", function (v) { PX[v] = !PX[v]; });
+  on("pxLegend", "data-line", function (v) { PX.off[v] = !PX.off[v]; });
+  // Choosing a row is not a setting worth remembering; it is what you are looking at.
+  if ($("pxList")) $("pxList").addEventListener("click", function (e) {
+    var b = ancestor(e.target, "button[data-line]");
+    if (!b) return;
+    PX.sel = b.getAttribute("data-line");
+    drawPrices();
+  });
+  if ($("pxEvMore")) $("pxEvMore").addEventListener("click", function () {
+    PX.evAll = !PX.evAll;
+    drawPrices();
+  });
+  // The all-lines chart is measured, so it is drawn again once the section is
+  // actually open and has a width.
+  if ($("pxCmp")) $("pxCmp").addEventListener("toggle", function () { if (pxVisible) drawCompare(); });
+  ["pxChart", "pxLegend"].forEach(function (id) {
+    var el = $(id);
+    if (!el) return;
+    function hover(e) {
+      var n = ancestor(e.target, "[data-line]");
+      pxIsolate(n ? n.getAttribute("data-line") : null);
+    }
+    el.addEventListener("mouseover", hover);
+    el.addEventListener("focusin", hover);
+    el.addEventListener("mouseout", function () { pxIsolate(null); });
+    el.addEventListener("focusout", function () { pxIsolate(null); });
+  });
+
+  function route() { setView(window.location.hash === "#prices" ? "prices" : "dash"); }
+  window.addEventListener("hashchange", route);
+  route();
+}
+
 initTheme();
 init();
 initLang();
 initCalendar();
 initRail();
 initFreshness();
+initPrices();
 })();

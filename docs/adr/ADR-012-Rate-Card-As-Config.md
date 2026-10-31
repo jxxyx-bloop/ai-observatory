@@ -95,6 +95,21 @@ not a mirror.
 4. **`price_epoch` is bumped by hand.** Deriving it from file contents would
    make every whitespace change rewrite history.
 
+## Addendum — 2026-10-31: prices are dated
+
+Trade-off 1 ("rates will still go stale") understated the problem. A stale rate is
+a *wrong number*; a rate that was **right then and is wrong now** is a wrong
+number about the past, which no amount of re-verifying fixes — overwriting it
+re-prices every earlier month. `pricing.json` therefore carries `history`: the
+superseded rates, each with the window it applied for, every boundary in
+Singapore time (`+08:00`) so there is one benchmark for the whole card. `cost_of`
+prices each turn at its own timestamp. A rate with a documented end and no
+published successor keeps pricing and is flagged by `doctor` (`recheck_after`)
+rather than guessed. See [Cost-Estimation](../specs/Cost-Estimation.md#dated-rates).
+
+This does not reopen "fetch live prices at runtime", which stays rejected: the
+card is still data a person verifies and commits.
+
 ## See also
 
 - [Cost-Estimation](../specs/Cost-Estimation.md)

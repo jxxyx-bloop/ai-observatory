@@ -147,6 +147,18 @@ turns landing in it. The error is bounded and small, and correcting a window is
 a one-line PR — but a number here can be stale, and the footer's
 `_verified_on` is the honest guide to how much to trust it.
 
+### Dated rates are hand-maintained, good to about a day, and list price
+
+A price change is recorded in `pricing.json` `history` from the vendor's release
+notes or pricing page. Those give a date, not an hour or a timezone, so a change
+is dated 00:00 Singapore time on that date and can be off by about a day. Only
+OpenAI and Anthropic were traced back through their changes as of 2026-10-31
+(`_verified_by_vendor`); every other vendor has a current rate and no history, so
+a price change that happened inside your window is not reflected for them. The
+card is the vendor's *list* price: an LLM gateway or reseller can bill
+differently, and apply a vendor's change at its own time. The vendor's long-prompt
+tiers and Fast mode are not modelled — a transcript does not record them.
+
 ### The plan model is single-plan
 
 `settings.plan` holds one id. The multi-vendor pragmatist — three subscriptions,

@@ -511,3 +511,173 @@ code{font:12.5px ui-monospace,SFMono-Regular,Menlo,monospace;background:var(--tr
   .rail,.filterpanel,.fresh{display:none}
   .shell{grid-template-columns:1fr}
 }
+
+/* ---- Prices page -----------------------------------------------------------
+   Switched in by `#prices`; the class on <main> hides every dashboard panel
+   without touching the ones that manage their own `hidden`.
+
+   Three parts, in the order the questions come: a glance (three counts, one
+   bar per line), one line in focus, then everything else on demand. Direction
+   is colour AND shape AND words (a bar left or right of zero, a sign, "no
+   change"), so no reader depends on telling green from orange. One hue per
+   lab, one weight and dash per tier, for the all-lines chart. */
+:root{
+  --px-anthropic-frontier:#7a2e12; --px-anthropic-premium:#c2410c;
+  --px-anthropic-workhorse:#e0733a; --px-anthropic-light:#d98a5e;
+  --px-openai-frontier:#0b5f58; --px-openai-workhorse:#1f9d8f; --px-openai-light:#5fb8ac;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --px-anthropic-frontier:#ffd6c4; --px-anthropic-premium:#ff8f63;
+    --px-anthropic-workhorse:#e8743f; --px-anthropic-light:#b35b34;
+    --px-openai-frontier:#9fe3da; --px-openai-workhorse:#3fc1b1; --px-openai-light:#2a8f83;
+  }
+}
+:root[data-theme="dark"]{
+  --px-anthropic-frontier:#ffd6c4; --px-anthropic-premium:#ff8f63;
+  --px-anthropic-workhorse:#e8743f; --px-anthropic-light:#b35b34;
+  --px-openai-frontier:#9fe3da; --px-openai-workhorse:#3fc1b1; --px-openai-light:#2a8f83;
+}
+.wrap.on-prices>[data-v="dash"]{display:none!important}
+#pricesView[hidden]{display:none}
+#pricesView>*+*{margin-top:18px}
+.chips button[disabled]{opacity:.4;cursor:not-allowed}
+.pxk{font-size:var(--t-cap-lg);font-weight:var(--cap-weight);color:var(--muted);
+  text-transform:var(--cap-case);letter-spacing:var(--cap-track-lg)}
+.pxsw{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:8px;vertical-align:-1px;flex:none}
+
+/* 1. at a glance */
+.pxkpis{display:flex;align-items:stretch;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+.pxkpi{display:flex;flex-direction:column;justify-content:center;gap:2px;min-width:112px;
+  padding:10px 18px 10px 16px;border:1px solid var(--line);border-left:4px solid var(--muted);
+  border-radius:var(--r-data)}
+.pxkpi b{font-size:34px;font-weight:800;line-height:1;font-variant-numeric:tabular-nums}
+.pxkpi span{font-size:12px;color:var(--muted)}
+.pxkpi.down{border-left-color:var(--ok)} .pxkpi.down b{color:var(--ok)}
+.pxkpi.up{border-left-color:var(--accent-data)} .pxkpi.up b{color:var(--accent-data)}
+.pxkof{flex:1 1 260px;align-self:center;margin:0;font-size:12.5px;line-height:1.5;color:var(--muted)}
+.pxwatch{margin:0 0 12px}
+.pxwatch[hidden]{display:none}
+.pxwatch p{margin:0 0 8px;font-size:12.5px;line-height:1.45;padding:8px 12px;
+  border:1px solid var(--line);border-left:3px solid var(--med);
+  border-radius:var(--r-data);background:var(--bg-deep)}
+.pxwtag{font-weight:700;text-transform:uppercase;font-size:10.5px;letter-spacing:.06em;margin-right:6px}
+.pxbasis{display:flex;align-items:center;gap:8px 12px;flex-wrap:wrap}
+.chips[hidden]{display:none}
+.pxbasis+.scope{margin-top:8px}
+.pxghead{margin-top:18px}
+.pxlist{margin-top:6px}
+.pxlhead,.pxrow{display:grid;align-items:center;gap:0 14px;
+  grid-template-columns:minmax(150px,210px) minmax(150px,1fr) 84px 78px 88px}
+.pxlhead{font-size:10.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);padding:0 8px 6px}
+.pxlhead .r{text-align:right} .pxlhead .c{text-align:center}
+.pxaxis{display:flex;justify-content:space-between}
+.pxaxis i{font-style:normal}
+.pxlab{margin:12px 0 2px;padding:0 8px;font-size:11px;font-weight:700;letter-spacing:.08em;
+  text-transform:uppercase;color:var(--ink)}
+.pxrow{appearance:none;width:100%;text-align:left;font:inherit;color:var(--ink);background:transparent;
+  border:0;border-top:1px solid var(--line);padding:9px 8px;cursor:pointer;border-radius:0}
+.pxrow:hover{background:var(--bg-deep)}
+.pxrow.sel{background:var(--bg-deep);box-shadow:inset 3px 0 0 var(--navy)}
+.pxrow:focus-visible{outline:2px solid var(--navy);outline-offset:-2px}
+.pxnm{font-size:14px;font-weight:600;display:flex;align-items:center;flex-wrap:wrap;gap:0 2px}
+.pxnm small{font-size:10.5px;font-weight:500;color:var(--muted);background:var(--bg-deep);
+  padding:1px 6px;border-radius:2px;margin-left:6px}
+.pxrow.sel .pxnm small{background:var(--panel)}
+.pxbar{position:relative;height:22px;background:var(--bg-deep);border-radius:2px}
+.pxrow.sel .pxbar{background:var(--panel)}
+.pxzero{position:absolute;left:50%;top:-2px;bottom:-2px;width:1px;background:var(--muted);opacity:.55}
+.pxfill{position:absolute;top:3px;bottom:3px;border-radius:1px}
+.pxfill.down{background:var(--ok)} .pxfill.up{background:var(--accent-data)} .pxfill.flat{background:var(--muted)}
+.pxpcw{display:flex;flex-direction:column;align-items:flex-end;line-height:1.15}
+.pxpcw small{font-size:10.5px;color:var(--muted)}
+.pxpc{font-weight:800;font-size:15px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.pxpc.down{color:var(--ok)} .pxpc.up{color:var(--accent-data)} .pxpc.flat,.pxpc.none{color:var(--muted)}
+.pxnowv{text-align:right;font-size:14px;font-variant-numeric:tabular-nums}
+svg.pxsp{display:block;justify-self:center}
+svg.pxsp path{fill:none;stroke-width:1.8;stroke-linejoin:round;stroke-linecap:round}
+svg.pxsp path.flatline{stroke-dasharray:2 3;opacity:.7}
+.pxper{margin:8px 8px 0;font-size:11px;color:var(--muted)}
+
+/* 2. one line in focus */
+#pxFocus[hidden]{display:none}
+.pxfhead{display:flex;justify-content:space-between;align-items:flex-start;gap:12px 24px;flex-wrap:wrap}
+.pxfk{margin:0 0 4px;font-size:10.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.pxfhead h2{margin:0;display:flex;align-items:center;flex-wrap:wrap}
+.pxfhead .scope{margin:2px 0 0}
+.pxbig{display:grid;justify-items:end;text-align:right}
+.pxbig b{font-size:34px;font-weight:800;line-height:1.05;font-variant-numeric:tabular-nums}
+.pxbig small{font-size:11px;color:var(--muted)}
+.pxfbody{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:24px;margin-top:10px;align-items:start}
+.pxfchart{min-width:0}
+.pxfchart svg{display:block;max-width:100%;height:auto}
+.pxmain{fill:none;stroke-width:3;stroke-linejoin:round;stroke-linecap:round}
+.pxmname{font-size:11.5px;font-weight:600;fill:var(--ink)}
+.pxwhy{border-left:1px solid var(--line);padding-left:22px}
+.pxwhy h3{margin:0 0 4px}
+.pxwhy .scope{margin:0 0 4px}
+.pxwhy ul{list-style:none;margin:8px 0 0;padding:0;display:grid;gap:10px}
+.pxwhy li{display:grid;grid-template-columns:1fr auto;gap:2px 10px;font-size:12.5px;opacity:.62}
+.pxwhy li.moved{opacity:1}
+.pxcn{font-weight:600;color:var(--ink)}
+.pxcv{text-align:right;font-variant-numeric:tabular-nums}
+.pxcv em{font-style:normal;font-size:12px;margin-left:4px}
+.pxcv.quiet{color:var(--muted)}
+.pxshare{grid-column:1;height:5px;background:var(--bg-deep);border-radius:1px;align-self:center}
+.pxshare i{display:block;height:100%;background:var(--muted);border-radius:1px}
+.pxwhy li.lead .pxshare i{background:var(--ok)}
+.pxsh{grid-column:2;font-size:11px;color:var(--muted);text-align:right}
+.pxlead{margin:12px 0 0;padding:8px 10px;font-size:12px;line-height:1.45;background:var(--bg-deep);border-radius:var(--r-data)}
+.pxhist{margin-top:18px}
+
+/* 3. on demand */
+details.pxcmp>summary{cursor:pointer;list-style:none;display:flex;align-items:center;gap:8px}
+details.pxcmp>summary::-webkit-details-marker{display:none}
+details.pxcmp>summary h2{margin:0}
+details.pxcmp>summary::before{content:"";flex:none;border:5px solid transparent;border-left:7px solid var(--muted);
+  border-right-width:0;transition:transform .12s}
+details.pxcmp[open]>summary::before{transform:rotate(90deg)}
+.pxctl{display:flex;flex-wrap:wrap;align-items:center;gap:10px 24px;margin:12px 0 6px}
+.pxgroup{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.pxgrow{flex:1 1 200px;margin:0}
+#pxChart{overflow-x:auto;margin-top:8px}
+#pxChart svg{display:block}
+.pxl{fill:none;stroke-width:2.2;stroke-linejoin:round;stroke-linecap:round}
+.pxl.pxt-frontier{stroke-width:2.8}
+.pxl.pxt-workhorse{stroke-dasharray:7 4}
+.pxl.pxt-light{stroke-dasharray:2 4}
+.pxhit{fill:none;stroke:transparent;stroke-width:14;pointer-events:stroke}
+.pxdot{stroke:var(--panel);stroke-width:1.5}
+.pxend{font-size:11.5px;font-weight:600}
+.pxs,.pxend,.pxl{transition:opacity .12s}
+.pxs.dim,.pxend.dim{opacity:.14}
+.pxlegend{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.pxlegend:empty{display:none}
+.pxleg{appearance:none;border:1px solid var(--line);background:var(--panel);color:var(--ink);
+  font:inherit;font-size:12px;padding:4px 10px;border-radius:var(--r-data);cursor:pointer;
+  display:inline-flex;align-items:center}
+.pxleg:hover{border-color:var(--navy)}
+.pxleg[aria-pressed="false"]{opacity:.45;text-decoration:line-through}
+.pxtable{min-width:640px}
+.pxevents{list-style:none;margin:0;padding:0;font-size:13px}
+.pxevents li{padding:8px 0;border-top:1px solid var(--line);line-height:1.45}
+.pxevents li:first-child{border-top:0;padding-top:0}
+.pxevd{display:inline-block;min-width:96px;color:var(--muted);font-variant-numeric:tabular-nums}
+.pxevents li.pxdown .pxevd{color:var(--ok)}
+.pxevents li.pxup .pxevd{color:var(--accent-data)}
+.pxmore{margin-top:10px}
+.pxmore[hidden]{display:none}
+.pxnotes{margin:10px 0 0;padding-left:18px;font-size:12.5px;color:var(--muted);line-height:1.5}
+.pxuntraced{margin:0;font-size:12.5px;color:var(--muted);line-height:1.5}
+
+@media (max-width:900px){
+  .pxfbody{grid-template-columns:minmax(0,1fr)}
+  .pxwhy{border-left:0;padding-left:0;border-top:1px solid var(--line);padding-top:14px}
+}
+@media (max-width:720px){
+  .pxlhead{display:none}
+  .pxrow{grid-template-columns:1fr auto auto;grid-template-areas:"nm pcw now" "bar bar bar";gap:6px 12px}
+  .pxrow .pxnm{grid-area:nm} .pxrow .pxpcw{grid-area:pcw} .pxrow .pxnowv{grid-area:now} .pxrow .pxbar{grid-area:bar}
+  .pxrow svg.pxsp{display:none}
+  .pxkpi{min-width:96px}
+}
