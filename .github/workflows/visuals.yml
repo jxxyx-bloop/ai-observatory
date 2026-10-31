@@ -45,7 +45,9 @@ concurrency:
 jobs:
   refresh:
     name: refresh README visuals
-    runs-on: ubuntu-latest
+    # Pinned, not `ubuntu-latest`: that label moved to Ubuntu 26.04, which Playwright
+    # does not support (it cannot install chromium there).
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
