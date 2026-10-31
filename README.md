@@ -106,7 +106,7 @@ filtered to Claude Code alone, the second from the full
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/assets/pipeline-dark.svg">
-  <img src="docs/assets/pipeline-light.svg" alt="Five steps: transcripts on disk, read-only collection in about 0.2 seconds, normalisation to counts only, fifteen detectors priced from 50 models and 13 currencies, then a ranked list with evidence and a monthly value.">
+  <img src="docs/assets/pipeline-light.svg" alt="Five steps: transcripts on disk, read-only collection in about 0.2 seconds, normalisation to counts only, fifteen detectors priced from 61 models and 13 currencies, then a ranked list with evidence and a monthly value.">
 </picture>
 
 ## Quick start
