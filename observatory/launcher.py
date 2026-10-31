@@ -52,6 +52,7 @@ from pathlib import Path
 import home
 
 import normalize
+import pricing
 import settings
 import updater
 
@@ -196,6 +197,30 @@ def doctor(root: Path) -> list[dict]:
         f"{dupes:,} duplicate turn(s) in the store — every number is that much "
         f"too big." if dupes else "No duplicate turns.",
         "Run `python3 observe.py dedupe`, then `python3 observe.py digest report`.")
+
+    # Every dollar figure rests on the rate card. A promotional rate whose
+    # documented end has passed keeps pricing - the vendor has not said what
+    # replaced it - but somebody has to look, and nothing else on the page will
+    # tell them. A malformed boundary is worse: it silently mis-dates a price.
+    try:
+        card = pricing.load_pricing()
+        broken = pricing.validate_card(card)
+        overdue = pricing.review_due(card)
+    except (OSError, ValueError, KeyError) as exc:
+        broken, overdue = ["the rate card could not be read (%s)" % exc], []
+    if broken:
+        detail = "; ".join(broken[:3]) + (" ..." if len(broken) > 3 else "")
+    elif overdue:
+        detail = "; ".join("%s: a rate documented to end %s has not been re-checked"
+                           % (m, t[:10]) for m, t in overdue)
+    else:
+        detail = "No rate is past its re-check date and every price change is dated."
+    add(not broken and not overdue,
+        "The rate card is current",
+        detail,
+        "Check the vendor's pricing page, update observatory/pricing.json (move the old "
+        "rate into `history` if the price changed), and move `_verified_on`. "
+        "CONTRIBUTING.md has the five-minute version.")
 
     _install_checks(root, add)
 

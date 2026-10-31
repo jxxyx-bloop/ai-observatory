@@ -1,7 +1,11 @@
 {
   "_doc": "Community-maintained rate card. USD per million tokens, from each vendor's public price list. Multipliers apply to the model's own input rate; a model may set its own `cache_read_mult` when the vendor's cache-hit discount isn't the 0.1x default. `window` names a peak/off-peak schedule in `windows` — a pricing shape that Chinese vendors use and Western trackers ignore. See docs/specs/Cost-Estimation.md and docs/specs/Peak-Off-Peak-Pricing.md.",
-  "_contributing": "Rates go stale. Correcting one is the easiest useful PR in this repo: edit the entry, move `_verified_on`, cite the vendor page in the PR body. See CONTRIBUTING.md.",
+  "_contributing": "Rates go stale, and a price is only right for a moment in time. Correcting one is the easiest useful PR in this repo: if the vendor CHANGED a price, move the old rates into `history` (with `from`/`until` in Singapore time, +08:00) and set the entry's `from`; if it was simply wrong, just edit it. Move `_verified_on` (and the vendor's `_verified_by_vendor`), and cite the vendor page in the PR body. See CONTRIBUTING.md.",
   "_verified_on": "2026-08-20",
+  "_verified_by_vendor": {
+    "anthropic": "2026-10-31",
+    "openai": "2026-10-31"
+  },
   "_schema": 2,
   "multipliers": {
     "cache_read": 0.1,
@@ -125,17 +129,40 @@
       "tier": "frontier",
       "vendor": "anthropic"
     },
+    "claude-fable-5-1": {
+      "input": 10.0,
+      "output": 50.0,
+      "tier": "frontier",
+      "vendor": "anthropic",
+      "cache_read_mult": 0.025,
+      "note": "launched 2026-09-01 at Fable 5's price; cache hits are 0.025x (not 0.1x). Source: platform.claude.com release notes."
+    },
     "claude-opus-5": {
       "input": 5.0,
       "output": 25.0,
       "tier": "opus",
       "vendor": "anthropic"
     },
+    "claude-opus-5-5": {
+      "input": 4.0,
+      "output": 20.0,
+      "tier": "opus",
+      "vendor": "anthropic",
+      "cache_read_mult": 0.05,
+      "note": "launched 2026-09-22 at this price (Opus 5 is $5/$25); cache hits are 0.05x."
+    },
     "claude-opus-4-8": {
       "input": 5.0,
       "output": 25.0,
       "tier": "opus",
       "vendor": "anthropic"
+    },
+    "claude-opus-4-7": {
+      "input": 5.0,
+      "output": 25.0,
+      "tier": "opus",
+      "vendor": "anthropic",
+      "note": "launched 2026-04-16 at $5/$25, the same as Opus 4.6 (Anthropic release notes)."
     },
     "claude-opus-4-6": {
       "input": 5.0,
@@ -155,6 +182,16 @@
       "tier": "sonnet",
       "vendor": "anthropic"
     },
+    "claude-sonnet-5-5": {
+      "input": 2.0,
+      "output": 10.0,
+      "tier": "sonnet",
+      "vendor": "anthropic",
+      "cache_read_mult": 0.05,
+      "from": "2026-10-07T00:00+08:00",
+      "precision": "date",
+      "note": "launched 2026-09-28. Cache reads were 0.1x until 2026-10-07 and 0.05x after; see history."
+    },
     "claude-sonnet-4-6": {
       "input": 3.0,
       "output": 15.0,
@@ -173,6 +210,13 @@
       "tier": "haiku",
       "vendor": "anthropic"
     },
+    "claude-haiku-5-5": {
+      "input": 0.1,
+      "output": 0.5,
+      "tier": "haiku",
+      "vendor": "anthropic",
+      "note": "launched 2026-10-07. Prompts over 100K tokens bill $0.50/$2.50; that tier is not modelled."
+    },
     "claude-3-7-sonnet": {
       "input": 3.0,
       "output": 15.0,
@@ -186,10 +230,57 @@
       "vendor": "anthropic"
     },
     "gpt-5.5": {
-      "input": 1.25,
-      "output": 10.0,
+      "input": 5.0,
+      "output": 30.0,
+      "tier": "frontier",
+      "vendor": "openai",
+      "note": "$5/$30 (cached $0.50) since the API launch on 2026-04-24; this entry read $1.25/$10, GPT-5.1's price, until 2026-10-31. Above 272K input it is $10/$45; not modelled."
+    },
+    "gpt-5.5-pro": {
+      "input": 30.0,
+      "output": 180.0,
       "tier": "frontier",
       "vendor": "openai"
+    },
+    "gpt-5.4": {
+      "input": 2.5,
+      "output": 15.0,
+      "tier": "mid",
+      "vendor": "openai"
+    },
+    "gpt-5.3-codex": {
+      "input": 1.75,
+      "output": 14.0,
+      "tier": "mid",
+      "vendor": "openai"
+    },
+    "gpt-5.6-sol": {
+      "input": 4.0,
+      "output": 20.0,
+      "tier": "frontier",
+      "vendor": "openai",
+      "from": "2026-08-21T00:00+08:00",
+      "precision": "date",
+      "recheck_after": "2026-11-21T00:00+08:00",
+      "note": "$4/$20 is a promotion OpenAI lists as available at least through 2026-11-21; no successor price is published, so it keeps applying and review_due() flags it. Launched 2026-07-09 at $5/$30."
+    },
+    "gpt-5.6-terra": {
+      "input": 2.0,
+      "output": 12.0,
+      "tier": "mid",
+      "vendor": "openai",
+      "from": "2026-07-30T00:00+08:00",
+      "precision": "date",
+      "note": "launched 2026-07-09 at $2.50/$15."
+    },
+    "gpt-5.6-luna": {
+      "input": 0.2,
+      "output": 1.2,
+      "tier": "mini",
+      "vendor": "openai",
+      "from": "2026-07-30T00:00+08:00",
+      "precision": "date",
+      "note": "launched 2026-07-09 at $1/$6."
     },
     "gpt-5.1": {
       "input": 1.25,
@@ -444,6 +535,192 @@
       "tier": "mini",
       "vendor": "xai"
     }
+  },
+  "_history_doc": "Superseded rates, oldest first, so a turn is priced at the rate in force when it happened rather than at today's. Each entry overrides the model's fields for the window [`from`, `until`); `until` is the next version's `from`, and the last `until` is the model's current `from`. Every boundary is an ISO time in Singapore time (`+08:00`) - `validate_card` rejects anything else. Vendors publish a date, not an hour: a date-only source is 00:00 SGT on that date with `precision: date` (good to about a day); write the real instant when a source gives one. The first entry's `from` is the model's launch and also applies to anything earlier. A rate with a documented end but no published successor carries `recheck_after` on its model entry instead: it keeps pricing, and `review_due` reports it once the date passes. Never invent the successor.",
+  "history": {
+    "gpt-5.6-sol": [
+      {
+        "from": "2026-07-09T00:00+08:00",
+        "until": "2026-08-21T00:00+08:00",
+        "input": 5.0,
+        "output": 30.0,
+        "precision": "date"
+      }
+    ],
+    "gpt-5.6-terra": [
+      {
+        "from": "2026-07-09T00:00+08:00",
+        "until": "2026-07-30T00:00+08:00",
+        "input": 2.5,
+        "output": 15.0,
+        "precision": "date"
+      }
+    ],
+    "gpt-5.6-luna": [
+      {
+        "from": "2026-07-09T00:00+08:00",
+        "until": "2026-07-30T00:00+08:00",
+        "input": 1.0,
+        "output": 6.0,
+        "precision": "date"
+      }
+    ],
+    "claude-sonnet-5-5": [
+      {
+        "from": "2026-09-28T00:00+08:00",
+        "until": "2026-10-07T00:00+08:00",
+        "cache_read_mult": 0.1,
+        "precision": "date"
+      }
+    ]
+  },
+  "_lines_doc": "A lab's model lines for the price-trends page: which model was the lab's offering in a tier, and when the next one took over. `from` is when that model took over the line (its launch, in Singapore time +08:00). A model's own price changes come from `history`, not from here. A line may only list models that are on the card. Prices before a model's launch are never invented: a line starts at its first model's `from`. Only OpenAI and Anthropic have been traced through their changes (see `_verified_by_vendor`); other vendors have current rates only and appear on the page as 'not traced yet'. gpt-5.4's launch price is not stated in OpenAI's changelog; the page assumes today's $2.50/$15 since the changelog records no repricing. `headline: true` marks the one line that stands for its lab at the page's most zoomed-out level - the offering people mean by 'the lab's flagship'. Anthropic's is Opus (long history, the line most used for coding), not the gated top tier.",
+  "labs": {
+    "anthropic": "Anthropic",
+    "openai": "OpenAI"
+  },
+  "lines": [
+    {
+      "id": "anthropic-frontier",
+      "lab": "anthropic",
+      "label": "Fable (top tier)",
+      "tier": "frontier",
+      "models": [
+        {
+          "model": "claude-fable-5",
+          "from": "2026-06-09T00:00+08:00"
+        },
+        {
+          "model": "claude-fable-5-1",
+          "from": "2026-09-01T00:00+08:00"
+        }
+      ]
+    },
+    {
+      "id": "anthropic-premium",
+      "lab": "anthropic",
+      "label": "Opus",
+      "tier": "premium",
+      "models": [
+        {
+          "model": "claude-opus-4-5",
+          "from": "2025-11-24T00:00+08:00"
+        },
+        {
+          "model": "claude-opus-4-6",
+          "from": "2026-02-05T00:00+08:00"
+        },
+        {
+          "model": "claude-opus-4-7",
+          "from": "2026-04-16T00:00+08:00"
+        },
+        {
+          "model": "claude-opus-4-8",
+          "from": "2026-05-28T00:00+08:00"
+        },
+        {
+          "model": "claude-opus-5",
+          "from": "2026-07-24T00:00+08:00"
+        },
+        {
+          "model": "claude-opus-5-5",
+          "from": "2026-09-22T00:00+08:00"
+        }
+      ],
+      "headline": true
+    },
+    {
+      "id": "anthropic-workhorse",
+      "lab": "anthropic",
+      "label": "Sonnet",
+      "tier": "workhorse",
+      "models": [
+        {
+          "model": "claude-sonnet-4-5",
+          "from": "2025-09-29T00:00+08:00"
+        },
+        {
+          "model": "claude-sonnet-4-6",
+          "from": "2026-02-17T00:00+08:00"
+        },
+        {
+          "model": "claude-sonnet-5",
+          "from": "2026-06-30T00:00+08:00"
+        },
+        {
+          "model": "claude-sonnet-5-5",
+          "from": "2026-09-28T00:00+08:00"
+        }
+      ]
+    },
+    {
+      "id": "anthropic-light",
+      "lab": "anthropic",
+      "label": "Haiku",
+      "tier": "light",
+      "models": [
+        {
+          "model": "claude-haiku-4-5",
+          "from": "2025-10-15T00:00+08:00"
+        },
+        {
+          "model": "claude-haiku-5-5",
+          "from": "2026-10-07T00:00+08:00"
+        }
+      ]
+    },
+    {
+      "id": "openai-frontier",
+      "lab": "openai",
+      "label": "GPT flagship",
+      "tier": "frontier",
+      "models": [
+        {
+          "model": "gpt-5.4",
+          "from": "2026-03-05T00:00+08:00"
+        },
+        {
+          "model": "gpt-5.5",
+          "from": "2026-04-24T00:00+08:00"
+        },
+        {
+          "model": "gpt-5.6-sol",
+          "from": "2026-07-09T00:00+08:00"
+        }
+      ],
+      "headline": true
+    },
+    {
+      "id": "openai-workhorse",
+      "lab": "openai",
+      "label": "GPT-5.6 Terra",
+      "tier": "workhorse",
+      "models": [
+        {
+          "model": "gpt-5.6-terra",
+          "from": "2026-07-09T00:00+08:00"
+        }
+      ]
+    },
+    {
+      "id": "openai-light",
+      "lab": "openai",
+      "label": "GPT-5.6 Luna",
+      "tier": "light",
+      "models": [
+        {
+          "model": "gpt-5.6-luna",
+          "from": "2026-07-09T00:00+08:00"
+        }
+      ]
+    }
+  ],
+  "_reference_mix_doc": "Share of tokens by kind in a typical agentic-coding session, used to turn a model's four prices into ONE comparable number ($ per 1M tokens of this mix). Measured on the maintainer's own store, 2026-05..2026-10 (154k turns, Claude Code and Codex). Cache reads dominate, so a cache-discount change moves the effective price far more than a headline input/output change does. The dashboard also offers 'your mix', measured from your own digest.",
+  "reference_mix": {
+    "input": 0.0071,
+    "cache_write": 0.0216,
+    "cache_read": 0.9679,
+    "output": 0.0034
   },
   "speed_overrides": {
     "claude-opus-5:fast": {
