@@ -490,34 +490,57 @@ def _png(size: int, rgba: bytearray) -> bytes:
             + chunk(b"IEND", b""))
 
 
-def _mark(size: int = 512) -> bytes:
-    """The observatory mark: two rings and four ticks, on an indigo field.
+def _mark_rgba(size: int) -> bytearray:
+    """The observatory mark as straight RGBA: white on an indigo disc.
 
-    Drawn arithmetically rather than converted from `docs/assets/mark.svg`,
-    because every SVG rasteriser on macOS is either a separate install or a
-    QuickLook side effect, and an icon is not worth a dependency.
+    Same geometry as `docs/assets/mark.svg` (24-unit viewBox): an outer ring of
+    radius 8.5, an inner ring of radius 3, four ticks between 3.5 and 6.5 units
+    from the edge-to-centre axes, all at stroke 1.5. Drawn arithmetically rather
+    than converted from the SVG, because every SVG rasteriser on macOS is either
+    a separate install or a QuickLook side effect, and an icon is not worth a
+    dependency. Supersampled so the small sizes a taskbar uses are not jagged.
     """
+    u = size / 24.0                       # one SVG unit, in pixels
+    disc, half = 11.0 * u, 0.75 * u       # backing disc radius, half the stroke
+    ss = 3 if size <= 64 else (2 if size <= 256 else 1)
+    c = size / 2.0
     px = bytearray(size * size * 4)
-    cx = cy = (size - 1) / 2
-    radius = size * 0.46
-    ring_o, ring_i = size * 0.30, size * 0.115
-    stroke = size * 0.035
+
+    def white(dx, dy):
+        d = (dx * dx + dy * dy) ** 0.5
+        if abs(d - 8.5 * u) <= half or abs(d - 3.0 * u) <= half:
+            return True
+        # ticks: 3 units long, centred on the axes, from 5.5 to 8.5 units out
+        # (the SVG's `M12 3.5v3` and its three mirrors), with round-ish caps.
+        ax, ay = abs(dx), abs(dy)
+        return any(across <= half and 5.5 * u - half <= along <= 8.5 * u + half
+                   for along, across in ((ax, ay), (ay, ax)))
 
     for y in range(size):
         for x in range(size):
-            dx, dy = x - cx, y - cy
-            d = (dx * dx + dy * dy) ** 0.5
-            if d > radius:
+            hit = cov = 0
+            for sy in range(ss):
+                for sx in range(ss):
+                    dx = x + (sx + .5) / ss - c
+                    dy = y + (sy + .5) / ss - c
+                    if (dx * dx + dy * dy) ** 0.5 > disc:
+                        continue
+                    cov += 1
+                    hit += white(dx, dy)
+            if not cov:
                 continue
+            n = ss * ss
+            w = hit / cov
             i = (y * size + x) * 4
-            on_ring = (abs(d - ring_o) < stroke / 2) or (d < ring_i)
-            tick = (abs(dy) < stroke / 2 or abs(dx) < stroke / 2) \
-                and ring_o + stroke < d < radius * 0.86
-            if on_ring or tick:
-                px[i:i + 4] = bytes((255, 255, 255, 255))
-            else:
-                px[i:i + 4] = bytes((*ACCENT, 255))
-    return _png(size, px)
+            px[i] = round(ACCENT[0] + (255 - ACCENT[0]) * w)
+            px[i + 1] = round(ACCENT[1] + (255 - ACCENT[1]) * w)
+            px[i + 2] = round(ACCENT[2] + (255 - ACCENT[2]) * w)
+            px[i + 3] = round(255 * cov / n)
+    return px
+
+
+def _mark(size: int = 512) -> bytes:
+    return _png(size, _mark_rgba(size))
 
 
 def _write_icon(dest: Path) -> bool:
@@ -767,13 +790,41 @@ def win_shortcut() -> Path:
             / f"{APP_NAME}.lnk")
 
 
-def _ico(size: int = 256) -> bytes:
-    """A single-image .ico wrapping the PNG mark (Vista+ accepts PNG frames)."""
-    png = _mark(size)
-    head = struct.pack("<HHH", 0, 1, 1)
-    entry = struct.pack("<BBBBHHII", size % 256, size % 256, 0, 0, 1, 32,
-                        len(png), 6 + 16)
-    return head + entry + png
+_ICO_SIZES = (16, 24, 32, 48, 64, 128, 256)
+
+
+def _dib(size: int) -> bytes:
+    """One .ico frame as a classic 32-bit BMP (BGRA, bottom-up, empty AND mask).
+
+    The taskbar asks for 24-48 px frames, and a file whose only frame is a
+    256 px PNG can render as the blank-document placeholder instead of being
+    scaled. Small sizes are therefore stored in the format every shell reads.
+    """
+    rgba = _mark_rgba(size)
+    rows = []
+    for y in range(size - 1, -1, -1):
+        row = rgba[y * size * 4:(y + 1) * size * 4]
+        bgra = bytearray(len(row))
+        bgra[0::4], bgra[1::4], bgra[2::4], bgra[3::4] = (
+            row[2::4], row[1::4], row[0::4], row[3::4])
+        rows.append(bytes(bgra))
+    mask = b"\x00" * (((size + 31) // 32) * 4 * size)
+    header = struct.pack("<IiiHHIIiiII", 40, size, size * 2, 1, 32, 0,
+                         size * size * 4, 0, 0, 0, 0)
+    return header + b"".join(rows) + mask
+
+
+def _ico() -> bytes:
+    """A multi-size .ico: BMP frames up to 128 px, a PNG frame at 256 px."""
+    frames = [(s, _png(s, _mark_rgba(s)) if s == 256 else _dib(s))
+              for s in _ICO_SIZES]
+    out = [struct.pack("<HHH", 0, 1, len(frames))]
+    offset = 6 + 16 * len(frames)
+    for s, blob in frames:
+        out.append(struct.pack("<BBBBHHII", s % 256, s % 256, 0, 0, 1, 32,
+                               len(blob), offset))
+        offset += len(blob)
+    return b"".join(out) + b"".join(blob for _, blob in frames)
 
 
 def _pythonw() -> str:
