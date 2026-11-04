@@ -416,19 +416,26 @@ def cmd_install(argv) -> int:
         print(f"  {launcher.add_to_dock()}")
 
     if "--no-open" in argv:
-        print("\nOpen it from ~/Applications, or run this command without "
+        where = ("search Start for AI Observatory" if sys.platform == "win32"
+                 else "open it from ~/Applications")
+        print(f"\n{where[0].upper()}{where[1:]}, or run this command without "
               "--no-open to have it launch itself.")
         return 0
 
     launcher.reveal()
     print("\nOpening it now — this is exactly what a double-click does.")
     if not launcher.launch():
-        print("Could not launch it automatically. Open ~/Applications and "
-              "double-click AI Observatory.")
+        print("Could not launch it automatically. " + (
+            "Search Start for AI Observatory." if sys.platform == "win32"
+            else "Open ~/Applications and double-click AI Observatory."))
         return 0
 
     print("\nFrom now on: click the AI Observatory icon. It refreshes, then opens.")
-    if not launcher.in_dock():
+    if sys.platform == "win32":
+        print("To keep it on your taskbar: right-click the highlighted "
+              "AI Observatory shortcut (or find it in Start) and choose "
+              "Pin to taskbar.")
+    elif not launcher.in_dock():
         print("It is not in your Dock — drag it there from the Finder window "
               "to keep it one click away.")
     print("Undo everything:  python3 observe.py install --remove")
@@ -519,11 +526,12 @@ def cmd_setup(argv) -> int:
     # step is skipped rather than failed: the dashboard is what `setup`
     # promised, and it has already been built by the time we get here.
     if home.is_checkout():
-        phase("Putting it in your Dock")
+        phase("Adding it to Start" if sys.platform == "win32"
+              else "Putting it in your Dock")
         for line in launcher.install(ROOT, daily="--no-daily" not in argv):
             ok(" ".join(line.split()))
         if "--no-dock" not in argv:
-            ok(launcher.add_to_dock().replace("dock", "", 1).strip())
+            ok(launcher.add_to_dock().split(None, 1)[-1].strip())
     else:
         phase("Keeping it current")
         ok("Refresh anytime with:  ai-observatory all")

@@ -490,34 +490,57 @@ def _png(size: int, rgba: bytearray) -> bytes:
             + chunk(b"IEND", b""))
 
 
-def _mark(size: int = 512) -> bytes:
-    """The observatory mark: two rings and four ticks, on an indigo field.
+def _mark_rgba(size: int) -> bytearray:
+    """The observatory mark as straight RGBA: white on an indigo disc.
 
-    Drawn arithmetically rather than converted from `docs/assets/mark.svg`,
-    because every SVG rasteriser on macOS is either a separate install or a
-    QuickLook side effect, and an icon is not worth a dependency.
+    Same geometry as `docs/assets/mark.svg` (24-unit viewBox): an outer ring of
+    radius 8.5, an inner ring of radius 3, four ticks between 3.5 and 6.5 units
+    from the edge-to-centre axes, all at stroke 1.5. Drawn arithmetically rather
+    than converted from the SVG, because every SVG rasteriser on macOS is either
+    a separate install or a QuickLook side effect, and an icon is not worth a
+    dependency. Supersampled so the small sizes a taskbar uses are not jagged.
     """
+    u = size / 24.0                       # one SVG unit, in pixels
+    disc, half = 11.0 * u, 0.75 * u       # backing disc radius, half the stroke
+    ss = 3 if size <= 64 else (2 if size <= 256 else 1)
+    c = size / 2.0
     px = bytearray(size * size * 4)
-    cx = cy = (size - 1) / 2
-    radius = size * 0.46
-    ring_o, ring_i = size * 0.30, size * 0.115
-    stroke = size * 0.035
+
+    def white(dx, dy):
+        d = (dx * dx + dy * dy) ** 0.5
+        if abs(d - 8.5 * u) <= half or abs(d - 3.0 * u) <= half:
+            return True
+        # ticks: 3 units long, centred on the axes, from 5.5 to 8.5 units out
+        # (the SVG's `M12 3.5v3` and its three mirrors), with round-ish caps.
+        ax, ay = abs(dx), abs(dy)
+        return any(across <= half and 5.5 * u - half <= along <= 8.5 * u + half
+                   for along, across in ((ax, ay), (ay, ax)))
 
     for y in range(size):
         for x in range(size):
-            dx, dy = x - cx, y - cy
-            d = (dx * dx + dy * dy) ** 0.5
-            if d > radius:
+            hit = cov = 0
+            for sy in range(ss):
+                for sx in range(ss):
+                    dx = x + (sx + .5) / ss - c
+                    dy = y + (sy + .5) / ss - c
+                    if (dx * dx + dy * dy) ** 0.5 > disc:
+                        continue
+                    cov += 1
+                    hit += white(dx, dy)
+            if not cov:
                 continue
+            n = ss * ss
+            w = hit / cov
             i = (y * size + x) * 4
-            on_ring = (abs(d - ring_o) < stroke / 2) or (d < ring_i)
-            tick = (abs(dy) < stroke / 2 or abs(dx) < stroke / 2) \
-                and ring_o + stroke < d < radius * 0.86
-            if on_ring or tick:
-                px[i:i + 4] = bytes((255, 255, 255, 255))
-            else:
-                px[i:i + 4] = bytes((*ACCENT, 255))
-    return _png(size, px)
+            px[i] = round(ACCENT[0] + (255 - ACCENT[0]) * w)
+            px[i + 1] = round(ACCENT[1] + (255 - ACCENT[1]) * w)
+            px[i + 2] = round(ACCENT[2] + (255 - ACCENT[2]) * w)
+            px[i + 3] = round(255 * cov / n)
+    return px
+
+
+def _mark(size: int = 512) -> bytes:
+    return _png(size, _mark_rgba(size))
 
 
 def _write_icon(dest: Path) -> bool:
@@ -642,6 +665,8 @@ def install(root: Path, daily: bool = True) -> list[str]:
     print exactly what changed on the machine rather than claiming success in
     the abstract.
     """
+    if platform.system() == "Windows":
+        return _install_windows(root, daily)
     if platform.system() != "Darwin":
         return _install_generic(root)
 
@@ -689,30 +714,207 @@ def install(root: Path, daily: bool = True) -> list[str]:
 
 
 def _install_generic(root: Path) -> list[str]:
-    """Windows and Linux: a script beside the project, not a bundle.
-
-    ADR-013 already accepts that Windows users carry more friction than macOS
-    users. This keeps the promise minimal and true rather than half-shipping a
-    Start Menu integration that only works on some machines.
-    """
-    windows = platform.system() == "Windows"
-    name = "Open AI Observatory." + ("cmd" if windows else "sh")
-    path = root / name
-    body = (
-        "@echo off\r\n"
-        f'python "{root / "observatory" / "observe.py"}" sync digest report\r\n'
-        if windows else
+    """Linux: a script beside the project, not a bundle."""
+    path = root / "Open AI Observatory.sh"
+    path.write_text(
         "#!/bin/sh\n"
-        f'exec python3 "{root / "observatory" / "observe.py"}" sync digest report\n')
-    path.write_text(body, encoding="utf-8")
-    if not windows:
-        path.chmod(0o755)
+        f'exec python3 "{root / "observatory" / "observe.py"}" sync digest report\n',
+        encoding="utf-8")
+    path.chmod(0o755)
     return [f"launcher   {tilde(path) or path}",
-            "note       double-click it, or pin it to your taskbar"]
+            "note       double-click it, or add it to your launcher"]
+
+
+# ── windows ─────────────────────────────────────────────────────────────────
+#
+# The macOS answer (a bundle in ~/Applications, a tile in the Dock) has no
+# direct Windows equivalent, and the previous fallback — a loose .cmd file in
+# the project folder — meant nothing ever appeared in Start or on the taskbar.
+# What does exist: a .lnk in the Start Menu, which Windows indexes, which has
+# its own icon, and which the user can right-click -> "Pin to taskbar".
+# Microsoft deliberately removed any supported API for pinning to the taskbar
+# programmatically (Windows 10 1809+), so the last click is the user's.
+
+_WIN_TASK = "AI Observatory daily refresh"
+
+_WIN_RUNNER = '''\
+# Generated by `observe.py install`. Safe to delete; re-create it by running
+# that command again. Run by pythonw.exe, so no console window flashes up.
+import os, subprocess, sys, webbrowser
+from pathlib import Path
+
+ROOT = Path({root!r})
+PY = {python!r}
+LOG = Path({log!r})
+REPORT = ROOT / "dist" / "observatory.html"
+FALLBACK = ROOT / "dist" / "needs-attention.html"
+if not Path(PY).exists():
+    PY = sys.executable
+ENGINE = str(ROOT / "observatory" / "observe.py")
+
+
+def run(*args, out=None):
+    try:
+        LOG.parent.mkdir(parents=True, exist_ok=True)
+        sink = out or open(LOG, "ab")
+        return subprocess.run([PY, ENGINE, *args], stdout=sink, stderr=subprocess.STDOUT,
+                              creationflags=0x08000000, cwd=str(ROOT)).returncode
+    except OSError:
+        return 1
+
+
+if not (ROOT / "observatory" / "observe.py").exists():
+    if FALLBACK.exists():
+        webbrowser.open(FALLBACK.as_uri())
+    sys.exit(0)
+
+run("update", "--quiet")
+if run("sync", "digest", "report", "--no-open") == 0 and REPORT.exists():
+    webbrowser.open(REPORT.as_uri())
+else:
+    FALLBACK.parent.mkdir(parents=True, exist_ok=True)
+    with open(FALLBACK, "wb") as fh:
+        run("doctor", "--html", out=fh)
+    webbrowser.open((REPORT if REPORT.exists() else FALLBACK).as_uri())
+'''
+
+
+def win_dir() -> Path:
+    base = os.environ.get("LOCALAPPDATA") or str(Path.home() / "AppData" / "Local")
+    return Path(base) / APP_NAME
+
+
+def win_shortcut() -> Path:
+    base = os.environ.get("APPDATA") or str(Path.home() / "AppData" / "Roaming")
+    return (Path(base) / "Microsoft" / "Windows" / "Start Menu" / "Programs"
+            / f"{APP_NAME}.lnk")
+
+
+_ICO_SIZES = (16, 24, 32, 48, 64, 128, 256)
+
+
+def _dib(size: int) -> bytes:
+    """One .ico frame as a classic 32-bit BMP (BGRA, bottom-up, empty AND mask).
+
+    The taskbar asks for 24-48 px frames, and a file whose only frame is a
+    256 px PNG can render as the blank-document placeholder instead of being
+    scaled. Small sizes are therefore stored in the format every shell reads.
+    """
+    rgba = _mark_rgba(size)
+    rows = []
+    for y in range(size - 1, -1, -1):
+        row = rgba[y * size * 4:(y + 1) * size * 4]
+        bgra = bytearray(len(row))
+        bgra[0::4], bgra[1::4], bgra[2::4], bgra[3::4] = (
+            row[2::4], row[1::4], row[0::4], row[3::4])
+        rows.append(bytes(bgra))
+    mask = b"\x00" * (((size + 31) // 32) * 4 * size)
+    header = struct.pack("<IiiHHIIiiII", 40, size, size * 2, 1, 32, 0,
+                         size * size * 4, 0, 0, 0, 0)
+    return header + b"".join(rows) + mask
+
+
+def _ico() -> bytes:
+    """A multi-size .ico: BMP frames up to 128 px, a PNG frame at 256 px."""
+    frames = [(s, _png(s, _mark_rgba(s)) if s == 256 else _dib(s))
+              for s in _ICO_SIZES]
+    out = [struct.pack("<HHH", 0, 1, len(frames))]
+    offset = 6 + 16 * len(frames)
+    for s, blob in frames:
+        out.append(struct.pack("<BBBBHHII", s % 256, s % 256, 0, 0, 1, 32,
+                               len(blob), offset))
+        offset += len(blob)
+    return b"".join(out) + b"".join(blob for _, blob in frames)
+
+
+def _pythonw() -> str:
+    """The windowless interpreter next to this one, so no console flashes."""
+    w = Path(sys.executable).with_name("pythonw.exe")
+    return str(w) if w.exists() else sys.executable
+
+
+def _ps_quote(value) -> str:
+    return "'" + str(value).replace("'", "''") + "'"
+
+
+def _make_lnk(lnk: Path, target: str, args: str, workdir: Path, icon: Path) -> bool:
+    script = (
+        "$s=(New-Object -ComObject WScript.Shell).CreateShortcut(%s);"
+        "$s.TargetPath=%s;$s.Arguments=%s;$s.WorkingDirectory=%s;"
+        "$s.IconLocation=%s;$s.Description=%s;$s.Save()"
+        % (_ps_quote(lnk), _ps_quote(target), _ps_quote(args),
+           _ps_quote(workdir), _ps_quote(icon), _ps_quote(APP_NAME)))
+    try:
+        lnk.parent.mkdir(parents=True, exist_ok=True)
+        subprocess.run(["powershell", "-NoProfile", "-NonInteractive",
+                        "-Command", script],
+                       check=True, capture_output=True, timeout=60)
+        return lnk.exists()
+    except (OSError, subprocess.SubprocessError):
+        return False
+
+
+def _schtasks(*args) -> bool:
+    try:
+        return subprocess.run(["schtasks", *args], check=False,
+                              capture_output=True, timeout=30).returncode == 0
+    except (OSError, subprocess.SubprocessError):
+        return False
+
+
+def _install_windows(root: Path, daily: bool = True) -> list[str]:
+    done = []
+    folder = win_dir()
+    folder.mkdir(parents=True, exist_ok=True)
+    log = folder / "ai-observatory.log"
+
+    runner = folder / "run.pyw"
+    runner.write_text(_WIN_RUNNER.format(
+        root=str(root.resolve()), python=sys.executable, log=str(log)),
+        encoding="utf-8")
+    icon = folder / "appicon.ico"
+    icon.write_bytes(_ico())
+    done.append(f"launcher   {runner}")
+
+    lnk = win_shortcut()
+    if _make_lnk(lnk, _pythonw(), f'"{runner}"', root.resolve(), icon):
+        done.append("start menu AI Observatory (search for it in Start)")
+    else:
+        done.append("start menu could not be created — double-click "
+                    f"{runner} instead")
+
+    if daily:
+        py = _pythonw()
+        cmd = (f'"{py}" "{root.resolve() / "observatory" / "observe.py"}" '
+               "check-update sync digest report --no-open --notify")
+        # Daily at 09:00, plus once at logon — the same two triggers as the
+        # macOS LaunchAgent. /F overwrites an earlier install's task.
+        ok = _schtasks("/Create", "/F", "/TN", _WIN_TASK, "/SC", "DAILY",
+                       "/ST", "09:00", "/TR", cmd)
+        done.append("daily sync " + ("scheduled (09:00 local)" if ok
+                                     else "could not be scheduled — skipped"))
+    return done
+
+
+def _uninstall_windows() -> list[str]:
+    done = []
+    if _schtasks("/Delete", "/F", "/TN", _WIN_TASK):
+        done.append(f"removed scheduled task '{_WIN_TASK}'")
+    lnk = win_shortcut()
+    if lnk.exists():
+        lnk.unlink()
+        done.append(f"removed {lnk}")
+    folder = win_dir()
+    if folder.exists():
+        shutil.rmtree(folder, ignore_errors=True)
+        done.append(f"removed {folder}")
+    return done or ["nothing to remove"]
 
 
 def uninstall() -> list[str]:
     """Remove everything `install` created. Never touches `data/`."""
+    if platform.system() == "Windows":
+        return _uninstall_windows()
     done = []
     unpinned = remove_from_dock()
     if unpinned:
@@ -769,6 +971,13 @@ def launch() -> bool:
     and exits leaves the user holding a receipt instead of a product — they have
     no way to know whether it worked, and nothing to look at if it did.
     """
+    if platform.system() == "Windows":
+        runner = win_dir() / "run.pyw"
+        try:
+            subprocess.Popen([_pythonw(), str(runner)], creationflags=0x08000000)
+            return runner.exists()
+        except OSError:
+            return False
     if platform.system() != "Darwin":
         return False
     try:
@@ -785,6 +994,13 @@ def reveal() -> bool:
     seen, not a path they were told. Finder is also where dragging it to the
     Dock starts, which is the gesture most people already know.
     """
+    if platform.system() == "Windows":
+        try:
+            # explorer.exe returns 1 even on success, so judge by existence.
+            subprocess.Popen(["explorer", f"/select,{win_shortcut()}"])
+            return win_shortcut().exists()
+        except OSError:
+            return False
     if platform.system() != "Darwin":
         return False
     try:
@@ -836,6 +1052,11 @@ def add_to_dock() -> str:
     is an app they will not open tomorrow. It stays reversible in both
     directions: `install --remove` takes the tile back out again.
     """
+    if platform.system() == "Windows":
+        # No supported API pins to the taskbar (removed in Windows 10 1809),
+        # so say the one gesture that does instead of claiming success.
+        return ("taskbar    right-click \"AI Observatory\" in Start -> "
+                "Pin to taskbar")
     if platform.system() != "Darwin":
         return "dock       (macOS only)"
     if in_dock():
