@@ -19,6 +19,7 @@ import re
 import shutil
 import subprocess
 import sys
+import os
 import tempfile
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -877,6 +878,35 @@ def test_refresh_command_per_platform():
         launcher.platform.system = real
 
 
+def test_sandbox_copy_detection():
+    """A sandboxed app's private AppData copy is spotted before a shortcut is made."""
+    print("\nsandboxed install")
+    real = os.environ.get("LOCALAPPDATA")
+    try:
+        with tempfile.TemporaryDirectory() as tmp:
+            local = Path(tmp)
+            os.environ["LOCALAPPDATA"] = str(local)
+            mine = local / "AI Observatory" / "run.pyw"
+            twin = (local / "Packages" / "App_x" / "LocalCache" / "Local"
+                    / "AI Observatory" / "run.pyw")
+            for p in (mine, twin):
+                p.parent.mkdir(parents=True)
+                p.write_text("x")
+            os.utime(twin, ns=(1, 1))
+            ok("a stale private copy from an earlier run is ignored",
+               launcher.sandbox_copy(mine) is None)
+            os.utime(twin, ns=(mine.stat().st_atime_ns, mine.stat().st_mtime_ns))
+            check("the same file under a package's LocalCache is a redirect",
+                  launcher.sandbox_copy(mine), twin)
+            ok("outside LOCALAPPDATA there is nothing to detect",
+               launcher.sandbox_copy(Path(tmp).parent / "elsewhere.txt") is None)
+    finally:
+        if real is None:
+            os.environ.pop("LOCALAPPDATA", None)
+        else:
+            os.environ["LOCALAPPDATA"] = real
+
+
 def test_doctor_install_checks():
     """The macOS-only checks, exercised from a machine that is not a Mac.
 
@@ -1123,7 +1153,7 @@ def main():
                test_share_payload, test_pipeline, test_hidden_guards,
                test_findings_i18n_coverage,
                test_updater, test_sync_integrity, test_unpriced_disclosure,
-               test_refresh_command_per_platform,
+               test_refresh_command_per_platform, test_sandbox_copy_detection,
                test_doctor_install_checks, test_cli_dispatch,
                test_duplicate_disclosure):
         fn()

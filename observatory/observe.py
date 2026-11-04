@@ -408,7 +408,11 @@ def cmd_install(argv) -> int:
               "repo and run `python3 observe.py install` there.")
         return DECLINED
 
-    created = launcher.install(ROOT, daily="--no-daily" not in argv)
+    try:
+        created = launcher.install(ROOT, daily="--no-daily" not in argv)
+    except launcher.SandboxedInstall as e:
+        print(f"install: not installed.\n{e}")
+        return 1
     print("Installed:")
     for line in created:
         print(f"  {line}")
@@ -528,10 +532,14 @@ def cmd_setup(argv) -> int:
     if home.is_checkout():
         phase("Adding it to Start" if sys.platform == "win32"
               else "Putting it in your Dock")
-        for line in launcher.install(ROOT, daily="--no-daily" not in argv):
-            ok(" ".join(line.split()))
-        if "--no-dock" not in argv:
-            ok(launcher.add_to_dock().split(None, 1)[-1].strip())
+        try:
+            for line in launcher.install(ROOT, daily="--no-daily" not in argv):
+                ok(" ".join(line.split()))
+            if "--no-dock" not in argv:
+                ok(launcher.add_to_dock().split(None, 1)[-1].strip())
+        except launcher.SandboxedInstall as e:
+            # The dashboard is already built; only the Start entry is skipped.
+            warn("Start entry skipped — " + str(e).replace("\n", "\n        "))
     else:
         phase("Keeping it current")
         ok("Refresh anytime with:  ai-observatory all")
