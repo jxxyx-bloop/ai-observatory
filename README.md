@@ -181,6 +181,19 @@ the macOS launcher — `install` builds a bundle that calls `observe.py` by path
 so it needs a checkout to point at. `ai-observatory install` says so and stops
 rather than writing a launcher that cannot work.
 
+**On Windows (PowerShell)** — the same steps, but PowerShell 5.1 (the default
+terminal) does not understand `&&`, and Windows has `python`, not `python3`:
+
+```powershell
+git clone https://github.com/jxxyx-bloop/ai-observatory.git
+cd ai-observatory\observatory
+python observe.py setup
+```
+
+To refresh later, run `python observe.py all` from that folder, or just open
+**AI Observatory** from the Start menu. If `python` is not found, install Python
+from python.org and tick *Add Python to PATH*.
+
 </details>
 
 ### When something looks wrong

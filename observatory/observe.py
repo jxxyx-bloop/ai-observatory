@@ -438,7 +438,7 @@ def cmd_install(argv) -> int:
     elif not launcher.in_dock():
         print("It is not in your Dock — drag it there from the Finder window "
               "to keep it one click away.")
-    print("Undo everything:  python3 observe.py install --remove")
+    print(home.retarget("Undo everything:  python3 observe.py install --remove"))
     return 0
 
 
@@ -546,9 +546,11 @@ def cmd_setup(argv) -> int:
     if not launcher.open_report(out):
         print(f"Could not open a browser \u2014 the file is at {out}")
     if home.is_checkout():
-        print("\nTomorrow: click the AI Observatory icon in your Dock. It "
-              "refreshes, then opens.")
-        print("Undo everything:  python3 observe.py install --remove")
+        where = ("open AI Observatory from Start (right-click it to pin it to "
+                 "your taskbar)" if sys.platform == "win32"
+                 else "click the AI Observatory icon in your Dock")
+        print(f"\nTomorrow: {where}. It refreshes, then opens.")
+        print(home.retarget("Undo everything:  python3 observe.py install --remove"))
     else:
         print(f"\nTomorrow: run `ai-observatory all` to refresh it. "
               f"Your settings are in {home.root()}.")
