@@ -90,9 +90,10 @@ def refresh_command(root: Path) -> str:
     if not home.is_checkout():
         return "ai-observatory all"
     short = tilde(root / "observatory")
+    run = f"{home.python_name()} observe.py all"
     if short is None:
-        return "python3 observe.py all"
-    return f"cd {short} && python3 observe.py all"
+        return run
+    return home.chain(f"cd {short}", run)
 
 
 def report_path(root: Path) -> Path:

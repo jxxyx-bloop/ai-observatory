@@ -35,6 +35,7 @@ wrong in a way nobody could see. Shipped data stays shipped.
 from __future__ import annotations
 
 import os
+import platform
 import shutil
 from pathlib import Path
 
@@ -126,8 +127,31 @@ def retarget(text: str) -> str:
     the messages stay readable in the source as the thing a contributor types.
     """
     if is_checkout():
-        return text
+        # Windows has no reliable `python3`: python.org installs `python` and
+        # `py`, and the Store ships a `python3` stub that opens the Store.
+        return text.replace("python3 observe.py", python_name() + " observe.py")
     return text.replace("python3 observe.py", "ai-observatory")
+
+
+def is_windows() -> bool:
+    return platform.system() == "Windows"
+
+
+def python_name() -> str:
+    """The interpreter name a person types, which differs by platform."""
+    return "python" if is_windows() else "python3"
+
+
+def chain(*steps: str) -> str:
+    """Join shell steps so the line pastes into the shell people actually use.
+
+    `&&` is bash/zsh/cmd syntax; Windows PowerShell 5.1 (the default terminal on
+    Windows 10 and 11) rejects it with "The token '&&' is not a valid statement
+    separator". `;` is PowerShell's separator and runs the next step even if
+    the first fails, which is harmless here: `cd` failing leaves the second
+    step to report its own missing file.
+    """
+    return ("; " if is_windows() else " && ").join(steps)
 
 
 def config_path(name: str) -> Path:

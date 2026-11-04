@@ -846,6 +846,37 @@ def _doctor_row(rows, title_starts):
     return None
 
 
+def test_refresh_command_per_platform():
+    """The line the dashboard tells people to paste must parse in their shell.
+
+    Windows PowerShell 5.1 rejects `&&` ("not a valid statement separator") and
+    has no dependable `python3`, so the same command line cannot serve both.
+    """
+    print("\nrefresh command")
+    real = launcher.platform.system
+    try:
+        root = Path.home() / "code" / "obs"
+        for system, sep, py in (("Windows", "; ", "python"),
+                                ("Darwin", " && ", "python3"),
+                                ("Linux", " && ", "python3")):
+            launcher.platform.system = lambda s=system: s
+            cmd = launcher.refresh_command(root)
+            if not launcher.home.is_checkout():
+                ok("a PyPI install gets the bare command", cmd == "ai-observatory all")
+                continue
+            check(f"{system}: cd into the checkout, then run it",
+                  cmd, f"cd ~/code/obs/observatory{sep}{py} observe.py all")
+            ok(f"{system}: only PowerShell gets no '&&'",
+               ("&&" in cmd) == (system != "Windows"))
+        launcher.platform.system = lambda: "Windows"
+        check("Windows advice that names python3 is rewritten",
+              launcher.home.retarget("Run `python3 observe.py sync`."),
+              "Run `python observe.py sync`."
+              if launcher.home.is_checkout() else "Run `ai-observatory sync`.")
+    finally:
+        launcher.platform.system = real
+
+
 def test_doctor_install_checks():
     """The macOS-only checks, exercised from a machine that is not a Mac.
 
@@ -1092,6 +1123,7 @@ def main():
                test_share_payload, test_pipeline, test_hidden_guards,
                test_findings_i18n_coverage,
                test_updater, test_sync_integrity, test_unpriced_disclosure,
+               test_refresh_command_per_platform,
                test_doctor_install_checks, test_cli_dispatch,
                test_duplicate_disclosure):
         fn()
