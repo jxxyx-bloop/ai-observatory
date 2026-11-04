@@ -863,6 +863,45 @@ def _schtasks(*args) -> bool:
         return False
 
 
+class SandboxedInstall(RuntimeError):
+    """`install` ran inside an app whose AppData writes are redirected."""
+
+
+def sandbox_copy(path: Path) -> Path | None:
+    """Where `path` really went, if a sandboxed app redirected the write.
+
+    Store-packaged apps (the Claude desktop app is one) give every process they
+    start a private copy of %LOCALAPPDATA%. The write succeeds and reads back
+    fine from inside, but File Explorer and Start never see it — so a Start Menu
+    shortcut, which is written to the real Roaming folder, ends up pointing at
+    an icon and a launcher that do not exist for the person using it.
+
+    The process cannot ask whether it is packaged (children report no package),
+    so this looks for the symptom: the same file, with the same timestamp, under
+    some app's `Packages\\*\\LocalCache\\Local`. A stale private copy from an
+    earlier sandboxed run has an older timestamp and is correctly ignored.
+    """
+    local = os.environ.get("LOCALAPPDATA")
+    if not local:
+        return None
+    try:
+        # Inside the sandbox the path resolves to the private copy outright.
+        real_path, shown = path.resolve(), os.path.abspath(path)
+        if (os.path.normcase(str(real_path)) != os.path.normcase(shown)
+                and "LocalCache" in real_path.parts
+                and "Packages" in real_path.parts):
+            return real_path
+        rel = real_path.relative_to(Path(local).resolve())
+        stamp = path.stat().st_mtime_ns
+        for pkg in (Path(local) / "Packages").glob("*/LocalCache/Local"):
+            twin = pkg / rel
+            if twin.is_file() and twin.stat().st_mtime_ns == stamp:
+                return twin
+    except (ValueError, OSError):
+        pass
+    return None
+
+
 def _install_windows(root: Path, daily: bool = True) -> list[str]:
     done = []
     folder = win_dir()
@@ -873,6 +912,20 @@ def _install_windows(root: Path, daily: bool = True) -> list[str]:
     runner.write_text(_WIN_RUNNER.format(
         root=str(root.resolve()), python=sys.executable, log=str(log)),
         encoding="utf-8")
+    hidden = sandbox_copy(runner)
+    if hidden is not None:
+        # Stop before the shortcut and the daily task: a Start entry whose icon
+        # and launcher Windows cannot find is worse than no entry at all.
+        try:
+            runner.unlink()
+        except OSError:
+            pass
+        raise SandboxedInstall(
+            "This terminal is inside an app that keeps its own private copy of "
+            "your AppData folder, so Start would never see the launcher.\n"
+            "Open a normal PowerShell instead (press the Windows key, type "
+            "PowerShell, open it from Start), then run:\n"
+            "    python observe.py install")
     icon = folder / "appicon.ico"
     icon.write_bytes(_ico())
     done.append(f"launcher   {runner}")
